@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "autoblocksai"
+version = "0.1.0"
+description = ""
+authors = ["Autoblocks Engineering <engineering@autoblocks.ai>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "autoblocks"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.3.3"
+pytest = "^7.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+select = ["E", "F", "I001"]
+line-length = 120
+
+[tool.ruff.isort]
+force-single-line = true
+known-first-party = ["autoblocks"]

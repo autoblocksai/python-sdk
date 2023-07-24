@@ -1,2 +1,1 @@
-# python-sdk
-Autoblocks Python SDK
+# Autoblocks Python SDK
