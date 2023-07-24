@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version-file: .python-version
+
+      - name: Install poetry
+        run: curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run pre-commit checks
+        uses: pre-commit/action@v3.0.0
+
+      - name: Run tests
+        run: poetry run pytest
