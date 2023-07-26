@@ -18,28 +18,28 @@ def test_convert_values_to_strings():
             "none": None,
             "str": "str",
             "int": 1,
-            "float": 1.0,
+            "float": 1.1,
             "bool": True,
             "dict": {
                 "str": "str",
                 "int": 2,
-                "float": 2.0,
+                "float_dot_oh": 2.0,
                 "bool": False,
-                "list": ["str", 3, True, {"d": "d"}],
+                "list": ["str", 3, True, None, {"d": "d"}],
             },
         }
     ) == {
         "none": "null",
         "str": "str",
         "int": "1",
-        "float": "1.0",
+        "float": "1.1",
         "bool": "true",
         "dict": {
             "str": "str",
             "int": "2",
-            "float": "2.0",
+            "float_dot_oh": "2",
             "bool": "false",
-            "list": ["str", "3", "true", {"d": "d"}],
+            "list": ["str", "3", "true", "null", {"d": "d"}],
         },
     }
 

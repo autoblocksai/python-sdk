@@ -30,7 +30,10 @@ def convert_values_to_strings(x) -> Dict:
     elif isinstance(x, bool):
         return str(x).lower()
     elif isinstance(x, (int, float)):
-        return str(x)
+        if int(x) == x:
+            return str(int(x))
+        else:
+            return str(x)
     else:
         return x
 
