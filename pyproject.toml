@@ -9,12 +9,12 @@ packages = [{include = "autoblocks"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-requests = "^2.0.0"
+httpx = "^0.24.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.3"
 pytest = "^7.4.0"
-requests-mock = "^1.11.0"
+pytest-httpx = "^0.22.0"
 
 [build-system]
 requires = ["poetry-core"]

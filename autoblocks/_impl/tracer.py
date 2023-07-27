@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Dict
 from typing import Optional
 
-import requests
+import httpx
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks._impl.config.env import env
@@ -36,10 +36,13 @@ class AutoblocksTracer:
         # Timeout for sending events to Autoblocks
         timeout: timedelta = timedelta(seconds=5),
     ):
-        self._ingestion_key: str = ingestion_key
         self._trace_id: Optional[str] = trace_id
         self._properties: Dict = properties or {}
-        self._timeout: timedelta = timeout
+
+        self._client = httpx.Client(
+            headers={"Authorization": f"Bearer {ingestion_key}"},
+            timeout=timeout.total_seconds(),
+        )
 
     def set_trace_id(self, trace_id: str) -> None:
         """
@@ -97,18 +100,14 @@ class AutoblocksTracer:
             return
 
         try:
-            req = requests.post(
-                INGESTION_ENDPOINT,
+            req = self._client.post(
+                url=INGESTION_ENDPOINT,
                 json={
                     "message": message,
                     "traceId": trace_id,
                     "timestamp": timestamp,
                     "properties": merged_properties,
                 },
-                headers={
-                    "Authorization": f"Bearer {self._ingestion_key}",
-                },
-                timeout=self._timeout.total_seconds(),
             )
             req.raise_for_status()
             resp = req.json()
