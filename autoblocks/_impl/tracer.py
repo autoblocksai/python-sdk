@@ -73,6 +73,11 @@ class AutoblocksTracer:
         timestamp: Optional[str] = None,
         properties: Optional[Dict] = None,
     ) -> Optional[str]:
+        """
+        Sends an event to the Autoblocks ingestion API.
+
+        Returns the event's traceId on success, otherwise None.
+        """
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
 

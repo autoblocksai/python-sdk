@@ -26,12 +26,13 @@ def start_replay() -> Optional[str]:
     replay_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
     # Create the directory for this replay
-    directory = os.path.join(
-        env.AUTOBLOCKS_REPLAYS_DIRECTORY,
-        replay_id,
+    os.makedirs(
+        os.path.join(
+            env.AUTOBLOCKS_REPLAYS_DIRECTORY,
+            replay_id,
+        ),
+        exist_ok=True,
     )
-
-    os.makedirs(directory, exist_ok=True)
 
     log.info(f"Your replay ID is {replay_id}")
     return replay_id
