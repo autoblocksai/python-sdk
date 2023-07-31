@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "autoblocksai"
-version = "0.1.0"
+version = "0.0.1"
 description = ""
 authors = ["Autoblocks Engineering <engineering@autoblocks.ai>"]
 license = "MIT"
@@ -8,11 +8,13 @@ readme = "README.md"
 packages = [{include = "autoblocks"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.8"
+httpx = "^0.24.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.3"
 pytest = "^7.4.0"
+pytest-httpx = "^0.22.0"
 
 [build-system]
 requires = ["poetry-core"]
