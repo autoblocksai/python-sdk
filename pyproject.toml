@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "autoblocksai"
-version = "0.0.1"
+version = "0.0.0"
 description = ""
 authors = ["Autoblocks Engineering <engineering@autoblocks.ai>"]
 license = "MIT"
