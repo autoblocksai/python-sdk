@@ -47,13 +47,13 @@ class ReplayData:
         """
         return "-".join([x[0].upper() + x[1:] for x in s.split("_")])
 
-    def to_http_headers(self) -> Dict:
+    def to_http_headers(self) -> Dict[str, str]:
         d = asdict(self)
         headers = {}
         for k, v in d.items():
             if v is None:
                 continue
-            headers[f"X-Autoblocks-Replay-{self.snake_to_kebab(k)}"] = v
+            headers[f"X-Autoblocks-Replay-{self.snake_to_kebab(k)}"] = str(v)
         return headers
 
 
