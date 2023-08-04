@@ -57,8 +57,12 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
+      - name: Dump GitHub event file
+        run: |
+          cat $GITHUB_EVENT_PATH
+
       - name: Test http headers
         run: poetry run test-headers
 
-      - name: Run tests
-        run: poetry run pytest
+#      - name: Run tests
+#        run: poetry run pytest

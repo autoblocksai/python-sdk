@@ -121,9 +121,15 @@ def get_replay_data() -> Optional[ReplayData]:
 
         commit = get_local_commit_data(g["SHA"])
 
+        # When it's a `push` event, GITHUB_REF_NAME will have the branch name, but on
+        # the `pull_request` event it will have the merge ref, like 5/merge, so for
+        # pull request events we get the branch name off the webhook payload below.
+        branch_name = g["REF_NAME"]
+
         try:
             pull_request_number = event["pull_request"]["number"]
             pull_request_title = event["pull_request"]["title"]
+            branch_name = event["pull_request"]["head"]["ref"]
         except KeyError:
             pull_request_number = None
             pull_request_title = None
@@ -149,7 +155,7 @@ def get_replay_data() -> Optional[ReplayData]:
                     g["REPOSITORY"],
                 ]
             ),
-            branch_name=g["REF_NAME"],
+            branch_name=branch_name,
             default_branch_name=event["repository"]["default_branch"],
             commit_sha=commit.sha,
             commit_message=commit.commit_message,
