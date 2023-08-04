@@ -6,6 +6,7 @@ from typing import Optional
 import httpx
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
+from autoblocks._impl.util import make_http_headers
 
 log = logging.getLogger(__name__)
 
@@ -79,6 +80,11 @@ class AutoblocksTracer:
         trace_id = trace_id or self._trace_id
 
         try:
+            headers = make_http_headers()
+        except Exception:
+            headers = None
+
+        try:
             req = self._client.post(
                 url=INGESTION_ENDPOINT,
                 json={
@@ -87,6 +93,7 @@ class AutoblocksTracer:
                     "timestamp": timestamp,
                     "properties": merged_properties,
                 },
+                headers=headers,
             )
             req.raise_for_status()
             resp = req.json()

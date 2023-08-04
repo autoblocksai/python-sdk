@@ -4,6 +4,9 @@ on:
   push:
     branches-ignore:
       - main
+  pull_request:
+  workflow_dispatch:
+
 
 env:
   POETRY_VERSION: "1.5.1"
@@ -53,6 +56,9 @@ jobs:
 
       - name: Install dependencies
         run: poetry install
+
+      - name: Test http headers
+        run: poetry run test-headers
 
       - name: Run tests
         run: poetry run pytest
