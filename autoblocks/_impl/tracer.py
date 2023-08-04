@@ -6,11 +6,6 @@ from typing import Optional
 import httpx
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
-from autoblocks._impl.config.env import env
-from autoblocks._impl.error import NoTraceIdForReplayException
-from autoblocks._impl.util import EventType
-from autoblocks._impl.util import write_event_to_file_ci
-from autoblocks._impl.util import write_event_to_file_local
 
 log = logging.getLogger(__name__)
 
@@ -82,27 +77,6 @@ class AutoblocksTracer:
         merged_properties.update(properties or {})
 
         trace_id = trace_id or self._trace_id
-
-        if env.AUTOBLOCKS_REPLAYS_ENABLED:
-            if not trace_id:
-                raise NoTraceIdForReplayException(
-                    "trace_id must be specified when AUTOBLOCKS_REPLAYS_ENABLED is set to true"
-                )
-
-            if env.CI:
-                write_event_to_file_ci(
-                    trace_id=trace_id,
-                    message=message,
-                    properties=merged_properties,
-                )
-            else:
-                write_event_to_file_local(
-                    event_type=EventType.REPLAYED,
-                    trace_id=trace_id,
-                    message=message,
-                    properties=merged_properties,
-                )
-            return
 
         try:
             req = self._client.post(
