@@ -20,7 +20,7 @@ class Commit:
 
 
 @dataclass(frozen=True)
-class ReplayData:
+class ReplayRun:
     provider: str
     run_id: str
     run_url: Optional[str]
@@ -111,7 +111,7 @@ def get_local_commit_data(sha: Optional[str]) -> Commit:
     return Commit(**data)
 
 
-def get_replay_data() -> Optional[ReplayData]:
+def make_replay_run() -> Optional[ReplayRun]:
     if os.environ.get("GITHUB_ACTIONS"):
         # GitHub Actions
         g = {k.split("GITHUB_", maxsplit=1)[-1]: v for k, v in os.environ.items() if k.startswith("GITHUB_")}
@@ -121,11 +121,6 @@ def get_replay_data() -> Optional[ReplayData]:
 
         commit = get_local_commit_data(g["SHA"])
 
-        # When it's a `push` event, GITHUB_REF_NAME will have the branch name, but on
-        # the `pull_request` event it will have the merge ref, like 5/merge, so for
-        # pull request events we get the branch name off the webhook payload below.
-        branch_name = g["REF_NAME"]
-
         try:
             pull_request_number = event["pull_request"]["number"]
             pull_request_title = event["pull_request"]["title"]
@@ -133,8 +128,12 @@ def get_replay_data() -> Optional[ReplayData]:
         except KeyError:
             pull_request_number = None
             pull_request_title = None
+            # When it's a `push` event, GITHUB_REF_NAME will have the branch name, but on
+            # the `pull_request` event it will have the merge ref, like 5/merge, so for
+            # pull request events we get the branch name off the webhook payload above.
+            branch_name = g["REF_NAME"]
 
-        return ReplayData(
+        return ReplayRun(
             provider="github",
             run_id=f"{g['REPOSITORY']}-{g['RUN_ID']}-{g['RUN_ATTEMPT']}",
             run_url="/".join(
@@ -170,7 +169,7 @@ def get_replay_data() -> Optional[ReplayData]:
     elif replay_id := os.environ.get("AUTOBLOCKS_REPLAY_ID"):
         # Local
         commit = get_local_commit_data(sha=None)
-        return ReplayData(
+        return ReplayRun(
             provider="local",
             run_id=replay_id,
             run_url=None,
@@ -192,9 +191,9 @@ def get_replay_data() -> Optional[ReplayData]:
 
 
 def make_http_headers() -> Optional[Dict]:
-    replay_data = get_replay_data()
-    if replay_data:
-        return replay_data.to_http_headers()
+    replay_run = make_replay_run()
+    if replay_run:
+        return replay_run.to_http_headers()
     return None
 
 
