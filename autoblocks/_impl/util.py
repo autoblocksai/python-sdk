@@ -53,7 +53,7 @@ class ReplayData:
         for k, v in d.items():
             if v is None:
                 continue
-            headers[f"X-Autoblocks-Replay-{self.snake_to_kebab(k)}"] = str(v)
+            headers[f"X-Autoblocks-Replay-{self.snake_to_kebab(k)}"] = str(v).strip()
         return headers
 
 
