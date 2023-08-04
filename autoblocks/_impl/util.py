@@ -42,8 +42,7 @@ class ReplayRun:
         """
         Converts from snake_case to Kebab-Case. For example:
 
-        >>> snake_to_kebab("hello_world")
-        "Hello-World"
+        "hello_world" -> "Hello-World"
         """
         return "-".join([x[0].upper() + x[1:] for x in s.split("_")])
 
