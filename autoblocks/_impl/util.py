@@ -58,7 +58,7 @@ class ReplayRun:
 
 
 def run_command(cmd: List[str]) -> str:
-    return subprocess.run(cmd, stdout=subprocess.PIPE).stdout.decode("utf8")
+    return subprocess.run(cmd, stdout=subprocess.PIPE).stdout.decode("utf8").strip()
 
 
 def get_local_branch_name() -> str:
@@ -69,7 +69,7 @@ def get_local_branch_name() -> str:
             "--abbrev-ref",
             "HEAD",
         ]
-    ).strip()
+    )
 
 
 def get_local_commit_data(sha: Optional[str]) -> Commit:
@@ -192,7 +192,7 @@ def make_replay_run() -> Optional[ReplayRun]:
     return None
 
 
-def make_http_headers() -> Optional[Dict]:
+def make_replay_headers() -> Optional[Dict]:
     replay_run = make_replay_run()
     if replay_run:
         return replay_run.to_http_headers()

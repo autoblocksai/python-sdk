@@ -6,7 +6,7 @@ from typing import Optional
 import httpx
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
-from autoblocks._impl.util import make_http_headers
+from autoblocks._impl.util import make_replay_headers
 
 log = logging.getLogger(__name__)
 
@@ -80,9 +80,10 @@ class AutoblocksTracer:
         trace_id = trace_id or self._trace_id
 
         try:
-            headers = make_http_headers()
-        except Exception:
-            headers = None
+            replay_headers = make_replay_headers()
+        except Exception as err:
+            log.error(f"Failed to generate replay headers: {err}", exc_info=True)
+            replay_headers = None
 
         try:
             req = self._client.post(
@@ -93,7 +94,7 @@ class AutoblocksTracer:
                     "timestamp": timestamp,
                     "properties": merged_properties,
                 },
-                headers=headers,
+                headers=replay_headers,
             )
             req.raise_for_status()
             resp = req.json()
