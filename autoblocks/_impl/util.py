@@ -34,6 +34,7 @@ class ReplayRun:
     commit_committer_email: str
     commit_author_name: str
     commit_author_email: str
+    commit_committed_date: str
     pull_request_number: Optional[str]
     pull_request_title: Optional[str]
 
@@ -161,6 +162,7 @@ def make_replay_run() -> Optional[ReplayRun]:
             commit_committer_email=commit.committer_email,
             commit_author_name=commit.author_name,
             commit_author_email=commit.author_email,
+            commit_committed_date=commit.committed_date,
             pull_request_number=pull_request_number,
             pull_request_title=pull_request_title,
         )
@@ -182,6 +184,7 @@ def make_replay_run() -> Optional[ReplayRun]:
             commit_committer_email=commit.committer_email,
             commit_author_name=commit.author_name,
             commit_author_email=commit.author_email,
+            commit_committed_date=commit.committed_date,
             pull_request_number=None,
             pull_request_title=None,
         )
