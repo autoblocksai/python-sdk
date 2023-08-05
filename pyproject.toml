@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "autoblocksai"
-version = "0.0.1"
+# The version is not maintained here. It's set in the release workflow via the version input.
+version = "0.0.0"
 description = ""
 authors = ["Autoblocks Engineering <engineering@autoblocks.ai>"]
 license = "MIT"
