@@ -13,6 +13,7 @@ from tests.util import make_expected_body
     os.environ,
     {
         "AUTOBLOCKS_REPLAY_ID": "replay-123",
+        "GITHUB_ACTIONS": "",
     },
 )
 def test_tracer_local(httpx_mock):
@@ -186,6 +187,12 @@ def test_tracer_ci_pull_request(httpx_mock, tmp_path):
     assert trace_id == "my-trace-id"
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -208,6 +215,12 @@ def test_tracer_prod(httpx_mock):
     assert trace_id == "my-trace-id"
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_no_trace_id_in_response(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -230,6 +243,12 @@ def test_tracer_prod_no_trace_id_in_response(httpx_mock):
     assert trace_id is None
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_with_trace_id_in_send_event(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -251,6 +270,12 @@ def test_tracer_prod_with_trace_id_in_send_event(httpx_mock):
     ab.send_event("my-message", trace_id="my-trace-id")
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_with_trace_id_in_init(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -271,6 +296,12 @@ def test_tracer_prod_with_trace_id_in_init(httpx_mock):
     ab.send_event("my-message")
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_with_trace_id_override(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -292,6 +323,12 @@ def test_tracer_prod_with_trace_id_override(httpx_mock):
     ab.send_event("my-message", trace_id="override-trace-id")
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_with_set_trace_id(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -314,6 +351,12 @@ def test_tracer_prod_with_set_trace_id(httpx_mock):
     ab.send_event("my-message")
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_with_properties(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -335,6 +378,12 @@ def test_tracer_prod_with_properties(httpx_mock):
     ab.send_event("my-message")
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_with_set_properties(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -357,6 +406,12 @@ def test_tracer_prod_with_set_properties(httpx_mock):
     ab.send_event("my-message")
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_with_update_properties(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -379,6 +434,12 @@ def test_tracer_prod_with_update_properties(httpx_mock):
     ab.send_event("my-message")
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_with_update_properties_and_send_event_properties(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -401,6 +462,12 @@ def test_tracer_prod_with_update_properties_and_send_event_properties(httpx_mock
     ab.send_event("my-message", properties=dict(z=3))
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_with_properties_with_conflicting_keys(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -423,6 +490,12 @@ def test_tracer_prod_with_properties_with_conflicting_keys(httpx_mock):
     ab.send_event("my-message", properties=dict(x=3, z=3))
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_with_timestamp(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -452,6 +525,12 @@ def test_tracer_prod_catches_errors(httpx_mock):
     assert trace_id is None
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
 def test_tracer_prod_handles_non_200(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
