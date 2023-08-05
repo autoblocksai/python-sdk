@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release
+        required: true
+
+env:
+  POETRY_VERSION: "1.5.1"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install poetry
+        run: curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Set version in pyproject.toml
+        run: poetry version ${{ inputs.version }}
+
+      - name: Build package
+        run: poetry build
+
+      - name: Publish to PyPI
+        run: poetry publish
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+
+      - name: Push tag to GitHub
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'github-actions@autoblocks.ai'
+          git tag -a ${{ inputs.version }} -m "${{ inputs.version }}"
+          git push origin ${{ inputs.version }}
