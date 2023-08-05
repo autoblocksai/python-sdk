@@ -127,6 +127,10 @@ def make_replay_run() -> Optional[ReplayRun]:
         g = {k.split("GITHUB_", maxsplit=1)[-1]: v for k, v in os.environ.items() if k.startswith("GITHUB_")}
 
         with open(g["EVENT_PATH"], "r") as f:
+            # GitHub Actions are triggered by webhook events, and the event payload is
+            # stored in a JSON file at $GITHUB_EVENT_PATH.
+            # You can see the schema of the various webhook payloads at:
+            # https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads
             event = json.load(f)
 
         commit = get_local_commit_data(g["SHA"])
