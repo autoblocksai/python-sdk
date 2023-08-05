@@ -194,9 +194,3 @@ def make_http_headers() -> Optional[Dict]:
     if replay_run:
         return replay_run.to_http_headers()
     return None
-
-
-def test_headers():
-    import pprint
-
-    pprint.pprint(make_http_headers())

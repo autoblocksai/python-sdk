@@ -16,9 +16,6 @@ pre-commit = "^3.3.3"
 pytest = "^7.4.0"
 pytest-httpx = "^0.22.0"
 
-[tool.poetry.scripts]
-test-headers = "autoblocks._impl.util:test_headers"
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
