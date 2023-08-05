@@ -83,6 +83,8 @@ def get_local_branch_name() -> str:
 
 
 def get_local_commit_data(sha: Optional[str]) -> Commit:
+    commit_message_key = "commit_message"
+
     log_format = "%n".join(
         [
             "sha=%H",
@@ -92,7 +94,7 @@ def get_local_commit_data(sha: Optional[str]) -> Commit:
             "committer_email=%ce",
             "committed_date=%aI",
             # This should be last because commit messages can contain multiple lines
-            "commit_message=%B",
+            f"{commit_message_key}=%B",
         ]
     )
     out = run_command(
@@ -109,14 +111,14 @@ def get_local_commit_data(sha: Optional[str]) -> Commit:
     for line in out.splitlines():
         key, value = line.split("=", maxsplit=1)
 
-        if key == "commit_message":
+        if key == commit_message_key:
             # Stop once we reach the commit message since it might consist of multiple lines
             break
 
         data[key] = value
 
     # Now get the commit message, which is everything after "commit_message="
-    data["commit_message"] = out.split("commit_message=", maxsplit=1)[-1]
+    data[commit_message_key] = out.split(f"{commit_message_key}=", maxsplit=1)[-1]
 
     return Commit(**data)
 
