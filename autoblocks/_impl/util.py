@@ -3,9 +3,19 @@ import os
 import subprocess
 from dataclasses import asdict
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict
 from typing import List
 from typing import Optional
+
+
+class Provider(str, Enum):
+    LOCAL = "local"
+    GITHUB = "github"
+
+    def __str__(self) -> str:
+        # https://stackoverflow.com/a/74440069
+        return str.__str__(self)
 
 
 @dataclass(frozen=True)
@@ -134,7 +144,7 @@ def make_replay_run() -> Optional[ReplayRun]:
             branch_name = g["REF_NAME"]
 
         return ReplayRun(
-            provider="github",
+            provider=Provider.GITHUB,
             run_id=f"{g['REPOSITORY']}-{g['RUN_ID']}-{g['RUN_ATTEMPT']}",
             run_url="/".join(
                 [
@@ -171,7 +181,7 @@ def make_replay_run() -> Optional[ReplayRun]:
         # Local
         commit = get_local_commit_data(sha=None)
         return ReplayRun(
-            provider="local",
+            provider=Provider.LOCAL,
             run_id=replay_id,
             run_url=None,
             repo=None,
