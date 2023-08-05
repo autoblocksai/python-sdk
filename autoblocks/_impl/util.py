@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+from collections import deque
 from dataclasses import asdict
 from dataclasses import dataclass
 from enum import Enum
@@ -108,17 +109,17 @@ def get_local_commit_data(sha: Optional[str]) -> Commit:
     )
 
     data = {}
-    for line in out.splitlines():
+    lines = deque(out.splitlines())
+    while lines:
+        line = lines.popleft()
         key, value = line.split("=", maxsplit=1)
 
         if key == commit_message_key:
-            # Stop once we reach the commit message since it might consist of multiple lines
+            # Once we've reached the commit message key, the remaining lines are the commit message
+            data[commit_message_key] = "\n".join([value, *lines])
             break
 
         data[key] = value
-
-    # Now get the commit message, which is everything after "commit_message="
-    data[commit_message_key] = out.split(f"{commit_message_key}=", maxsplit=1)[-1]
 
     return Commit(**data)
 
