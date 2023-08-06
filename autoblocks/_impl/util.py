@@ -32,7 +32,7 @@ class Commit:
 
 @dataclass(frozen=True)
 class ReplayRun:
-    provider: str
+    provider: Provider
     run_id: str
     run_url: Optional[str]
     repo: Optional[str]
