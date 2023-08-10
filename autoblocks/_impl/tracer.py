@@ -6,11 +6,7 @@ from typing import Optional
 import httpx
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
-from autoblocks._impl.config.env import env
-from autoblocks._impl.error import NoTraceIdForReplayException
-from autoblocks._impl.util import EventType
-from autoblocks._impl.util import write_event_to_file_ci
-from autoblocks._impl.util import write_event_to_file_local
+from autoblocks._impl.util import make_replay_headers
 
 log = logging.getLogger(__name__)
 
@@ -83,26 +79,11 @@ class AutoblocksTracer:
 
         trace_id = trace_id or self._trace_id
 
-        if env.AUTOBLOCKS_REPLAYS_ENABLED:
-            if not trace_id:
-                raise NoTraceIdForReplayException(
-                    "trace_id must be specified when AUTOBLOCKS_REPLAYS_ENABLED is set to true"
-                )
-
-            if env.CI:
-                write_event_to_file_ci(
-                    trace_id=trace_id,
-                    message=message,
-                    properties=merged_properties,
-                )
-            else:
-                write_event_to_file_local(
-                    event_type=EventType.REPLAYED,
-                    trace_id=trace_id,
-                    message=message,
-                    properties=merged_properties,
-                )
-            return
+        try:
+            replay_headers = make_replay_headers()
+        except Exception as err:
+            log.error(f"Failed to generate replay headers: {err}", exc_info=True)
+            replay_headers = None
 
         try:
             req = self._client.post(
@@ -113,6 +94,7 @@ class AutoblocksTracer:
                     "timestamp": timestamp,
                     "properties": merged_properties,
                 },
+                headers=replay_headers,
             )
             req.raise_for_status()
             resp = req.json()

@@ -1,125 +1,216 @@
 import json
 import os
+import subprocess
+from collections import deque
+from dataclasses import asdict
+from dataclasses import dataclass
 from enum import Enum
 from typing import Dict
+from typing import List
 from typing import Optional
 
-from autoblocks._impl.config.env import env
-from autoblocks._impl.error import NoReplayInProgressException
+
+class Provider(str, Enum):
+    LOCAL = "local"
+    GITHUB = "github"
+
+    def __str__(self) -> str:
+        # https://stackoverflow.com/a/74440069
+        return str.__str__(self)
 
 
-class EventType(str, Enum):
-    ORIGINAL = "original"
-    REPLAYED = "replayed"
+@dataclass(frozen=True)
+class Commit:
+    sha: str
+    author_name: str
+    author_email: str
+    committer_name: str
+    committer_email: str
+    committed_date: str
+    commit_message: str
 
 
-def convert_values_to_strings(x) -> Dict:
-    """
-    Convert all values in a dictionary to strings.
+@dataclass(frozen=True)
+class ReplayRun:
+    provider: Provider
+    run_id: str
+    run_url: Optional[str]
+    repo: Optional[str]
+    repo_url: Optional[str]
+    branch_name: str
+    default_branch_name: Optional[str]
+    commit_sha: str
+    commit_message: str
+    commit_committer_name: str
+    commit_committer_email: str
+    commit_author_name: str
+    commit_author_email: str
+    commit_committed_date: str
+    pull_request_number: Optional[str]
+    pull_request_title: Optional[str]
 
-    We do this because under the hood, Autoblocks stores all property values as strings.
-    In order to effectively diff original vs replayed events, we need to ensure that
-    the values are the same type.
-    """
-    if x is None:
-        return "null"
-    elif isinstance(x, dict):
-        return {k: convert_values_to_strings(v) for k, v in x.items()}
-    elif isinstance(x, list):
-        return [convert_values_to_strings(item) for item in x]
-    elif isinstance(x, bool):
-        return str(x).lower()
-    elif isinstance(x, (int, float)):
-        if int(x) == x:
-            return str(int(x))
-        else:
-            return str(x)
-    else:
-        return x
+    @staticmethod
+    def snake_to_kebab(s: str) -> str:
+        """
+        Converts from snake_case to Kebab-Case. For example:
+
+        "hello_world" -> "Hello-World"
+        """
+        return "-".join([x[0].upper() + x[1:] for x in s.split("_")])
+
+    def to_http_headers(self) -> Dict[str, str]:
+        d = asdict(self)
+        headers = {}
+        for k, v in d.items():
+            if v is None:
+                continue
+            headers[f"X-Autoblocks-Replay-{self.snake_to_kebab(k)}"] = str(v).strip()
+        return headers
 
 
-def write_event_to_file_local(
-    event_type: EventType,
-    trace_id: str,
-    message: str,
-    properties: Optional[Dict] = None,
-) -> None:
-    """
-    In local environments we write the replayed events to a directory structure
-    that looks like this:
+def run_command(cmd: List[str]) -> str:
+    return subprocess.run(cmd, stdout=subprocess.PIPE).stdout.decode("utf8").strip()
 
-    autoblocks-replays/
-        <replay-id>/
-            <trace-id>/
-                original/
-                    <event-number>-<message>.json
-                replayed/
-                    <event-number>-<message>.json
-    """
-    # Assume the last folder in the replay directory is the current replay folder
-    # if not explicitly specified
-    current_replays = os.listdir(env.AUTOBLOCKS_REPLAYS_DIRECTORY)
-    if not current_replays:
-        raise NoReplayInProgressException(
-            "No replay is currently in progress. Call autoblocks.replays.start_replay to start a replay."
-        )
-    replay_id = sorted(current_replays)[-1]
 
-    directory = os.path.join(
-        env.AUTOBLOCKS_REPLAYS_DIRECTORY,
-        replay_id,
-        trace_id,
-        event_type,
+def get_local_branch_name() -> str:
+    return run_command(
+        [
+            "git",
+            "rev-parse",
+            "--abbrev-ref",
+            "HEAD",
+        ]
     )
 
-    os.makedirs(directory, exist_ok=True)
 
-    num_existing_replayed_events = len(os.listdir(directory))
+def get_local_commit_data(sha: Optional[str]) -> Commit:
+    commit_message_key = "commit_message"
 
-    filename = os.path.join(
-        directory,
-        # Prefix with the replay number so that the replayed files are sorted
-        # by replay order
-        f"{num_existing_replayed_events + 1}-{message.replace(' ', '-')}.json",
+    log_format = "%n".join(
+        [
+            "sha=%H",
+            "author_name=%an",
+            "author_email=%ae",
+            "committer_name=%cn",
+            "committer_email=%ce",
+            "committed_date=%aI",
+            # This should be last because commit messages can contain multiple lines
+            f"{commit_message_key}=%B",
+        ]
+    )
+    out = run_command(
+        [
+            "git",
+            "show",
+            sha or "HEAD",
+            "--quiet",
+            f"--format={log_format}",
+        ]
     )
 
-    with open(filename, "w") as f:
-        f.write(
-            json.dumps(
-                {
-                    "message": message,
-                    "properties": convert_values_to_strings(properties),
-                },
-                indent=2,
-                sort_keys=True,
-            )
+    data = {}
+    lines = deque(out.splitlines())
+    while lines:
+        line = lines.popleft()
+        key, value = line.split("=", maxsplit=1)
+
+        if key == commit_message_key:
+            # Once we've reached the commit message key, the remaining lines are the commit message
+            data[commit_message_key] = "\n".join([value, *lines])
+            break
+
+        data[key] = value
+
+    return Commit(**data)
+
+
+def make_replay_run() -> Optional[ReplayRun]:
+    if os.environ.get("GITHUB_ACTIONS"):
+        # GitHub Actions
+        g = {k.split("GITHUB_", maxsplit=1)[-1]: v for k, v in os.environ.items() if k.startswith("GITHUB_")}
+
+        with open(g["EVENT_PATH"], "r") as f:
+            # GitHub Actions are triggered by webhook events, and the event payload is
+            # stored in a JSON file at $GITHUB_EVENT_PATH.
+            # You can see the schema of the various webhook payloads at:
+            # https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads
+            event = json.load(f)
+
+        commit = get_local_commit_data(g["SHA"])
+
+        try:
+            pull_request_number = event["pull_request"]["number"]
+            pull_request_title = event["pull_request"]["title"]
+            branch_name = event["pull_request"]["head"]["ref"]
+        except KeyError:
+            pull_request_number = None
+            pull_request_title = None
+            # When it's a `push` event, GITHUB_REF_NAME will have the branch name, but on
+            # the `pull_request` event it will have the merge ref, like 5/merge, so for
+            # pull request events we get the branch name off the webhook payload above.
+            branch_name = g["REF_NAME"]
+
+        return ReplayRun(
+            provider=Provider.GITHUB,
+            run_id=f"{g['REPOSITORY']}-{g['RUN_ID']}-{g['RUN_ATTEMPT']}",
+            run_url="/".join(
+                [
+                    g["SERVER_URL"],
+                    g["REPOSITORY"],
+                    "actions",
+                    "runs",
+                    g["RUN_ID"],
+                    "attempts",
+                    g["RUN_ATTEMPT"],
+                ]
+            ),
+            repo=g["REPOSITORY"],
+            repo_url="/".join(
+                [
+                    g["SERVER_URL"],
+                    g["REPOSITORY"],
+                ]
+            ),
+            branch_name=branch_name,
+            default_branch_name=event["repository"]["default_branch"],
+            commit_sha=commit.sha,
+            commit_message=commit.commit_message,
+            commit_committer_name=commit.committer_name,
+            commit_committer_email=commit.committer_email,
+            commit_author_name=commit.author_name,
+            commit_author_email=commit.author_email,
+            commit_committed_date=commit.committed_date,
+            pull_request_number=pull_request_number,
+            pull_request_title=pull_request_title,
         )
 
-
-def write_event_to_file_ci(
-    trace_id: str,
-    message: str,
-    properties: Optional[Dict] = None,
-) -> None:
-    """
-    In CI environments we just write all the traces to one file. This makes it
-    a bit easier for the downstream GitHub Actions job to process the replayed traces.
-    """
-    # If the replays file doesn't exist, create it
-    if not os.path.exists(env.AUTOBLOCKS_REPLAYS_FILEPATH):
-        with open(env.AUTOBLOCKS_REPLAYS_FILEPATH, "w") as f:
-            f.write(json.dumps([]))
-
-    # Read the file and append the new event
-    with open(env.AUTOBLOCKS_REPLAYS_FILEPATH, "r") as f:
-        content = json.loads(f.read())
-
-    with open(env.AUTOBLOCKS_REPLAYS_FILEPATH, "w") as f:
-        content.append(
-            {
-                "traceId": trace_id,
-                "message": message,
-                "properties": convert_values_to_strings(properties),
-            }
+    elif replay_id := os.environ.get("AUTOBLOCKS_REPLAY_ID"):
+        # Local
+        commit = get_local_commit_data(sha=None)
+        return ReplayRun(
+            provider=Provider.LOCAL,
+            run_id=replay_id,
+            run_url=None,
+            repo=None,
+            repo_url=None,
+            branch_name=get_local_branch_name(),
+            default_branch_name=None,
+            commit_sha=commit.sha,
+            commit_message=commit.commit_message,
+            commit_committer_name=commit.committer_name,
+            commit_committer_email=commit.committer_email,
+            commit_author_name=commit.author_name,
+            commit_author_email=commit.author_email,
+            commit_committed_date=commit.committed_date,
+            pull_request_number=None,
+            pull_request_title=None,
         )
-        f.write(json.dumps(content, indent=2, sort_keys=True))
+
+    return None
+
+
+def make_replay_headers() -> Optional[Dict]:
+    replay_run = make_replay_run()
+    if replay_run:
+        return replay_run.to_http_headers()
+    return None

@@ -1,165 +1,43 @@
-import json
-import os
+from datetime import datetime
+from unittest import mock
 
-import pytest
-
-from autoblocks._impl.config.env import env
-from autoblocks._impl.error import NoReplayInProgressException
-from autoblocks._impl.util import EventType
-from autoblocks._impl.util import convert_values_to_strings
-from autoblocks._impl.util import write_event_to_file_ci
-from autoblocks._impl.util import write_event_to_file_local
-from autoblocks.replays import start_replay
+from autoblocks._impl.util import get_local_commit_data
 
 
-def test_convert_values_to_strings():
-    assert convert_values_to_strings(
-        {
-            "none": None,
-            "str": "str",
-            "int": 1,
-            "float": 1.1,
-            "bool": True,
-            "dict": {
-                "str": "str",
-                "int": 2,
-                "float_dot_oh": 2.0,
-                "bool": False,
-                "list": ["str", 3, True, None, {"d": "d"}],
-            },
-        }
-    ) == {
-        "none": "null",
-        "str": "str",
-        "int": "1",
-        "float": "1.1",
-        "bool": "true",
-        "dict": {
-            "str": "str",
-            "int": "2",
-            "float_dot_oh": "2",
-            "bool": "false",
-            "list": ["str", "3", "true", "null", {"d": "d"}],
-        },
-    }
+def test_get_local_commit_data_real():
+    # Run it for real against whatever commit we're on
+    commit = get_local_commit_data(sha=None)
+
+    # Do sanity checks
+    assert len(commit.sha) == 40
+    assert commit.commit_message
+    assert commit.committer_name
+    assert "@" in commit.committer_email
+    assert commit.author_name
+    assert "@" in commit.author_email
+
+    # Check committed date is a valid ISO 8601 date
+    datetime.fromisoformat(commit.committed_date)
 
 
-def test_write_file_no_replay_in_progress(tmp_path):
-    env.AUTOBLOCKS_REPLAYS_ENABLED = True
-    env.AUTOBLOCKS_REPLAYS_DIRECTORY = tmp_path
-
-    with pytest.raises(NoReplayInProgressException):
-        write_event_to_file_local(
-            event_type=EventType.ORIGINAL,
-            trace_id="my-trace-id",
-            message="my-message",
-            properties=dict(x=1),
+def test_get_local_commit_data_mocked():
+    # Test get_local_commit_data while mocking run_command
+    with mock.patch("autoblocks._impl.util.run_command") as run_command:
+        run_command.return_value = (
+            "sha=3567334251119b2457a0d4b8996b431491aa8a41\n"
+            "author_name=Nicole=White\n"
+            "author_email=nicole@autoblocks.ai\n"
+            "committer_name=commit_message=Nicole White\n"
+            "committer_email=nicole@autoblocks.ai\n"
+            "committed_date=2023-08-05T18:48:50-04:00\n"
+            "commit_message=Line 1\nLine 2\nLine 3"
         )
+        commit = get_local_commit_data(sha=None)
 
-
-def test_write_file_with_replay_id(tmp_path):
-    env.AUTOBLOCKS_REPLAYS_ENABLED = True
-    env.AUTOBLOCKS_REPLAYS_DIRECTORY = tmp_path
-
-    replay_id = start_replay()
-    write_event_to_file_local(
-        event_type=EventType.ORIGINAL,
-        trace_id="my-trace-id",
-        message="my-message",
-        properties=dict(x=1),
-    )
-
-    assert os.listdir(tmp_path) == [replay_id]
-    with open(os.path.join(tmp_path, replay_id, "my-trace-id", "original", "1-my-message.json")) as f:
-        assert json.loads(f.read()) == {
-            "message": "my-message",
-            "properties": {
-                "x": "1",
-            },
-        }
-
-
-def test_write_file_appends_to_most_recent_replay(tmp_path):
-    env.AUTOBLOCKS_REPLAYS_ENABLED = True
-    env.AUTOBLOCKS_REPLAYS_DIRECTORY = tmp_path
-
-    replay_id_1 = start_replay()
-    write_event_to_file_local(
-        event_type=EventType.ORIGINAL,
-        trace_id="trace-1",
-        message="message-1",
-    )
-    replay_id_2 = start_replay()
-    write_event_to_file_local(
-        event_type=EventType.ORIGINAL,
-        trace_id="trace-2",
-        message="message-2",
-    )
-
-    # This should get appended to replay-2 since it's the last active replay
-    write_event_to_file_local(
-        event_type=EventType.ORIGINAL,
-        trace_id="trace-3",
-        message="message-3",
-    )
-
-    assert sorted(os.listdir(tmp_path)) == [replay_id_1, replay_id_2]
-    assert sorted(os.listdir(os.path.join(tmp_path, replay_id_1))) == ["trace-1"]
-    assert sorted(os.listdir(os.path.join(tmp_path, replay_id_2))) == ["trace-2", "trace-3"]
-
-
-def test_write_file_adds_index_prefix(tmp_path):
-    env.AUTOBLOCKS_REPLAYS_ENABLED = True
-    env.AUTOBLOCKS_REPLAYS_DIRECTORY = tmp_path
-
-    replay_id = start_replay()
-    write_event_to_file_local(
-        event_type=EventType.ORIGINAL,
-        trace_id="my-trace-id",
-        message="message",
-    )
-    write_event_to_file_local(
-        event_type=EventType.ORIGINAL,
-        trace_id="my-trace-id",
-        message="message",
-    )
-
-    assert sorted(os.listdir(os.path.join(tmp_path, replay_id, "my-trace-id", "original"))) == [
-        "1-message.json",
-        "2-message.json",
-    ]
-
-
-def test_write_event_file_to_ci(tmp_path):
-    env.AUTOBLOCKS_REPLAYS_ENABLED = True
-    env.AUTOBLOCKS_REPLAYS_FILEPATH = os.path.join(tmp_path, "replays.json")
-    env.CI = True
-
-    write_event_to_file_ci(
-        trace_id="trace-1",
-        message="message-1",
-        properties=dict(x=1),
-    )
-    write_event_to_file_ci(
-        trace_id="trace-2",
-        message="message-2",
-        properties=dict(x=2),
-    )
-
-    with open(env.AUTOBLOCKS_REPLAYS_FILEPATH) as f:
-        assert json.loads(f.read()) == [
-            {
-                "traceId": "trace-1",
-                "message": "message-1",
-                "properties": {
-                    "x": "1",
-                },
-            },
-            {
-                "traceId": "trace-2",
-                "message": "message-2",
-                "properties": {
-                    "x": "2",
-                },
-            },
-        ]
+    assert commit.sha == "3567334251119b2457a0d4b8996b431491aa8a41"
+    assert commit.author_name == "Nicole=White"
+    assert commit.author_email == "nicole@autoblocks.ai"
+    assert commit.committer_name == "commit_message=Nicole White"
+    assert commit.committer_email == "nicole@autoblocks.ai"
+    assert commit.committed_date == "2023-08-05T18:48:50-04:00"
+    assert commit.commit_message == "Line 1\nLine 2\nLine 3"
