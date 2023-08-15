@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from datetime import timedelta
 from typing import Dict
 from typing import Optional
@@ -9,6 +10,11 @@ from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks._impl.util import make_replay_headers
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class SendEventResponse:
+    trace_id: Optional[str]
 
 
 class AutoblocksTracer:
@@ -68,11 +74,11 @@ class AutoblocksTracer:
         trace_id: Optional[str] = None,
         timestamp: Optional[str] = None,
         properties: Optional[Dict] = None,
-    ) -> Optional[str]:
+    ) -> SendEventResponse:
         """
         Sends an event to the Autoblocks ingestion API.
 
-        Returns the event's traceId on success, otherwise None.
+        Returns a SendEventResponse with the event's trace_id on success, otherwise None.
         """
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
@@ -98,7 +104,9 @@ class AutoblocksTracer:
             )
             req.raise_for_status()
             resp = req.json()
-            return resp.get("traceId")
+            trace_id = resp.get("traceId")
         except Exception as err:
             log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
-            return None
+            trace_id = None
+
+        return SendEventResponse(trace_id=trace_id)
