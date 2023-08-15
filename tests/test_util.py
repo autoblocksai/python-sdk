@@ -1,7 +1,9 @@
 from datetime import datetime
 from unittest import mock
 
+from autoblocks._impl.util import get_local_branch_name
 from autoblocks._impl.util import get_local_commit_data
+from autoblocks._impl.util import get_local_repo_name
 
 
 def test_get_local_commit_data_real():
@@ -41,3 +43,11 @@ def test_get_local_commit_data_mocked():
     assert commit.committer_email == "nicole@autoblocks.ai"
     assert commit.committed_date == "2023-08-05T18:48:50-04:00"
     assert commit.commit_message == "Line 1\nLine 2\nLine 3"
+
+
+def test_get_local_repo_name():
+    assert get_local_repo_name() == "autoblocksai/python-sdk"
+
+
+def test_get_local_branch_name():
+    assert get_local_branch_name()

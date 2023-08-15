@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import subprocess
 from collections import deque
@@ -8,6 +9,8 @@ from enum import Enum
 from typing import Dict
 from typing import List
 from typing import Optional
+
+log = logging.getLogger(__name__)
 
 
 class Provider(str, Enum):
@@ -37,15 +40,15 @@ class ReplayRun:
     run_url: Optional[str]
     repo: Optional[str]
     repo_url: Optional[str]
-    branch_name: str
+    branch_name: Optional[str]
     default_branch_name: Optional[str]
-    commit_sha: str
-    commit_message: str
-    commit_committer_name: str
-    commit_committer_email: str
-    commit_author_name: str
-    commit_author_email: str
-    commit_committed_date: str
+    commit_sha: Optional[str]
+    commit_message: Optional[str]
+    commit_committer_name: Optional[str]
+    commit_committer_email: Optional[str]
+    commit_author_name: Optional[str]
+    commit_author_email: Optional[str]
+    commit_committed_date: Optional[str]
     pull_request_number: Optional[str]
     pull_request_title: Optional[str]
 
@@ -81,6 +84,23 @@ def get_local_branch_name() -> str:
             "HEAD",
         ]
     )
+
+
+def get_local_repo_name() -> str:
+    url = run_command(
+        [
+            "git",
+            "remote",
+            "get-url",
+            "origin",
+        ]
+    )
+    # Parsed the owner/repo string out of the remote URL
+    # Eg. https://github.com/autoblocksai/python-sdk.git -> autoblocksai/python-sdk
+    parts = url.split("/")[-2:]
+    owner, repo = parts
+    repo = repo.split(".")[0]
+    return f"{owner}/{repo}"
 
 
 def get_local_commit_data(sha: Optional[str]) -> Commit:
@@ -186,22 +206,53 @@ def make_replay_run() -> Optional[ReplayRun]:
 
     elif replay_id := os.environ.get("AUTOBLOCKS_REPLAY_ID"):
         # Local
-        commit = get_local_commit_data(sha=None)
+        try:
+            # Try to get local commit data
+            commit = get_local_commit_data(sha=None)
+            commit_sha = commit.sha
+            commit_message = commit.commit_message
+            committer_name = commit.committer_name
+            committer_email = commit.committer_email
+            author_name = commit.author_name
+            author_email = commit.author_email
+            committed_date = commit.committed_date
+        except Exception as err:
+            log.warning(f"Failed to get local commit data: {err}", exc_info=True)
+            commit_sha = None
+            commit_message = None
+            committer_name = None
+            committer_email = None
+            author_name = None
+            author_email = None
+            committed_date = None
+
+        try:
+            repo_name = get_local_repo_name()
+        except Exception as err:
+            log.warning(f"Failed to get local repo name: {err}", exc_info=True)
+            repo_name = None
+
+        try:
+            branch_name = get_local_branch_name()
+        except Exception as err:
+            log.warning(f"Failed to get local branch name: {err}", exc_info=True)
+            branch_name = None
+
         return ReplayRun(
             provider=Provider.LOCAL,
             run_id=replay_id,
             run_url=None,
-            repo=None,
+            repo=repo_name,
             repo_url=None,
-            branch_name=get_local_branch_name(),
+            branch_name=branch_name,
             default_branch_name=None,
-            commit_sha=commit.sha,
-            commit_message=commit.commit_message,
-            commit_committer_name=commit.committer_name,
-            commit_committer_email=commit.committer_email,
-            commit_author_name=commit.author_name,
-            commit_author_email=commit.author_email,
-            commit_committed_date=commit.committed_date,
+            commit_sha=commit_sha,
+            commit_message=commit_message,
+            commit_committer_name=committer_name,
+            commit_committer_email=committer_email,
+            commit_author_name=author_name,
+            commit_author_email=author_email,
+            commit_committed_date=committed_date,
             pull_request_number=None,
             pull_request_title=None,
         )
