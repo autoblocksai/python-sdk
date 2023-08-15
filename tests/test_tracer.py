@@ -49,8 +49,8 @@ def test_tracer_local(httpx_mock):
     )
 
     ab = AutoblocksTracer("mock-ingestion-key")
-    trace_id = ab.send_event("my-message")
-    assert trace_id == "my-trace-id"
+    resp = ab.send_event("my-message")
+    assert resp.trace_id == "my-trace-id"
 
 
 @mock.patch.dict(
@@ -111,9 +111,9 @@ def test_tracer_ci_push(httpx_mock, tmp_path):
         },
     ):
         ab = AutoblocksTracer("mock-ingestion-key")
-        trace_id = ab.send_event("my-message")
+        resp = ab.send_event("my-message")
 
-    assert trace_id == "my-trace-id"
+    assert resp.trace_id == "my-trace-id"
 
 
 @mock.patch.dict(
@@ -182,9 +182,9 @@ def test_tracer_ci_pull_request(httpx_mock, tmp_path):
         },
     ):
         ab = AutoblocksTracer("mock-ingestion-key")
-        trace_id = ab.send_event("my-message")
+        resp = ab.send_event("my-message")
 
-    assert trace_id == "my-trace-id"
+    assert resp.trace_id == "my-trace-id"
 
 
 @mock.patch.dict(
@@ -210,9 +210,9 @@ def test_tracer_prod(httpx_mock):
         ),
     )
     ab = AutoblocksTracer("mock-ingestion-key")
-    trace_id = ab.send_event("my-message")
+    resp = ab.send_event("my-message")
 
-    assert trace_id == "my-trace-id"
+    assert resp.trace_id == "my-trace-id"
 
 
 @mock.patch.dict(
@@ -238,9 +238,9 @@ def test_tracer_prod_no_trace_id_in_response(httpx_mock):
         ),
     )
     ab = AutoblocksTracer("mock-ingestion-key")
-    trace_id = ab.send_event("my-message")
+    resp = ab.send_event("my-message")
 
-    assert trace_id is None
+    assert resp.trace_id is None
 
 
 @mock.patch.dict(
@@ -521,8 +521,8 @@ def test_tracer_prod_catches_errors(httpx_mock):
     httpx_mock.add_exception(Exception())
 
     ab = AutoblocksTracer("mock-ingestion-key")
-    trace_id = ab.send_event("my-message")
-    assert trace_id is None
+    resp = ab.send_event("my-message")
+    assert resp.trace_id is None
 
 
 @mock.patch.dict(
@@ -549,5 +549,5 @@ def test_tracer_prod_handles_non_200(httpx_mock):
     )
 
     ab = AutoblocksTracer("mock-ingestion-key")
-    trace_id = ab.send_event("my-message")
-    assert trace_id is None
+    resp = ab.send_event("my-message")
+    assert resp.trace_id is None
