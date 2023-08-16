@@ -37,7 +37,7 @@ def test_get_views(httpx_mock):
 
 def test_get_traces_from_view(httpx_mock):
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/views/123/traces?pageSize=10&nextCursor=",
+        url=f"{API_ENDPOINT}/views/123/traces?pageSize=10&cursor=",
         method="GET",
         status_code=200,
         json={

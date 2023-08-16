@@ -27,11 +27,11 @@ class AutoblocksAPIClient:
         return GetViewsResponse(views=[View(id=view["id"], name=view["name"]) for view in resp["views"]])
 
     def get_traces_from_view(
-        self, view_id: str, *, page_size: int, next_cursor: Optional[str] = None
+        self, view_id: str, *, page_size: int, cursor: Optional[str] = None
     ) -> GetTracesFromViewResponse:
         req = self._client.get(
             f"/views/{view_id}/traces",
-            params={"pageSize": page_size, "nextCursor": next_cursor or ""},
+            params={"pageSize": page_size, "cursor": cursor or ""},
         )
         req.raise_for_status()
         resp = req.json()
