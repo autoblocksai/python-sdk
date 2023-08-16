@@ -1,11 +1,11 @@
 import logging
+from typing import List
 from typing import Optional
 
 import httpx
 
 from autoblocks._impl.api.models import Event
 from autoblocks._impl.api.models import GetTracesFromViewResponse
-from autoblocks._impl.api.models import GetViewsResponse
 from autoblocks._impl.api.models import Trace
 from autoblocks._impl.api.models import View
 from autoblocks._impl.config.constants import API_ENDPOINT
@@ -20,11 +20,11 @@ class AutoblocksAPIClient:
             headers={"Authorization": f"Bearer {api_key}"},
         )
 
-    def get_views(self) -> GetViewsResponse:
+    def get_views(self) -> List[View]:
         req = self._client.get("/views")
         req.raise_for_status()
         resp = req.json()
-        return GetViewsResponse(views=[View(id=view["id"], name=view["name"]) for view in resp["views"]])
+        return [View(id=view["id"], name=view["name"]) for view in resp]
 
     def get_traces_from_view(
         self, view_id: str, *, page_size: int, cursor: Optional[str] = None

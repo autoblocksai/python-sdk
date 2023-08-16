@@ -53,3 +53,9 @@ jobs:
 
       - name: Run tests
         run: poetry run pytest
+
+      - name: Run e2e tests
+        run: poetry run e2e
+        env:
+          AUTOBLOCKS_API_KEY: ${{ secrets.DEMO_AUTOBLOCKS_API_KEY }}
+          AUTOBLOCKS_INGESTION_KEY: ${{ secrets.DEMO_AUTOBLOCKS_INGESTION_KEY }}

@@ -26,11 +26,6 @@ class View:
 
 
 @dataclass
-class GetViewsResponse:
-    views: List[View]
-
-
-@dataclass
 class GetTracesFromViewResponse:
     next_cursor: Optional[str]
     traces: List[Trace]
