@@ -11,25 +11,23 @@ def test_get_views(httpx_mock):
         url=f"{API_ENDPOINT}/views",
         method="GET",
         status_code=200,
-        json={
-            "views": [
-                {
-                    "id": "view-id-1",
-                    "name": "View 1",
-                },
-                {
-                    "id": "view-id-2",
-                    "name": "View 2",
-                },
-            ],
-        },
+        json=[
+            {
+                "id": "view-id-1",
+                "name": "View 1",
+            },
+            {
+                "id": "view-id-2",
+                "name": "View 2",
+            },
+        ],
         match_headers={"Authorization": "Bearer mock-api-key"},
     )
 
     client = AutoblocksAPIClient("mock-api-key")
-    resp = client.get_views()
+    views = client.get_views()
 
-    assert resp.views == [
+    assert views == [
         View(id="view-id-1", name="View 1"),
         View(id="view-id-2", name="View 2"),
     ]

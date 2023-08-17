@@ -17,6 +17,9 @@ pre-commit = "^3.3.3"
 pytest = "^7.4.0"
 pytest-httpx = "^0.22.0"
 
+[tool.poetry.scripts]
+e2e = "e2e.run:main"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
