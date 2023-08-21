@@ -3,6 +3,12 @@ import time
 import uuid
 
 from autoblocks.api.client import AutoblocksAPIClient
+from autoblocks.api.models import EventFilter
+from autoblocks.api.models import EventFilterOperator
+from autoblocks.api.models import RelativeTimeFilter
+from autoblocks.api.models import SystemEventFilterKey
+from autoblocks.api.models import TraceFilter
+from autoblocks.api.models import TraceFilterOperator
 from autoblocks.tracer import AutoblocksTracer
 
 AUTOBLOCKS_API_KEY = os.environ.get("AUTOBLOCKS_API_KEY")
@@ -34,10 +40,31 @@ def main():
     tracer.send_event(E2E_TESTS_EXPECTED_MESSAGE, trace_id=test_trace_id)
 
     retries = 10
+    page_size = 10
 
     while True:
-        resp = client.get_traces_from_view(E2E_TESTS_VIEW_ID, page_size=10)
-        if any(trace.id == test_trace_id for trace in resp.traces):
+        page_from_view = client.get_traces_from_view(E2E_TESTS_VIEW_ID, page_size=page_size)
+        page_from_search = client.search_traces(
+            page_size=page_size,
+            time_filter=RelativeTimeFilter(hours=1),
+            trace_filters=[
+                TraceFilter(
+                    operator=TraceFilterOperator.CONTAINS,
+                    event_filters=[
+                        EventFilter(
+                            key=SystemEventFilterKey.MESSAGE,
+                            value=E2E_TESTS_EXPECTED_MESSAGE,
+                            operator=EventFilterOperator.EQUALS,
+                        ),
+                    ],
+                )
+            ],
+        )
+
+        trace_in_view = any(trace.id == test_trace_id for trace in page_from_view.traces)
+        trace_in_search = any(trace.id == test_trace_id for trace in page_from_search.traces)
+
+        if trace_in_view and trace_in_search:
             print(f"Found trace {test_trace_id}!")
             break
 
