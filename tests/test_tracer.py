@@ -12,7 +12,7 @@ from tests.util import make_expected_body
 @mock.patch.dict(
     os.environ,
     {
-        "AUTOBLOCKS_REPLAY_ID": "replay-123",
+        "AUTOBLOCKS_SIMULATION_ID": "replay-123",
         "GITHUB_ACTIONS": "",
     },
 )

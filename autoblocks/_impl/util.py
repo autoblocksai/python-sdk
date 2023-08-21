@@ -204,7 +204,7 @@ def make_replay_run() -> Optional[ReplayRun]:
             pull_request_title=pull_request_title,
         )
 
-    elif replay_id := os.environ.get("AUTOBLOCKS_REPLAY_ID"):
+    elif replay_id := os.environ.get("AUTOBLOCKS_SIMULATION_ID"):
         # Local
         try:
             # Try to get local commit data
