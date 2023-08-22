@@ -70,14 +70,13 @@ class AutoblocksAPIClient:
             params={"pageSize": page_size, "cursor": cursor or ""},
         )
         req.raise_for_status()
-        data = req.json()
-        return make_traces_response(data)
+        return make_traces_response(req.json())
 
     def search_traces(
         self,
         *,
         page_size: int,
-        time_filter: Optional[Union[RelativeTimeFilter, AbsoluteTimeFilter]] = None,
+        time_filter: Union[RelativeTimeFilter, AbsoluteTimeFilter],
         trace_filters: Optional[List[TraceFilter]] = None,
         query: Optional[str] = None,
         cursor: Optional[str] = None,
@@ -95,5 +94,4 @@ class AutoblocksAPIClient:
             json=payload,
         )
         req.raise_for_status()
-        data = req.json()
-        return make_traces_response(data)
+        return make_traces_response(req.json())
