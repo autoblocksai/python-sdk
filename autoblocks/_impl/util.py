@@ -13,7 +13,13 @@ from typing import Optional
 log = logging.getLogger(__name__)
 
 
-class Provider(str, Enum):
+class StrEnum(str, Enum):
+    def __str__(self) -> str:
+        # https://stackoverflow.com/a/74440069
+        return str.__str__(self)
+
+
+class Provider(StrEnum):
     LOCAL = "local"
     GITHUB = "github"
 
@@ -59,7 +65,7 @@ class ReplayRun:
 
         "hello_world" -> "Hello-World"
         """
-        return "-".join([x[0].upper() + x[1:] for x in s.split("_")])
+        return "-".join([x.capitalize() for x in s.split("_")])
 
     def to_http_headers(self) -> Dict[str, str]:
         d = asdict(self)

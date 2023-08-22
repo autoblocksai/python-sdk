@@ -3,6 +3,8 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
+from autoblocks._impl.util import StrEnum
+
 
 @dataclass
 class Event:
@@ -26,6 +28,55 @@ class View:
 
 
 @dataclass
-class GetTracesFromViewResponse:
+class TracesResponse:
     next_cursor: Optional[str]
     traces: List[Trace]
+
+
+@dataclass
+class RelativeTimeFilter:
+    type: str = "relative"
+    seconds: Optional[float] = None
+    minutes: Optional[float] = None
+    hours: Optional[float] = None
+    days: Optional[float] = None
+    weeks: Optional[float] = None
+    months: Optional[float] = None
+    years: Optional[float] = None
+
+
+@dataclass
+class AbsoluteTimeFilter:
+    start: str
+    end: str
+    type: str = "absolute"
+
+
+class TraceFilterOperator(StrEnum):
+    CONTAINS = "CONTAINS"
+    NOT_CONTAINS = "NOT_CONTAINS"
+
+
+class EventFilterOperator(StrEnum):
+    CONTAINS = "CONTAINS"
+    NOT_CONTAINS = "NOT_CONTAINS"
+    EQUALS = "EQUALS"
+    NOT_EQUALS = "NOT_EQUALS"
+
+
+@dataclass
+class EventFilter:
+    key: str
+    value: str
+    operator: EventFilterOperator
+
+
+@dataclass
+class TraceFilter:
+    operator: TraceFilterOperator
+    event_filters: List[EventFilter]
+
+
+class SystemEventFilterKey(StrEnum):
+    MESSAGE = "SYSTEM:message"
+    LABEL = "SYSTEM:label"
