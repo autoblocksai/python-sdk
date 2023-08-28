@@ -57,7 +57,7 @@ def main():
                             operator=EventFilterOperator.EQUALS,
                         ),
                     ],
-                )
+                ),
             ],
         )
 
