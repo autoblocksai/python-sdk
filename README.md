@@ -4,7 +4,7 @@
 <h1 align="center">Python SDK</h1>
 <p align="center">
   <a href="https://github.com/autoblocksai/python-sdk/actions/workflows/ci.yml">
-    <img src="https://github.com/autoblocksai/python-sdk/actions/workflows/ci.yml/badge.svg">
+    <img src="https://github.com/autoblocksai/python-sdk/actions/workflows/ci.yml/badge.svg?branch=main">
   </a>
 </p>
 
