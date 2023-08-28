@@ -3,6 +3,7 @@ import os
 from unittest import mock
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
+from autoblocks._impl.util import encode_uri_component
 from autoblocks._impl.util import get_local_branch_name
 from autoblocks._impl.util import get_local_commit_data
 from autoblocks.tracer import AutoblocksTracer
@@ -27,16 +28,16 @@ def test_tracer_local(httpx_mock):
         json={"traceId": "my-trace-id"},
         match_headers={
             "Authorization": "Bearer mock-ingestion-key",
-            "X-Autoblocks-Replay-Provider": "local",
-            "X-Autoblocks-Replay-Run-Id": "replay-123",
-            "X-Autoblocks-Replay-Branch-Name": branch,
-            "X-Autoblocks-Replay-Commit-Sha": commit.sha,
-            "X-Autoblocks-Replay-Commit-Message": commit.commit_message,
-            "X-Autoblocks-Replay-Commit-Committer-Name": commit.committer_name,
-            "X-Autoblocks-Replay-Commit-Committer-Email": commit.committer_email,
-            "X-Autoblocks-Replay-Commit-Author-Name": commit.author_name,
-            "X-Autoblocks-Replay-Commit-Author-Email": commit.author_email,
-            "X-Autoblocks-Replay-Commit-Committed-Date": commit.committed_date,
+            "X-Autoblocks-Replay-Provider": encode_uri_component("local"),
+            "X-Autoblocks-Replay-Run-Id": encode_uri_component("replay-123"),
+            "X-Autoblocks-Replay-Branch-Name": encode_uri_component(branch),
+            "X-Autoblocks-Replay-Commit-Sha": encode_uri_component(commit.sha),
+            "X-Autoblocks-Replay-Commit-Message": encode_uri_component(commit.commit_message),
+            "X-Autoblocks-Replay-Commit-Committer-Name": encode_uri_component(commit.committer_name),
+            "X-Autoblocks-Replay-Commit-Committer-Email": encode_uri_component(commit.committer_email),
+            "X-Autoblocks-Replay-Commit-Author-Name": encode_uri_component(commit.author_name),
+            "X-Autoblocks-Replay-Commit-Author-Email": encode_uri_component(commit.author_email),
+            "X-Autoblocks-Replay-Commit-Committed-Date": encode_uri_component(commit.committed_date),
         },
         match_content=make_expected_body(
             dict(
@@ -78,20 +79,22 @@ def test_tracer_ci_push(httpx_mock, tmp_path):
         json={"traceId": "my-trace-id"},
         match_headers={
             "Authorization": "Bearer mock-ingestion-key",
-            "X-Autoblocks-Replay-Provider": "github",
-            "X-Autoblocks-Replay-Run-Id": "owner/repo-123456789-1",
-            "X-Autoblocks-Replay-Run-Url": "https://github.com/owner/repo/actions/runs/123456789/attempts/1",
-            "X-Autoblocks-Replay-Repo": "owner/repo",
-            "X-Autoblocks-Replay-Repo-Url": "https://github.com/owner/repo",
-            "X-Autoblocks-Replay-Branch-Name": "feat/branch-name",
-            "X-Autoblocks-Replay-Default-Branch-Name": "main",
-            "X-Autoblocks-Replay-Commit-Sha": commit.sha,
-            "X-Autoblocks-Replay-Commit-Message": commit.commit_message,
-            "X-Autoblocks-Replay-Commit-Committer-Name": commit.committer_name,
-            "X-Autoblocks-Replay-Commit-Committer-Email": commit.committer_email,
-            "X-Autoblocks-Replay-Commit-Author-Name": commit.author_name,
-            "X-Autoblocks-Replay-Commit-Author-Email": commit.author_email,
-            "X-Autoblocks-Replay-Commit-Committed-Date": commit.committed_date,
+            "X-Autoblocks-Replay-Provider": encode_uri_component("github"),
+            "X-Autoblocks-Replay-Run-Id": encode_uri_component("owner/repo-123456789-1"),
+            "X-Autoblocks-Replay-Run-Url": encode_uri_component(
+                "https://github.com/owner/repo/actions/runs/123456789/attempts/1"
+            ),
+            "X-Autoblocks-Replay-Repo": encode_uri_component("owner/repo"),
+            "X-Autoblocks-Replay-Repo-Url": encode_uri_component("https://github.com/owner/repo"),
+            "X-Autoblocks-Replay-Branch-Name": encode_uri_component("feat/branch-name"),
+            "X-Autoblocks-Replay-Default-Branch-Name": encode_uri_component("main"),
+            "X-Autoblocks-Replay-Commit-Sha": encode_uri_component(commit.sha),
+            "X-Autoblocks-Replay-Commit-Message": encode_uri_component(commit.commit_message),
+            "X-Autoblocks-Replay-Commit-Committer-Name": encode_uri_component(commit.committer_name),
+            "X-Autoblocks-Replay-Commit-Committer-Email": encode_uri_component(commit.committer_email),
+            "X-Autoblocks-Replay-Commit-Author-Name": encode_uri_component(commit.author_name),
+            "X-Autoblocks-Replay-Commit-Author-Email": encode_uri_component(commit.author_email),
+            "X-Autoblocks-Replay-Commit-Committed-Date": encode_uri_component(commit.committed_date),
         },
         match_content=make_expected_body(
             dict(
@@ -147,22 +150,24 @@ def test_tracer_ci_pull_request(httpx_mock, tmp_path):
         json={"traceId": "my-trace-id"},
         match_headers={
             "Authorization": "Bearer mock-ingestion-key",
-            "X-Autoblocks-Replay-Provider": "github",
-            "X-Autoblocks-Replay-Run-Id": "owner/repo-123456789-1",
-            "X-Autoblocks-Replay-Run-Url": "https://github.com/owner/repo/actions/runs/123456789/attempts/1",
-            "X-Autoblocks-Replay-Repo": "owner/repo",
-            "X-Autoblocks-Replay-Repo-Url": "https://github.com/owner/repo",
-            "X-Autoblocks-Replay-Branch-Name": "my-pr-branch-name",
-            "X-Autoblocks-Replay-Default-Branch-Name": "main",
-            "X-Autoblocks-Replay-Commit-Sha": commit.sha,
-            "X-Autoblocks-Replay-Commit-Message": commit.commit_message,
-            "X-Autoblocks-Replay-Commit-Committer-Name": commit.committer_name,
-            "X-Autoblocks-Replay-Commit-Committer-Email": commit.committer_email,
-            "X-Autoblocks-Replay-Commit-Author-Name": commit.author_name,
-            "X-Autoblocks-Replay-Commit-Author-Email": commit.author_email,
-            "X-Autoblocks-Replay-Commit-Committed-Date": commit.committed_date,
-            "X-Autoblocks-Replay-Pull-Request-Number": "5",
-            "X-Autoblocks-Replay-Pull-Request-Title": "My PR Title",
+            "X-Autoblocks-Replay-Provider": encode_uri_component("github"),
+            "X-Autoblocks-Replay-Run-Id": encode_uri_component("owner/repo-123456789-1"),
+            "X-Autoblocks-Replay-Run-Url": encode_uri_component(
+                "https://github.com/owner/repo/actions/runs/123456789/attempts/1"
+            ),
+            "X-Autoblocks-Replay-Repo": encode_uri_component("owner/repo"),
+            "X-Autoblocks-Replay-Repo-Url": encode_uri_component("https://github.com/owner/repo"),
+            "X-Autoblocks-Replay-Branch-Name": encode_uri_component("my-pr-branch-name"),
+            "X-Autoblocks-Replay-Default-Branch-Name": encode_uri_component("main"),
+            "X-Autoblocks-Replay-Commit-Sha": encode_uri_component(commit.sha),
+            "X-Autoblocks-Replay-Commit-Message": encode_uri_component(commit.commit_message),
+            "X-Autoblocks-Replay-Commit-Committer-Name": encode_uri_component(commit.committer_name),
+            "X-Autoblocks-Replay-Commit-Committer-Email": encode_uri_component(commit.committer_email),
+            "X-Autoblocks-Replay-Commit-Author-Name": encode_uri_component(commit.author_name),
+            "X-Autoblocks-Replay-Commit-Author-Email": encode_uri_component(commit.author_email),
+            "X-Autoblocks-Replay-Commit-Committed-Date": encode_uri_component(commit.committed_date),
+            "X-Autoblocks-Replay-Pull-Request-Number": encode_uri_component("5"),
+            "X-Autoblocks-Replay-Pull-Request-Title": encode_uri_component("My PR Title"),
         },
         match_content=make_expected_body(
             dict(

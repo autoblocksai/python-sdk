@@ -1,6 +1,7 @@
 from datetime import datetime
 from unittest import mock
 
+from autoblocks._impl.util import encode_uri_component
 from autoblocks._impl.util import get_local_branch_name
 from autoblocks._impl.util import get_local_commit_data
 from autoblocks._impl.util import get_local_repo_name
@@ -51,3 +52,9 @@ def test_get_local_repo_name():
 
 def test_get_local_branch_name():
     assert get_local_branch_name()
+
+
+def test_encode_uri_component():
+    assert encode_uri_component("hello") == "hello"
+    assert encode_uri_component("hello world") == "hello%20world"
+    assert encode_uri_component("hello\n!().*'") == "hello%0A!().*'"
