@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import subprocess
+import urllib.parse
 from collections import deque
 from dataclasses import asdict
 from dataclasses import dataclass
@@ -39,6 +40,15 @@ class Commit:
     commit_message: str
 
 
+def encode_uri_component(s: str) -> str:
+    """
+    This should have the same behavior as encodeURIComponent from JS.
+
+    https://stackoverflow.com/a/6618858
+    """
+    return urllib.parse.quote(s, safe="()*!.'")
+
+
 @dataclass(frozen=True)
 class ReplayRun:
     provider: Provider
@@ -73,7 +83,7 @@ class ReplayRun:
         for k, v in d.items():
             if v is None:
                 continue
-            headers[f"X-Autoblocks-Replay-{self.snake_to_kebab(k)}"] = str(v).strip()
+            headers[f"X-Autoblocks-Replay-{self.snake_to_kebab(k)}"] = encode_uri_component(str(v).strip())
         return headers
 
 
