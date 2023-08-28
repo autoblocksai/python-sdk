@@ -1,7 +1,9 @@
 <p align="center">
   <img src="https://app.autoblocks.ai/images/logo.png" width="300px">
 </p>
-<h1 align="center">Python SDK</h1>
+<p align="center">
+  <img src="assets/python-logo-only.png" width="64px">
+</p>
 <p align="center">
   <a href="https://github.com/autoblocksai/python-sdk/actions/workflows/ci.yml">
     <img src="https://github.com/autoblocksai/python-sdk/actions/workflows/ci.yml/badge.svg?branch=main">
