@@ -24,10 +24,6 @@ class Provider(StrEnum):
     LOCAL = "local"
     GITHUB = "github"
 
-    def __str__(self) -> str:
-        # https://stackoverflow.com/a/74440069
-        return str.__str__(self)
-
 
 @dataclass(frozen=True)
 class Commit:
@@ -111,7 +107,7 @@ def get_local_repo_name() -> str:
             "origin",
         ]
     )
-    # Parsed the owner/repo string out of the remote URL
+    # Parses the owner/repo string out of the remote URL
     # Eg. https://github.com/autoblocksai/python-sdk.git -> autoblocksai/python-sdk
     parts = url.split("/")[-2:]
     owner, repo = parts
