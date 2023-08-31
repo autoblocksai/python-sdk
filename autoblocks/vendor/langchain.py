@@ -1,1 +1,1 @@
-from autoblocks._impl.langchain.callback import AutoblocksCallbackHandler  # noqa: F401
+from autoblocks._impl.vendor.langchain.callback import AutoblocksCallbackHandler  # noqa: F401
