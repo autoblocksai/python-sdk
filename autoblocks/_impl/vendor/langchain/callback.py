@@ -11,7 +11,7 @@ from autoblocks._impl.tracer import AutoblocksTracer
 try:
     from langchain.callbacks.base import BaseCallbackHandler
 except ImportError:
-    raise ImportError("You must have langchain installed to use AutoblocksCallbackHandler.")
+    raise ImportError("You must have langchain installed in order to use AutoblocksCallbackHandler.")
 
 
 class AutoblocksCallbackHandler(BaseCallbackHandler):
