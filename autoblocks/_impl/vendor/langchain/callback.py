@@ -1,5 +1,6 @@
 import traceback
 from datetime import datetime
+from datetime import timezone
 from typing import Any
 from typing import Dict
 from typing import List
@@ -31,7 +32,7 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
             message,
             trace_id=self._trace_id,
             properties=properties,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
     @staticmethod
