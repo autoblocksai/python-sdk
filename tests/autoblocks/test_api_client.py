@@ -9,7 +9,7 @@ from autoblocks.api.models import TraceFilter
 from autoblocks.api.models import TraceFilterOperator
 from autoblocks.api.models import TracesResponse
 from autoblocks.api.models import View
-from tests.util import make_expected_body
+from tests.autoblocks.util import make_expected_body
 
 
 def test_get_views(httpx_mock):
