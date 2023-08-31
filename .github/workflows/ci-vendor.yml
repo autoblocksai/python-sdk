@@ -1,0 +1,51 @@
+name: CI - Vendor
+
+on:
+  push:
+  schedule:
+    # Every day at ~7:17am Chicago time.
+    #
+    # Using a non-zero minute offset since GitHub Actions suggests
+    # running jobs at a random minute to avoid overloading their
+    # servers.
+    #
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule
+    - cron: "17 12 * * *"
+
+env:
+  POETRY_VERSION: "1.5.1"
+
+jobs:
+  langchain:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        langchain-version:
+          - "0.0.277"
+          - "0.0.276"
+          - "0.0.275"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install poetry
+        run: curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Install langchain ${{ matrix.langchain-version }}
+        run: poetry add --group=dev langchain==${{ matrix.langchain-version }}
+
+      - name: Run tests
+        run: poetry run pytest tests/vendor/langchain
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

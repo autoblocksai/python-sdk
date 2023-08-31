@@ -9,13 +9,14 @@ readme = "README.md"
 packages = [{include = "autoblocks"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8.1"
 httpx = "^0.24.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.3"
 pytest = "^7.4.0"
 pytest-httpx = "^0.22.0"
+langchain = "0.0.277"
 
 [tool.poetry.scripts]
 e2e = "e2e.run:main"

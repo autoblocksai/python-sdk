@@ -7,7 +7,7 @@ from autoblocks._impl.util import encode_uri_component
 from autoblocks._impl.util import get_local_branch_name
 from autoblocks._impl.util import get_local_commit_data
 from autoblocks.tracer import AutoblocksTracer
-from tests.util import make_expected_body
+from tests.autoblocks.util import make_expected_body
 
 
 @mock.patch.dict(
