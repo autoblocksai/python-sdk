@@ -64,11 +64,18 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
-      - name: Install openai
+      - name: Install latest version of openai
         run: poetry add --group=dev openai
 
       - name: Install langchain ${{ matrix.langchain-version }}
         run: poetry add --group=dev langchain==${{ matrix.langchain-version }}
+
+      # Required by LLMMathChain
+      - name: Install latest version of numexpr
+        # Not using poetry here because numexpr requires python 3.9 or above
+        # but our package's pyproject supports 3.8. This test is only run on
+        # the version in .python-version, though, which will be above 3.8.
+        run: poetry run pip install numexpr
 
       - name: Run tests
         run: poetry run pytest tests/vendor/langchain
