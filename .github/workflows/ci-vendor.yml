@@ -81,3 +81,24 @@ jobs:
         run: poetry run pytest tests/vendor/langchain
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+  notify:
+    needs:
+      - langchain
+
+    if: always() && contains(needs.*.result, 'failure') && github.event_name == 'schedule'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": ":warning:  Workflow `${{ github.workflow }}` in repository `${{ github.repository }}` failed. <${{ env.run-url }}|Logs>"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+          run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
