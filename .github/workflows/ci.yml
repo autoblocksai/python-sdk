@@ -49,7 +49,7 @@ jobs:
         run: poetry install
 
       - name: Run tests
-        run: poetry run pytest tests/autoblocks
+        run: poetry run pytest
 
       - name: Run e2e tests
         run: poetry run e2e
