@@ -8,6 +8,9 @@ from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks.vendor.openai import patch_openai
 
 with mock.patch.dict(os.environ, {AUTOBLOCKS_INGESTION_KEY: "mock-ingestion-key"}):
+    # Call multiple times to ensure that the patch is idempotent
+    patch_openai()
+    patch_openai()
     patch_openai()
 
 

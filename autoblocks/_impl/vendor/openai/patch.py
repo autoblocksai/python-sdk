@@ -62,7 +62,13 @@ def wrapper(wrapped, instance, args, kwargs):
     return response
 
 
-def patch_openai(properties: Optional[Dict] = None):
+def patch_openai(properties: Optional[Dict] = None, called=[False]):
+    # Using a mutable default argument (which is only set once)
+    # to track whether this function has been called before
+    # to prevent patching openai multiple times.
+    if called[0]:
+        return
+
     if not os.environ.get(AUTOBLOCKS_INGESTION_KEY):
         raise ValueError(
             f"You must set the {AUTOBLOCKS_INGESTION_KEY} environment variable in order to use patch_openai."
@@ -78,3 +84,5 @@ def patch_openai(properties: Optional[Dict] = None):
 
     wrapt.wrap_function_wrapper(openai, "Completion.create", wrapper)
     wrapt.wrap_function_wrapper(openai, "ChatCompletion.create", wrapper)
+
+    called[0] = True
