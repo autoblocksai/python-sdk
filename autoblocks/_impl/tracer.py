@@ -52,6 +52,13 @@ class AutoblocksTracer:
         """
         self._trace_id = trace_id
 
+    @property
+    def trace_id(self) -> Optional[str]:
+        """
+        Get the trace ID currently set on the tracer.
+        """
+        return self._trace_id
+
     def set_properties(self, properties: Dict) -> None:
         """
         Set the properties for all events sent by this tracer.
