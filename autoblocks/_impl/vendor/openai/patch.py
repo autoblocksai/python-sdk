@@ -10,9 +10,8 @@ import wrapt
 from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks._impl.tracer import AutoblocksTracer
 
-ingestion_key = os.environ.get(AUTOBLOCKS_INGESTION_KEY)
 tracer = AutoblocksTracer(
-    ingestion_key,
+    os.environ.get(AUTOBLOCKS_INGESTION_KEY),
     properties=dict(provider="openai"),
 )
 
@@ -70,7 +69,7 @@ def trace_openai(properties: Optional[Dict] = None, called=[False]) -> Autoblock
     if called[0]:
         return tracer
 
-    if not ingestion_key:
+    if not os.environ.get(AUTOBLOCKS_INGESTION_KEY):
         raise ValueError(
             f"You must set the {AUTOBLOCKS_INGESTION_KEY} environment variable in order to use trace_openai."
         )
