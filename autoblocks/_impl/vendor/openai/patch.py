@@ -71,13 +71,13 @@ def trace_openai(properties: Optional[Dict] = None, called=[False]) -> Autoblock
 
     if not os.environ.get(AUTOBLOCKS_INGESTION_KEY):
         raise ValueError(
-            f"You must set the {AUTOBLOCKS_INGESTION_KEY} environment variable in order to use patch_openai."
+            f"You must set the {AUTOBLOCKS_INGESTION_KEY} environment variable in order to use trace_openai."
         )
 
     try:
         import openai
     except ImportError:
-        raise ImportError("You must have openai installed in order to use the patch_openai function.")
+        raise ImportError("You must have openai installed in order to use the trace_openai function.")
 
     if properties:
         tracer.update_properties(properties)
