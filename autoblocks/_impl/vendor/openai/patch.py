@@ -10,7 +10,7 @@ import wrapt
 from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks._impl.tracer import AutoblocksTracer
 
-patch_tracer = AutoblocksTracer(
+tracer = AutoblocksTracer(
     os.environ.get(AUTOBLOCKS_INGESTION_KEY),
     properties=dict(provider="openai"),
 )
@@ -26,10 +26,10 @@ def wrapper(wrapped, instance, args, kwargs):
     error = None
     response = None
 
-    if not patch_tracer.trace_id:
-        patch_tracer.set_trace_id(str(uuid.uuid4()))
+    if not tracer.trace_id:
+        tracer.set_trace_id(str(uuid.uuid4()))
 
-    patch_tracer.send_event("ai.completion.request", properties=kwargs, timestamp=datetime.utcnow().isoformat())
+    tracer.send_event("ai.completion.request", properties=kwargs, timestamp=datetime.utcnow().isoformat())
 
     start_time = time.perf_counter()
     try:
@@ -41,7 +41,7 @@ def wrapper(wrapped, instance, args, kwargs):
         latency_ms = (time.perf_counter() - start_time) * 1000
 
         if error:
-            patch_tracer.send_event(
+            tracer.send_event(
                 "ai.completion.error",
                 properties=dict(
                     latency_ms=latency_ms,
@@ -50,7 +50,7 @@ def wrapper(wrapped, instance, args, kwargs):
                 timestamp=datetime.utcnow().isoformat(),
             )
         else:
-            patch_tracer.send_event(
+            tracer.send_event(
                 "ai.completion.response",
                 properties=dict(
                     latency_ms=latency_ms,
@@ -62,12 +62,12 @@ def wrapper(wrapped, instance, args, kwargs):
     return response
 
 
-def patch_openai(properties: Optional[Dict] = None, called=[False]):
+def trace_openai(properties: Optional[Dict] = None, called=[False]) -> AutoblocksTracer:
     # Using a mutable default argument (which is only set once)
     # to track whether this function has been called before
     # to prevent patching openai multiple times.
     if called[0]:
-        return
+        return tracer
 
     if not os.environ.get(AUTOBLOCKS_INGESTION_KEY):
         raise ValueError(
@@ -80,9 +80,11 @@ def patch_openai(properties: Optional[Dict] = None, called=[False]):
         raise ImportError("You must have openai installed in order to use the patch_openai function.")
 
     if properties:
-        patch_tracer.update_properties(properties)
+        tracer.update_properties(properties)
 
     wrapt.wrap_function_wrapper(openai, "Completion.create", wrapper)
     wrapt.wrap_function_wrapper(openai, "ChatCompletion.create", wrapper)
 
     called[0] = True
+
+    return tracer

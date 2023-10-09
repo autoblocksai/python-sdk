@@ -1,21 +1,25 @@
 import json
 import os
+import uuid
 from unittest import mock
 
 import openai
 
 from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
-from autoblocks.vendor.openai import patch_openai
+from autoblocks.vendor.openai import trace_openai
 
 with mock.patch.dict(os.environ, {AUTOBLOCKS_INGESTION_KEY: "mock-ingestion-key"}):
     # Call multiple times to ensure that the patch is idempotent
-    patch_openai()
-    patch_openai()
-    patch_openai()
+    tracer = trace_openai()
+    trace_openai()
+    trace_openai()
 
 
 def test_patch_completion(httpx_mock):
     httpx_mock.add_response()
+
+    trace_id = str(uuid.uuid4())
+    tracer.set_trace_id(trace_id)
 
     openai.Completion.create(
         model="gpt-3.5-turbo-instruct",
@@ -24,15 +28,16 @@ def test_patch_completion(httpx_mock):
         temperature=0,
     )
 
+    tracer.send_event("custom.message")
+
     requests = httpx_mock.get_requests()
-    assert len(requests) == 2
+    assert len(requests) == 3
 
     req0 = json.loads(requests[0].content.decode())
     req1 = json.loads(requests[1].content.decode())
+    req2 = json.loads(requests[2].content.decode())
 
-    req0_trace_id = req0["traceId"]
-    req1_trace_id = req1["traceId"]
-    assert req0_trace_id is not None and req1_trace_id is not None and req0_trace_id == req1_trace_id
+    assert all(req["traceId"] == trace_id for req in [req0, req1, req2])
 
     assert req0["message"] == "ai.completion.request"
     assert req0["timestamp"] is not None
@@ -50,9 +55,14 @@ def test_patch_completion(httpx_mock):
     assert req1["properties"]["choices"][0]["text"] is not None
     assert req1["properties"]["usage"] is not None
 
+    assert req2["message"] == "custom.message"
+
 
 def test_patch_chat_completion(httpx_mock):
     httpx_mock.add_response()
+
+    trace_id = str(uuid.uuid4())
+    tracer.set_trace_id(trace_id)
 
     openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -60,15 +70,16 @@ def test_patch_chat_completion(httpx_mock):
         messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "Hello!"}],
     )
 
+    tracer.send_event("custom.message")
+
     requests = httpx_mock.get_requests()
-    assert len(requests) == 2
+    assert len(requests) == 3
 
     req0 = json.loads(requests[0].content.decode())
     req1 = json.loads(requests[1].content.decode())
+    req2 = json.loads(requests[2].content.decode())
 
-    req0_trace_id = req0["traceId"]
-    req1_trace_id = req1["traceId"]
-    assert req0_trace_id is not None and req1_trace_id is not None and req0_trace_id == req1_trace_id
+    assert all(req["traceId"] == trace_id for req in [req0, req1, req2])
 
     assert req0["message"] == "ai.completion.request"
     assert req0["timestamp"] is not None
@@ -87,3 +98,5 @@ def test_patch_chat_completion(httpx_mock):
     assert req1["properties"]["model"].startswith("gpt-3.5-turbo")
     assert req1["properties"]["choices"][0]["message"]["content"] is not None
     assert req1["properties"]["usage"] is not None
+
+    assert req2["message"] == "custom.message"

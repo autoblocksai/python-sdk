@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime
 from typing import List
@@ -7,9 +8,10 @@ import wrapt
 
 from autoblocks._impl.config.constants import AUTOBLOCKS_SIMULATION_ID
 from autoblocks._impl.util import make_replay_run
-from autoblocks._impl.vendor.openai.patch import patch_openai
-from autoblocks._impl.vendor.openai.patch import patch_tracer
+from autoblocks._impl.vendor.openai.patch import trace_openai
+from autoblocks._impl.vendor.openai.patch import tracer
 
+log = logging.getLogger(__name__)
 autoblocks_enabled = "--autoblocks"
 
 
@@ -21,7 +23,10 @@ def pytest_sessionstart(session: pytest.Session):
     if not session.config.getoption(autoblocks_enabled):
         return
 
-    patch_openai()
+    try:
+        trace_openai()
+    except Exception as err:
+        log.error(f"trace_openai() failed: {err}", exc_info=True)
 
     home = os.path.basename(os.path.expanduser("~"))
     now = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -30,7 +35,7 @@ def pytest_sessionstart(session: pytest.Session):
 
 @wrapt.function_wrapper
 def set_trace_id_wrapper(wrapped, instance, args, kwargs):
-    patch_tracer.set_trace_id(wrapped.__name__)
+    tracer.set_trace_id(wrapped.__name__)
     return wrapped(*args, **kwargs)
 
 
