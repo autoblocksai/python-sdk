@@ -5,6 +5,7 @@ from autoblocks._impl.util import encode_uri_component
 from autoblocks._impl.util import get_local_branch_name
 from autoblocks._impl.util import get_local_commit_data
 from autoblocks._impl.util import get_local_repo_name
+from autoblocks._impl.util import parse_repo_name_from_origin_url
 
 
 def test_get_local_commit_data_real():
@@ -58,3 +59,29 @@ def test_encode_uri_component():
     assert encode_uri_component("hello") == "hello"
     assert encode_uri_component("hello world") == "hello%20world"
     assert encode_uri_component("hello\n!().*'") == "hello%0A!().*'"
+
+
+def test_parse_https_github():
+    assert (
+        parse_repo_name_from_origin_url("https://github.com/autoblocksai/neon-actions.git")
+        == "autoblocksai/neon-actions"
+    )
+
+
+def test_parse_https_gitlab():
+    assert (
+        parse_repo_name_from_origin_url("https://gitlab.com/gitlab-com/www-gitlab-com.git")
+        == "gitlab-com/www-gitlab-com"
+    )
+
+
+def test_parse_ssh_github():
+    assert (
+        parse_repo_name_from_origin_url("git@github.com:autoblocksai/neon-actions.git") == "autoblocksai/neon-actions"
+    )
+
+
+def test_parse_ssh_gitlab():
+    assert (
+        parse_repo_name_from_origin_url("git@gitlab.com:gitlab-com/www-gitlab-com.git") == "gitlab-com/www-gitlab-com"
+    )

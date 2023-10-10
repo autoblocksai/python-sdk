@@ -112,6 +112,18 @@ def get_local_branch_name() -> str:
     )
 
 
+def parse_repo_name_from_origin_url(url: str) -> str:
+    """
+    Parses the org and repo name from the origin URL.
+
+    Examples:
+
+    https://github.com/autoblocksai/javascript-sdk.git -> autoblocksai/javascript-sdk
+    git@gitlab.com:gitlab-com/www-gitlab-com.git -> gitlab-com/www-gitlab-com
+    """
+    return "/".join(url.replace(".git", "").split(":")[1].split("/")[-2:])
+
+
 def get_local_repo_name() -> str:
     url = run_command(
         [
@@ -121,12 +133,7 @@ def get_local_repo_name() -> str:
             "origin",
         ]
     )
-    # Parses the owner/repo string out of the remote URL
-    # Eg. https://github.com/autoblocksai/python-sdk.git -> autoblocksai/python-sdk
-    parts = url.split("/")[-2:]
-    owner, repo = parts
-    repo = repo.split(".")[0]
-    return f"{owner}/{repo}"
+    return parse_repo_name_from_origin_url(url)
 
 
 def get_local_commit_data(sha: Optional[str]) -> Commit:
