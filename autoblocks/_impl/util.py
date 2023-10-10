@@ -178,12 +178,12 @@ def get_local_commit_data(sha: Optional[str]) -> Commit:
 
 
 def make_replay_run() -> Optional[ReplayRun]:
-    simulation_id = os.environ.get(AUTOBLOCKS_SIMULATION_ID)
+    replay_id = os.environ.get(AUTOBLOCKS_SIMULATION_ID)
 
     if os.environ.get("GITHUB_ACTIONS"):
-        if simulation_id:
+        if replay_id:
             log.warning(
-                f"Ignoring {AUTOBLOCKS_SIMULATION_ID}={simulation_id} "
+                f"Ignoring {AUTOBLOCKS_SIMULATION_ID}={replay_id} "
                 f"environment variable while in GitHub Actions context."
             )
 
@@ -244,7 +244,7 @@ def make_replay_run() -> Optional[ReplayRun]:
             pull_request_number=pull_request_number,
             pull_request_title=pull_request_title,
         )
-    elif simulation_id:
+    elif replay_id:
         # Local
         try:
             # Try to get local commit data
@@ -280,7 +280,7 @@ def make_replay_run() -> Optional[ReplayRun]:
 
         return ReplayRun(
             provider=Provider.LOCAL,
-            run_id=simulation_id,
+            run_id=replay_id,
             run_url=None,
             repo=repo_name,
             repo_url=None,
