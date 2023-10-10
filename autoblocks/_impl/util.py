@@ -11,6 +11,8 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
+from autoblocks._impl.config.constants import AUTOBLOCKS_SIMULATION_ID
+
 log = logging.getLogger(__name__)
 
 
@@ -81,6 +83,18 @@ class ReplayRun:
                 continue
             headers[f"X-Autoblocks-Replay-{self.snake_to_kebab(k)}"] = encode_uri_component(str(v).strip())
         return headers
+
+    @property
+    def html_url(self) -> Optional[str]:
+        base_url = "https://app.autoblocks.ai/simulations"
+        if self.provider == Provider.LOCAL:
+            return f"{base_url}/local/run/{encode_uri_component(self.run_id)}"
+        elif self.provider == Provider.GITHUB and self.repo and self.branch_name:
+            repo = encode_uri_component(self.repo)
+            branch = encode_uri_component(self.branch_name)
+            return f"{base_url}/github/repo/{repo}/branch/{branch}"
+
+        return None
 
 
 def run_command(cmd: List[str]) -> str:
@@ -164,7 +178,15 @@ def get_local_commit_data(sha: Optional[str]) -> Commit:
 
 
 def make_replay_run() -> Optional[ReplayRun]:
+    replay_id = os.environ.get(AUTOBLOCKS_SIMULATION_ID)
+
     if os.environ.get("GITHUB_ACTIONS"):
+        if replay_id:
+            log.warning(
+                f"Ignoring {AUTOBLOCKS_SIMULATION_ID}={replay_id} "
+                f"environment variable while in GitHub Actions context."
+            )
+
         # GitHub Actions
         g = {k.split("GITHUB_", maxsplit=1)[-1]: v for k, v in os.environ.items() if k.startswith("GITHUB_")}
 
@@ -222,8 +244,7 @@ def make_replay_run() -> Optional[ReplayRun]:
             pull_request_number=pull_request_number,
             pull_request_title=pull_request_title,
         )
-
-    elif replay_id := os.environ.get("AUTOBLOCKS_SIMULATION_ID"):
+    elif replay_id:
         # Local
         try:
             # Try to get local commit data
