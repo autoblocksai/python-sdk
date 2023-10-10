@@ -16,6 +16,10 @@ tracer = AutoblocksTracer(
 )
 
 
+def make_timestamp():
+    return datetime.utcnow().isoformat()
+
+
 def wrapper(wrapped, instance, args, kwargs):
     """
     Wrapper for OpenAI API calls. Logs the request and response to Autoblocks.
@@ -26,10 +30,22 @@ def wrapper(wrapped, instance, args, kwargs):
     error = None
     response = None
 
-    if not tracer.trace_id:
-        tracer.set_trace_id(str(uuid.uuid4()))
+    if tracer.trace_id:
+        # If the user has set a trace_id on the tracer via set_trace_id, don't override it.
+        trace_id = None
+    else:
+        # Instead of using set_trace_id, this trace_id will be sent along with each send_event
+        # call so that we can tell the difference between when a user sets a trace_id and when
+        # we set one. In other words, we'll know the user has set a trace_id via set_trace_id
+        # when tracer.trace_id is not None, since we will never set it here.
+        trace_id = str(uuid.uuid4())
 
-    tracer.send_event("ai.completion.request", properties=kwargs, timestamp=datetime.utcnow().isoformat())
+    tracer.send_event(
+        "ai.completion.request",
+        trace_id=trace_id,
+        properties=kwargs,
+        timestamp=make_timestamp(),
+    )
 
     start_time = time.perf_counter()
     try:
@@ -43,20 +59,22 @@ def wrapper(wrapped, instance, args, kwargs):
         if error:
             tracer.send_event(
                 "ai.completion.error",
+                trace_id=trace_id,
                 properties=dict(
                     latency_ms=latency_ms,
                     error=str(error),
                 ),
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=make_timestamp(),
             )
         else:
             tracer.send_event(
                 "ai.completion.response",
+                trace_id=trace_id,
                 properties=dict(
                     latency_ms=latency_ms,
                     **response,
                 ),
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=make_timestamp(),
             )
 
     return response
