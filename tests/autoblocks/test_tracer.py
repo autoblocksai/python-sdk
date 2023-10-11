@@ -1,6 +1,10 @@
 import json
 import os
+from datetime import datetime
 from unittest import mock
+
+import freezegun
+import pytest
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks._impl.util import encode_uri_component
@@ -8,6 +12,15 @@ from autoblocks._impl.util import get_local_branch_name
 from autoblocks._impl.util import get_local_commit_data
 from autoblocks.tracer import AutoblocksTracer
 from tests.autoblocks.util import make_expected_body
+
+
+@pytest.fixture(autouse=True)
+def freeze_time():
+    with freezegun.freeze_time(datetime(2021, 1, 1, 1, 1, 1, 1)):
+        yield
+
+
+timestamp = "2021-01-01T01:01:01.000001+00:00"
 
 
 @mock.patch.dict(
@@ -43,14 +56,14 @@ def test_tracer_local(httpx_mock):
             dict(
                 message="my-message",
                 traceId=None,
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(),
             )
         ),
     )
 
-    ab = AutoblocksTracer("mock-ingestion-key")
-    resp = ab.send_event("my-message")
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    resp = tracer.send_event("my-message")
     assert resp.trace_id == "my-trace-id"
 
 
@@ -100,7 +113,7 @@ def test_tracer_ci_push(httpx_mock, tmp_path):
             dict(
                 message="my-message",
                 traceId=None,
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(),
             )
         ),
@@ -113,8 +126,8 @@ def test_tracer_ci_push(httpx_mock, tmp_path):
             "GITHUB_SHA": commit.sha,
         },
     ):
-        ab = AutoblocksTracer("mock-ingestion-key")
-        resp = ab.send_event("my-message")
+        tracer = AutoblocksTracer("mock-ingestion-key")
+        resp = tracer.send_event("my-message")
 
     assert resp.trace_id == "my-trace-id"
 
@@ -173,7 +186,7 @@ def test_tracer_ci_pull_request(httpx_mock, tmp_path):
             dict(
                 message="my-message",
                 traceId=None,
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(),
             )
         ),
@@ -186,8 +199,8 @@ def test_tracer_ci_pull_request(httpx_mock, tmp_path):
             "GITHUB_SHA": commit.sha,
         },
     ):
-        ab = AutoblocksTracer("mock-ingestion-key")
-        resp = ab.send_event("my-message")
+        tracer = AutoblocksTracer("mock-ingestion-key")
+        resp = tracer.send_event("my-message")
 
     assert resp.trace_id == "my-trace-id"
 
@@ -209,13 +222,13 @@ def test_tracer_prod(httpx_mock):
             dict(
                 message="my-message",
                 traceId=None,
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(),
             )
         ),
     )
-    ab = AutoblocksTracer("mock-ingestion-key")
-    resp = ab.send_event("my-message")
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    resp = tracer.send_event("my-message")
 
     assert resp.trace_id == "my-trace-id"
 
@@ -237,13 +250,13 @@ def test_tracer_prod_no_trace_id_in_response(httpx_mock):
             dict(
                 message="my-message",
                 traceId=None,
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(),
             )
         ),
     )
-    ab = AutoblocksTracer("mock-ingestion-key")
-    resp = ab.send_event("my-message")
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    resp = tracer.send_event("my-message")
 
     assert resp.trace_id is None
 
@@ -265,14 +278,14 @@ def test_tracer_prod_with_trace_id_in_send_event(httpx_mock):
             dict(
                 message="my-message",
                 traceId="my-trace-id",
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(),
             )
         ),
     )
 
-    ab = AutoblocksTracer("mock-ingestion-key")
-    ab.send_event("my-message", trace_id="my-trace-id")
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    tracer.send_event("my-message", trace_id="my-trace-id")
 
 
 @mock.patch.dict(
@@ -292,13 +305,13 @@ def test_tracer_prod_with_trace_id_in_init(httpx_mock):
             dict(
                 message="my-message",
                 traceId="my-trace-id",
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(),
             )
         ),
     )
-    ab = AutoblocksTracer("mock-ingestion-key", trace_id="my-trace-id")
-    ab.send_event("my-message")
+    tracer = AutoblocksTracer("mock-ingestion-key", trace_id="my-trace-id")
+    tracer.send_event("my-message")
 
 
 @mock.patch.dict(
@@ -318,14 +331,14 @@ def test_tracer_prod_with_trace_id_override(httpx_mock):
             dict(
                 message="my-message",
                 traceId="override-trace-id",
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(),
             )
         ),
     )
 
-    ab = AutoblocksTracer("mock-ingestion-key", trace_id="my-trace-id")
-    ab.send_event("my-message", trace_id="override-trace-id")
+    tracer = AutoblocksTracer("mock-ingestion-key", trace_id="my-trace-id")
+    tracer.send_event("my-message", trace_id="override-trace-id")
 
 
 @mock.patch.dict(
@@ -345,15 +358,15 @@ def test_tracer_prod_with_set_trace_id(httpx_mock):
             dict(
                 message="my-message",
                 traceId="override-trace-id",
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(),
             )
         ),
     )
 
-    ab = AutoblocksTracer("mock-ingestion-key", trace_id="my-trace-id")
-    ab.set_trace_id("override-trace-id")
-    ab.send_event("my-message")
+    tracer = AutoblocksTracer("mock-ingestion-key", trace_id="my-trace-id")
+    tracer.set_trace_id("override-trace-id")
+    tracer.send_event("my-message")
 
 
 @mock.patch.dict(
@@ -373,14 +386,14 @@ def test_tracer_prod_with_properties(httpx_mock):
             dict(
                 message="my-message",
                 traceId=None,
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(x=1),
             )
         ),
     )
 
-    ab = AutoblocksTracer("mock-ingestion-key", properties=dict(x=1))
-    ab.send_event("my-message")
+    tracer = AutoblocksTracer("mock-ingestion-key", properties=dict(x=1))
+    tracer.send_event("my-message")
 
 
 @mock.patch.dict(
@@ -400,15 +413,15 @@ def test_tracer_prod_with_set_properties(httpx_mock):
             dict(
                 message="my-message",
                 traceId=None,
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(y=2),
             )
         ),
     )
 
-    ab = AutoblocksTracer("mock-ingestion-key", properties=dict(x=1))
-    ab.set_properties(dict(y=2))
-    ab.send_event("my-message")
+    tracer = AutoblocksTracer("mock-ingestion-key", properties=dict(x=1))
+    tracer.set_properties(dict(y=2))
+    tracer.send_event("my-message")
 
 
 @mock.patch.dict(
@@ -428,15 +441,15 @@ def test_tracer_prod_with_update_properties(httpx_mock):
             dict(
                 message="my-message",
                 traceId=None,
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(x=1, y=2),
             )
         ),
     )
 
-    ab = AutoblocksTracer("mock-ingestion-key", properties=dict(x=1))
-    ab.update_properties(dict(y=2))
-    ab.send_event("my-message")
+    tracer = AutoblocksTracer("mock-ingestion-key", properties=dict(x=1))
+    tracer.update_properties(dict(y=2))
+    tracer.send_event("my-message")
 
 
 @mock.patch.dict(
@@ -456,15 +469,15 @@ def test_tracer_prod_with_update_properties_and_send_event_properties(httpx_mock
             dict(
                 message="my-message",
                 traceId=None,
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(x=1, y=2, z=3),
             )
         ),
     )
 
-    ab = AutoblocksTracer("mock-ingestion-key", properties=dict(x=1))
-    ab.update_properties(dict(y=2))
-    ab.send_event("my-message", properties=dict(z=3))
+    tracer = AutoblocksTracer("mock-ingestion-key", properties=dict(x=1))
+    tracer.update_properties(dict(y=2))
+    tracer.send_event("my-message", properties=dict(z=3))
 
 
 @mock.patch.dict(
@@ -484,15 +497,15 @@ def test_tracer_prod_with_properties_with_conflicting_keys(httpx_mock):
             dict(
                 message="my-message",
                 traceId=None,
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(x=3, y=2, z=3),
             )
         ),
     )
 
-    ab = AutoblocksTracer("mock-ingestion-key", properties=dict(x=1))
-    ab.update_properties(dict(y=2))
-    ab.send_event("my-message", properties=dict(x=3, z=3))
+    tracer = AutoblocksTracer("mock-ingestion-key", properties=dict(x=1))
+    tracer.update_properties(dict(y=2))
+    tracer.send_event("my-message", properties=dict(x=3, z=3))
 
 
 @mock.patch.dict(
@@ -518,15 +531,15 @@ def test_tracer_prod_with_timestamp(httpx_mock):
         ),
     )
 
-    ab = AutoblocksTracer("mock-ingestion-key")
-    ab.send_event("my-message", timestamp="2023-07-24T21:52:52.742Z")
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    tracer.send_event("my-message", timestamp="2023-07-24T21:52:52.742Z")
 
 
 def test_tracer_prod_catches_errors(httpx_mock):
     httpx_mock.add_exception(Exception())
 
-    ab = AutoblocksTracer("mock-ingestion-key")
-    resp = ab.send_event("my-message")
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    resp = tracer.send_event("my-message")
     assert resp.trace_id is None
 
 
@@ -547,12 +560,12 @@ def test_tracer_prod_handles_non_200(httpx_mock):
             dict(
                 message="my-message",
                 traceId=None,
-                timestamp=None,
+                timestamp=timestamp,
                 properties=dict(),
             )
         ),
     )
 
-    ab = AutoblocksTracer("mock-ingestion-key")
-    resp = ab.send_event("my-message")
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    resp = tracer.send_event("my-message")
     assert resp.trace_id is None

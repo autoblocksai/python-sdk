@@ -1,6 +1,8 @@
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from typing import Dict
 from typing import Optional
 
@@ -91,6 +93,7 @@ class AutoblocksTracer:
         merged_properties.update(properties or {})
 
         trace_id = trace_id or self._trace_id
+        timestamp = timestamp or datetime.now(timezone.utc).isoformat()
 
         try:
             replay_headers = make_replay_headers()

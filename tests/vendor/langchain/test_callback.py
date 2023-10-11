@@ -10,11 +10,10 @@ from autoblocks.vendor.langchain import AutoblocksCallbackHandler
 def test_callback_handler():
     events = []
     handler = AutoblocksCallbackHandler("mock-key")
-    handler._ab.send_event = lambda message, trace_id, timestamp, **kwargs: events.append(
+    handler._tracer.send_event = lambda message, trace_id, **kwargs: events.append(
         (
             message,
             trace_id,
-            timestamp,
         )
     )
 
@@ -32,7 +31,6 @@ def test_callback_handler():
 
     messages = [event[0] for event in events]
     trace_ids = [event[1] for event in events]
-    timestamps = [event[2] for event in events]
 
     assert messages == [
         "langchain.agents.agent.AgentExecutor.start",
@@ -60,6 +58,3 @@ def test_callback_handler():
     # All trace_ids should be the same and should not be None
     assert trace_ids[0] is not None
     assert len(set(trace_ids)) == 1
-
-    # All timestamps should have offset +00:00
-    assert all(t.endswith("+00:00") for t in timestamps)

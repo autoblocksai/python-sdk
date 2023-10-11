@@ -1,8 +1,10 @@
 import json
 import os
 import uuid
+from datetime import datetime
 from unittest import mock
 
+import freezegun
 import openai
 import pytest
 
@@ -20,6 +22,15 @@ with mock.patch.dict(os.environ, {AUTOBLOCKS_INGESTION_KEY: "mock-ingestion-key"
 def before_each():
     tracer.set_trace_id(None)
     yield
+
+
+@pytest.fixture(autouse=True)
+def freeze_time():
+    with freezegun.freeze_time(datetime(2021, 1, 1, 1, 1, 1, 1)):
+        yield
+
+
+timestamp = "2021-01-01T01:01:01.000001+00:00"
 
 
 def decode_requests(requests):
@@ -43,14 +54,14 @@ def test_patch_completion(httpx_mock):
     assert trace_ids[0] is not None
 
     assert requests[0]["message"] == "ai.completion.request"
-    assert requests[0]["timestamp"] is not None
+    assert requests[0]["timestamp"] == timestamp
     assert requests[0]["properties"]["provider"] == "openai"
     assert requests[0]["properties"]["model"] == "gpt-3.5-turbo-instruct"
     assert requests[0]["properties"]["prompt"] == "Say this is a test"
     assert requests[0]["properties"]["temperature"] == 0
 
     assert requests[1]["message"] == "ai.completion.response"
-    assert requests[1]["timestamp"] is not None
+    assert requests[1]["timestamp"] == timestamp
     assert requests[1]["properties"]["provider"] == "openai"
     assert requests[1]["properties"]["latency_ms"] is not None
     assert requests[1]["properties"]["model"] == "gpt-3.5-turbo-instruct"
@@ -99,7 +110,7 @@ def test_patch_chat_completion(httpx_mock):
     assert trace_ids[0] is not None
 
     assert requests[0]["message"] == "ai.completion.request"
-    assert requests[0]["timestamp"] is not None
+    assert requests[0]["timestamp"] == timestamp
     assert requests[0]["properties"]["provider"] == "openai"
     assert requests[0]["properties"]["model"] == "gpt-3.5-turbo"
     assert requests[0]["properties"]["temperature"] == 0
@@ -109,7 +120,7 @@ def test_patch_chat_completion(httpx_mock):
     ]
 
     assert requests[1]["message"] == "ai.completion.response"
-    assert requests[1]["timestamp"] is not None
+    assert requests[1]["timestamp"] == timestamp
     assert requests[1]["properties"]["provider"] == "openai"
     assert requests[1]["properties"]["latency_ms"] is not None
     assert requests[1]["properties"]["model"].startswith("gpt-3.5-turbo")
@@ -180,14 +191,14 @@ def test_patch_completion_error(httpx_mock):
     assert trace_ids[0] is not None
 
     assert requests[0]["message"] == "ai.completion.request"
-    assert requests[0]["timestamp"] is not None
+    assert requests[0]["timestamp"] == timestamp
     assert requests[0]["properties"]["provider"] == "openai"
     assert requests[0]["properties"]["model"] == "fdsa"
     assert requests[0]["properties"]["prompt"] == "Say this is a test"
     assert requests[0]["properties"]["temperature"] == 0
 
     assert requests[1]["message"] == "ai.completion.error"
-    assert requests[1]["timestamp"] is not None
+    assert requests[1]["timestamp"] == timestamp
     assert requests[1]["properties"]["provider"] == "openai"
     assert requests[1]["properties"]["latency_ms"] is not None
     assert requests[1]["properties"]["error"] == "The model `fdsa` does not exist"
@@ -216,7 +227,7 @@ def test_patch_chat_completion_error(httpx_mock):
     assert trace_ids[0] is not None
 
     assert requests[0]["message"] == "ai.completion.request"
-    assert requests[0]["timestamp"] is not None
+    assert requests[0]["timestamp"] == timestamp
     assert requests[0]["properties"]["provider"] == "openai"
     assert requests[0]["properties"]["model"] == "fdsa"
     assert requests[0]["properties"]["temperature"] == 0
@@ -226,7 +237,7 @@ def test_patch_chat_completion_error(httpx_mock):
     ]
 
     assert requests[1]["message"] == "ai.completion.error"
-    assert requests[1]["timestamp"] is not None
+    assert requests[1]["timestamp"] == timestamp
     assert requests[1]["properties"]["provider"] == "openai"
     assert requests[1]["properties"]["latency_ms"] is not None
     assert requests[1]["properties"]["error"] == "The model `fdsa` does not exist"

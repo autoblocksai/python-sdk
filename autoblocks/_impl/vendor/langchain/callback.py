@@ -1,6 +1,4 @@
 import traceback
-from datetime import datetime
-from datetime import timezone
 from typing import Any
 from typing import Dict
 from typing import List
@@ -25,14 +23,13 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         super().__init__()
         self._trace_id = trace_id
         self._run_names: Dict[UUID, str] = {}
-        self._ab = AutoblocksTracer(ingestion_key)
+        self._tracer = AutoblocksTracer(ingestion_key)
 
     def _send_event(self, message: str, properties: Dict) -> None:
-        self._ab.send_event(
+        self._tracer.send_event(
             message,
             trace_id=self._trace_id,
             properties=properties,
-            timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
     @staticmethod
