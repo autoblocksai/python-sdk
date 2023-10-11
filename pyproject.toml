@@ -18,6 +18,7 @@ pre-commit = "^3.3.3"
 pytest = "^7.4.0"
 pytest-httpx = "^0.22.0"
 langchain = "0.0.277"
+openai = "^0.28.1"
 
 [tool.poetry.scripts]
 e2e = "e2e.run:main"

@@ -157,3 +157,76 @@ def test_patch_completion_makes_new_trace_id_for_each_openai_call(httpx_mock):
     assert requests[0]["traceId"] == requests[1]["traceId"]
     assert requests[2]["traceId"] == requests[3]["traceId"]
     assert requests[0]["traceId"] != requests[2]["traceId"]
+
+
+def test_patch_completion_error(httpx_mock):
+    httpx_mock.add_response()
+
+    try:
+        openai.Completion.create(
+            # Invalid model
+            model="fdsa",
+            prompt="Say this is a test",
+            temperature=0,
+        )
+    except openai.InvalidRequestError:
+        pass
+
+    requests = decode_requests(httpx_mock.get_requests())
+    assert len(requests) == 2
+
+    trace_ids = list(set(req["traceId"] for req in requests))
+    assert len(trace_ids) == 1
+    assert trace_ids[0] is not None
+
+    assert requests[0]["message"] == "ai.completion.request"
+    assert requests[0]["timestamp"] is not None
+    assert requests[0]["properties"]["provider"] == "openai"
+    assert requests[0]["properties"]["model"] == "fdsa"
+    assert requests[0]["properties"]["prompt"] == "Say this is a test"
+    assert requests[0]["properties"]["temperature"] == 0
+
+    assert requests[1]["message"] == "ai.completion.error"
+    assert requests[1]["timestamp"] is not None
+    assert requests[1]["properties"]["provider"] == "openai"
+    assert requests[1]["properties"]["latency_ms"] is not None
+    assert requests[1]["properties"]["error"] == "The model `fdsa` does not exist"
+
+
+def test_patch_chat_completion_error(httpx_mock):
+    httpx_mock.add_response()
+
+    try:
+        openai.ChatCompletion.create(
+            model="fdsa",
+            temperature=0,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": "Hello!"},
+            ],
+        )
+    except openai.InvalidRequestError:
+        pass
+
+    requests = decode_requests(httpx_mock.get_requests())
+    assert len(requests) == 2
+
+    trace_ids = list(set(req["traceId"] for req in requests))
+    assert len(trace_ids) == 1
+    assert trace_ids[0] is not None
+
+    assert requests[0]["message"] == "ai.completion.request"
+    assert requests[0]["timestamp"] is not None
+    assert requests[0]["properties"]["provider"] == "openai"
+    assert requests[0]["properties"]["model"] == "fdsa"
+    assert requests[0]["properties"]["temperature"] == 0
+    assert requests[0]["properties"]["messages"] == [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Hello!"},
+    ]
+
+    assert requests[1]["message"] == "ai.completion.error"
+    assert requests[1]["timestamp"] is not None
+    assert requests[1]["properties"]["provider"] == "openai"
+    assert requests[1]["properties"]["latency_ms"] is not None
+    assert requests[1]["properties"]["error"] == "The model `fdsa` does not exist"

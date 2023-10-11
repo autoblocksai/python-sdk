@@ -1,6 +1,16 @@
 name: CI
 
-on: push
+on:
+  push:
+  schedule:
+    # Every day at ~7:17am Chicago time.
+    #
+    # Using a non-zero minute offset since GitHub Actions suggests
+    # running jobs at a random minute to avoid overloading their
+    # servers.
+    #
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule
+    - cron: "17 12 * * *"
 
 env:
   POETRY_VERSION: "1.5.1"
@@ -48,11 +58,41 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
+      # When we're running the scheduled job we update the vendor packages
+      # to their latest version to ensure the integrations we've written
+      # haven't broken with the latest version of the vendor package.
+      - name: Update vendor packages to latest version
+        if: github.event_name == 'schedule'
+        run: poetry update openai langchain
+
       - name: Run tests
         run: poetry run pytest
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Run e2e tests
         run: poetry run e2e
         env:
           AUTOBLOCKS_API_KEY: ${{ secrets.CI_AUTOBLOCKS_API_KEY }}
           AUTOBLOCKS_INGESTION_KEY: ${{ secrets.CI_AUTOBLOCKS_INGESTION_KEY }}
+
+  notify:
+    needs:
+      - tests
+
+    if: always() && contains(needs.*.result, 'failure') && github.event_name == 'schedule'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": ":warning:  Workflow `${{ github.workflow }}` in repository `${{ github.repository }}` failed. <${{ env.run-url }}|Logs>"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+          run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
