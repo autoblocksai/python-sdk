@@ -1,7 +1,6 @@
 import os
 import time
 import uuid
-from datetime import datetime
 from typing import Dict
 from typing import Optional
 
@@ -14,10 +13,6 @@ tracer = AutoblocksTracer(
     os.environ.get(AUTOBLOCKS_INGESTION_KEY),
     properties=dict(provider="openai"),
 )
-
-
-def make_timestamp():
-    return datetime.utcnow().isoformat()
 
 
 def wrapper(wrapped, instance, args, kwargs):
@@ -44,7 +39,6 @@ def wrapper(wrapped, instance, args, kwargs):
         "ai.completion.request",
         trace_id=trace_id,
         properties=kwargs,
-        timestamp=make_timestamp(),
     )
 
     start_time = time.perf_counter()
@@ -64,7 +58,6 @@ def wrapper(wrapped, instance, args, kwargs):
                     latency_ms=latency_ms,
                     error=str(error),
                 ),
-                timestamp=make_timestamp(),
             )
         else:
             tracer.send_event(
@@ -74,7 +67,6 @@ def wrapper(wrapped, instance, args, kwargs):
                     latency_ms=latency_ms,
                     **response,
                 ),
-                timestamp=make_timestamp(),
             )
 
     return response

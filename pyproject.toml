@@ -19,6 +19,7 @@ pytest = "^7.4.0"
 pytest-httpx = "^0.22.0"
 langchain = "0.0.277"
 openai = "^0.28.1"
+freezegun = "^1.2.2"
 
 [tool.poetry.scripts]
 e2e = "e2e.run:main"
@@ -45,8 +46,3 @@ line-length = 120
 [tool.ruff.isort]
 force-single-line = true
 known-first-party = ["autoblocks"]
-
-[tool.pytest.ini_options]
-testpaths = [
-    "tests/autoblocks",
-]
