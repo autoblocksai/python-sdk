@@ -26,7 +26,7 @@ timestamp = "2021-01-01T01:01:01.000001+00:00"
 @mock.patch.dict(
     os.environ,
     {
-        "AUTOBLOCKS_SIMULATION_ID": "replay-123",
+        "AUTOBLOCKS_REPLAY_ID": "replay-123",
         "GITHUB_ACTIONS": "",
     },
 )
