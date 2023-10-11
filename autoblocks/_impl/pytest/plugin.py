@@ -6,7 +6,7 @@ from typing import List
 import pytest
 import wrapt
 
-from autoblocks._impl.config.constants import AUTOBLOCKS_SIMULATION_ID
+from autoblocks._impl.config.constants import AUTOBLOCKS_REPLAY_ID
 from autoblocks._impl.util import make_replay_run
 from autoblocks._impl.vendor.openai.patch import trace_openai
 from autoblocks._impl.vendor.openai.patch import tracer
@@ -16,7 +16,7 @@ autoblocks_enabled = "--autoblocks"
 
 
 def pytest_addoption(parser: pytest.Parser):
-    parser.addoption(autoblocks_enabled, action="store_true", help="Enable Autoblocks simulations.")
+    parser.addoption(autoblocks_enabled, action="store_true", help="Enable Autoblocks replays.")
 
 
 def pytest_sessionstart(session: pytest.Session):
@@ -30,7 +30,7 @@ def pytest_sessionstart(session: pytest.Session):
 
     home = os.path.basename(os.path.expanduser("~"))
     now = datetime.now().strftime("%Y%m%d-%H%M%S")
-    os.environ[AUTOBLOCKS_SIMULATION_ID] = f"{home}-pytest-{now}"
+    os.environ[AUTOBLOCKS_REPLAY_ID] = f"{home}-pytest-{now}"
 
 
 @wrapt.function_wrapper
@@ -54,8 +54,8 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config: pytest.Config)
     run = make_replay_run()
     run_html_url = run.html_url if run else None
     if run_html_url:
-        terminalreporter.write_sep("=", "Autoblocks Simulation Results", blue=True, bold=True)
-        terminalreporter.write_line(f"View your simulation: {run_html_url}")
+        terminalreporter.write_sep("=", "Autoblocks Replay Results", blue=True, bold=True)
+        terminalreporter.write_line(f"View your replay: {run_html_url}")
         terminalreporter.write_sep("=", blue=True, bold=True)
 
-    os.environ.pop(AUTOBLOCKS_SIMULATION_ID, None)
+    os.environ.pop(AUTOBLOCKS_REPLAY_ID, None)
