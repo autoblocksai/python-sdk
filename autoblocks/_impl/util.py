@@ -11,6 +11,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
+from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks._impl.config.constants import AUTOBLOCKS_REPLAY_ID
 
 log = logging.getLogger(__name__)
@@ -304,3 +305,10 @@ def make_replay_headers() -> Optional[Dict]:
     if replay_run:
         return replay_run.to_http_headers()
     return None
+
+
+def ingestion_key_from_env() -> str:
+    ingestion_key = os.environ.get(AUTOBLOCKS_INGESTION_KEY)
+    if not ingestion_key:
+        raise ValueError(f"The {AUTOBLOCKS_INGESTION_KEY} environment variable isn't set.")
+    return ingestion_key

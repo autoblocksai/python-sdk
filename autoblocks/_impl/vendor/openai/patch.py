@@ -15,6 +15,20 @@ tracer = AutoblocksTracer(
 )
 
 
+def _mask_request_kwargs(kwargs: Dict) -> Dict:
+    masked = dict()
+    keys_to_omit = [
+        "api_base",
+        "api_key",
+        "organization",
+    ]
+    for k, v in kwargs.items():
+        if k in keys_to_omit or v is None:
+            continue
+        masked[k] = v
+    return masked
+
+
 def wrapper(wrapped, instance, args, kwargs):
     """
     Wrapper for OpenAI API calls. Logs the request and response to Autoblocks.
@@ -38,7 +52,7 @@ def wrapper(wrapped, instance, args, kwargs):
     tracer.send_event(
         "ai.completion.request",
         trace_id=trace_id,
-        properties=kwargs,
+        properties=_mask_request_kwargs(kwargs),
     )
 
     start_time = time.perf_counter()
