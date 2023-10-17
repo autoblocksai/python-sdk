@@ -63,7 +63,14 @@ jobs:
       # haven't broken with the latest version of the vendor package.
       - name: Update vendor packages to latest version
         if: github.event_name == 'schedule'
-        run: poetry update openai langchain
+        run: poetry remove openai langchain && poetry add --group=dev openai langchain
+
+      # Required by LLMMathChain
+      - name: Install latest version of numexpr
+        # Not using poetry here because numexpr requires python 3.9 or above
+        # but our package's pyproject supports 3.8. numexpr appears to work
+        # fine on python 3.8, so we just install it directly.
+        run: poetry run pip install numexpr
 
       - name: Run tests
         run: poetry run pytest

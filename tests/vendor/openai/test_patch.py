@@ -11,17 +11,14 @@ import pytest
 from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks.vendor.openai import trace_openai
 
-with mock.patch.dict(os.environ, {AUTOBLOCKS_INGESTION_KEY: "mock-ingestion-key"}):
-    # Call multiple times to ensure that the patch is idempotent
-    tracer = trace_openai()
-    trace_openai()
-    trace_openai()
 
-
-@pytest.fixture(autouse=True)
-def before_each():
-    tracer.set_trace_id(None)
-    yield
+@pytest.fixture
+def tracer():
+    with mock.patch.dict(os.environ, {AUTOBLOCKS_INGESTION_KEY: "mock-ingestion-key"}):
+        tracer = trace_openai()
+        trace_openai()  # call multiple times to ensure that the patch is idempotent
+        tracer.set_trace_id(None)  # reset the trace id
+        return tracer
 
 
 @pytest.fixture(autouse=True)
@@ -37,7 +34,7 @@ def decode_requests(requests):
     return [json.loads(req.content.decode()) for req in requests]
 
 
-def test_patch_completion(httpx_mock):
+def test_patch_completion(httpx_mock, tracer):
     httpx_mock.add_response()
 
     openai.Completion.create(
@@ -60,6 +57,10 @@ def test_patch_completion(httpx_mock):
     assert requests[0]["properties"]["prompt"] == "Say this is a test"
     assert requests[0]["properties"]["temperature"] == 0
 
+    assert "api_key" not in requests[0]
+    assert "api_base" not in requests[0]
+    assert "organization" not in requests[0]
+
     assert requests[1]["message"] == "ai.completion.response"
     assert requests[1]["timestamp"] == timestamp
     assert requests[1]["properties"]["provider"] == "openai"
@@ -69,7 +70,7 @@ def test_patch_completion(httpx_mock):
     assert requests[1]["properties"]["usage"] is not None
 
 
-def test_patch_completion_custom_event(httpx_mock):
+def test_patch_completion_custom_event(httpx_mock, tracer):
     httpx_mock.add_response()
 
     trace_id = str(uuid.uuid4())
@@ -93,7 +94,7 @@ def test_patch_completion_custom_event(httpx_mock):
     assert requests[2]["message"] == "custom.message"
 
 
-def test_patch_chat_completion(httpx_mock):
+def test_patch_chat_completion(httpx_mock, tracer):
     httpx_mock.add_response()
 
     openai.ChatCompletion.create(
@@ -119,6 +120,10 @@ def test_patch_chat_completion(httpx_mock):
         {"role": "user", "content": "Hello!"},
     ]
 
+    assert "api_key" not in requests[0]
+    assert "api_base" not in requests[0]
+    assert "organization" not in requests[0]
+
     assert requests[1]["message"] == "ai.completion.response"
     assert requests[1]["timestamp"] == timestamp
     assert requests[1]["properties"]["provider"] == "openai"
@@ -128,7 +133,7 @@ def test_patch_chat_completion(httpx_mock):
     assert requests[1]["properties"]["usage"] is not None
 
 
-def test_patch_completion_doesnt_override_trace_id(httpx_mock):
+def test_patch_completion_doesnt_override_trace_id(httpx_mock, tracer):
     httpx_mock.add_response()
 
     trace_id = str(uuid.uuid4())
@@ -148,7 +153,7 @@ def test_patch_completion_doesnt_override_trace_id(httpx_mock):
     assert all(req["traceId"] == trace_id for req in requests)
 
 
-def test_patch_completion_makes_new_trace_id_for_each_openai_call(httpx_mock):
+def test_patch_completion_makes_new_trace_id_for_each_openai_call(httpx_mock, tracer):
     # We aren't setting a trace_id, so each openai call should generate its own.
     openai.Completion.create(
         model="gpt-3.5-turbo-instruct",
@@ -170,7 +175,7 @@ def test_patch_completion_makes_new_trace_id_for_each_openai_call(httpx_mock):
     assert requests[0]["traceId"] != requests[2]["traceId"]
 
 
-def test_patch_completion_error(httpx_mock):
+def test_patch_completion_error(httpx_mock, tracer):
     httpx_mock.add_response()
 
     try:
@@ -204,7 +209,7 @@ def test_patch_completion_error(httpx_mock):
     assert requests[1]["properties"]["error"] == "The model `fdsa` does not exist"
 
 
-def test_patch_chat_completion_error(httpx_mock):
+def test_patch_chat_completion_error(httpx_mock, tracer):
     httpx_mock.add_response()
 
     try:

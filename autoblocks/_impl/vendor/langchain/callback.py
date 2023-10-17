@@ -7,9 +7,15 @@ from typing import Union
 from uuid import UUID
 
 from autoblocks._impl.tracer import AutoblocksTracer
+from autoblocks._impl.util import ingestion_key_from_env
 
 try:
+    import langchain
     from langchain.callbacks.base import BaseCallbackHandler
+    from langchain.schema import AgentAction
+    from langchain.schema import AgentFinish
+    from langchain.schema import BaseMessage
+    from langchain.schema import LLMResult
 except ImportError:
     raise ImportError("You must have langchain installed in order to use AutoblocksCallbackHandler.")
 
@@ -17,13 +23,19 @@ except ImportError:
 class AutoblocksCallbackHandler(BaseCallbackHandler):
     def __init__(
         self,
-        ingestion_key: str,
         trace_id: Optional[str] = None,
+        properties: Optional[Dict] = None,
     ) -> None:
         super().__init__()
         self._trace_id = trace_id
-        self._run_names: Dict[UUID, str] = {}
-        self._tracer = AutoblocksTracer(ingestion_key)
+        properties = dict(properties or {})
+        properties.update(
+            {
+                "__langchainVersion": langchain.__version__,
+                "__langchainLanguage": "python",
+            }
+        )
+        self._tracer = AutoblocksTracer(ingestion_key_from_env(), properties=properties)
 
     def _send_event(self, message: str, properties: Dict) -> None:
         self._tracer.send_event(
@@ -32,58 +44,41 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
             properties=properties,
         )
 
-    @staticmethod
-    def _convert_message_to_dict(message: Any) -> Optional[Dict]:  # message=BaseMessage
-        if message.type == "human":
-            return {"role": "user", "content": message.content}
-        elif message.type == "ai":
-            return {"role": "assistant", "content": message.content}
-        elif message.type == "system":
-            return {"role": "system", "content": message.content}
-        elif message.type == "function":
-            return {"role": "function", "content": message.content, "name": message.name}
-        elif message.type == "chat":
-            return {"role": message.role, "content": message.content}
-        return None
+    def _on_start(self, run_id: UUID):
+        if not self._trace_id:
+            self._trace_id = str(run_id)
+
+    def _on_end(self, run_id: UUID):
+        if self._trace_id == str(run_id):
+            self._trace_id = None
 
     @staticmethod
-    def _make_name_from_parts(parts: List[str]) -> str:
-        return ".".join(parts)
+    def _serialize_error(error: Union[Exception, KeyboardInterrupt]) -> Dict:
+        return dict(
+            type=type(error).__name__,
+            message=str(error),
+            traceback=traceback.format_exc(),
+        )
 
     def on_chat_model_start(
         self,
         serialized: Dict[str, Any],
-        messages: List[List[Any]],  # List[List[BaseMessage]]
+        messages: List[List[BaseMessage]],
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
-        name = self._make_name_from_parts(serialized["id"])
-
-        self._run_names[run_id] = name
-
-        if not self._trace_id:
-            self._trace_id = str(run_id)
-
-        message_dicts = []
-        for group in messages:
-            message_group_dicts = []
-            for message in group:
-                message_dict = self._convert_message_to_dict(message)
-                if message_dict:
-                    message_group_dicts.append(message_dict)
-            message_dicts.append(message_group_dicts)
+        self._on_start(run_id)
 
         self._send_event(
-            f"{name}.start",
+            "langchain.chatmodel.start",
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
-                messages=message_dicts,
-                params=kwargs.get("invocation_params"),
+                serialized=serialized,
+                messages=[[m.to_json() for m in group] for group in messages],
+                **kwargs,
             ),
         )
 
@@ -94,24 +89,18 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
-        name = self._make_name_from_parts(serialized["id"])
-
-        self._run_names[run_id] = name
-
-        if not self._trace_id:
-            self._trace_id = str(run_id)
+        self._on_start(run_id)
 
         self._send_event(
-            f"{name}.start",
+            "langchain.llm.start",
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
+                serialized=serialized,
                 prompts=prompts,
-                params=kwargs.get("invocation_params"),
+                **kwargs,
             ),
         )
 
@@ -120,42 +109,28 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
 
     def on_llm_end(
         self,
-        response: Any,  # LLMResult
+        response: LLMResult,
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
-        name = self._run_names.pop(run_id, None)
-        if not name:
-            return
-
-        generations = []
-        for llm_result in response.flatten():
-            g = llm_result.generations[0][0]
-            if not g:
-                continue
-            generations.append(
-                dict(
-                    text=g.text,
-                    info=g.generation_info,
-                )
-            )
+        response_serialized = dict(
+            llm_output=response.llm_output,
+            generations=[[g.to_json() for g in group] for group in response.generations],
+        )
 
         self._send_event(
-            f"{name}.end",
+            "langchain.llm.end",
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
-                generations=generations,
+                response=response_serialized,
+                **kwargs,
             ),
         )
 
-        # Unset the trace id if this trace has ended
-        if self._trace_id == str(run_id):
-            self._trace_id = None
+        self._on_end(run_id)
 
     def on_llm_error(
         self,
@@ -163,26 +138,19 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
-        name = self._run_names.pop(run_id, None)
-        if not name:
-            return
-
         self._send_event(
-            f"{name}.error",
+            "langchain.llm.error",
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
-                error=dict(message=str(error), stacktrace=traceback.format_exc()),
+                error=self._serialize_error(error),
+                **kwargs,
             ),
         )
 
-        # Unset the trace id if this trace has ended
-        if self._trace_id == str(run_id):
-            self._trace_id = None
+        self._on_end(run_id)
 
     def on_chain_start(
         self,
@@ -191,23 +159,18 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
-        name = self._make_name_from_parts(serialized["id"])
-
-        self._run_names[run_id] = name
-
-        if not self._trace_id:
-            self._trace_id = str(run_id)
+        self._on_start(run_id)
 
         self._send_event(
-            f"{name}.start",
+            "langchain.chain.start",
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
+                serialized=serialized,
                 inputs=inputs,
+                **kwargs,
             ),
         )
 
@@ -217,26 +180,19 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
-        name = self._run_names.pop(run_id, None)
-        if not name:
-            return
-
         self._send_event(
-            f"{name}.end",
+            "langchain.chain.end",
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
                 outputs=outputs,
+                **kwargs,
             ),
         )
 
-        # Unset the trace id if this trace has ended
-        if self._trace_id == str(run_id):
-            self._trace_id = None
+        self._on_end(run_id)
 
     def on_chain_error(
         self,
@@ -244,34 +200,26 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
-        name = self._run_names.pop(run_id, None)
-        if not name:
-            return
-
         self._send_event(
-            f"{name}.error",
+            "langchain.chain.error",
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
-                error=dict(message=str(error), stacktrace=traceback.format_exc()),
+                error=self._serialize_error(error),
+                **kwargs,
             ),
         )
 
-        # Unset the trace id if this trace has ended
-        if self._trace_id == str(run_id):
-            self._trace_id = None
+        self._on_end(run_id)
 
     def on_agent_action(
         self,
-        action: Any,  # AgentAction
+        action: AgentAction,
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
         self._send_event(
@@ -279,20 +227,19 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
                 tool=action.tool,
                 tool_input=action.tool_input,
                 log=action.log,
+                **kwargs,
             ),
         )
 
     def on_agent_finish(
         self,
-        finish: Any,  # AgentFinish
+        finish: AgentFinish,
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
         self._send_event(
@@ -300,9 +247,9 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
                 return_values=finish.return_values,
                 log=finish.log,
+                **kwargs,
             ),
         )
 
@@ -313,26 +260,18 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
-        name = serialized["name"]
-
-        self._run_names[run_id] = name
-
-        if not self._trace_id:
-            self._trace_id = str(run_id)
-
-        description = serialized.get("description")
+        self._on_start(run_id)
 
         self._send_event(
-            f"langchain.tool.{name}.start",
+            "langchain.tool.start",
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
-                input=input_str,
-                description=description,
+                serialized=serialized,
+                input_str=input_str,
+                **kwargs,
             ),
         )
 
@@ -342,26 +281,19 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
-        name = self._run_names.pop(run_id, None)
-        if not name:
-            return
-
         self._send_event(
-            f"langchain.tool.{name}.end",
+            "langchain.tool.end",
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
                 output=output,
+                **kwargs,
             ),
         )
 
-        # Unset the trace id if this trace has ended
-        if self._trace_id == str(run_id):
-            self._trace_id = None
+        self._on_end(run_id)
 
     def on_tool_error(
         self,
@@ -369,26 +301,19 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         *,
         run_id: UUID,
         parent_run_id: Optional[UUID] = None,
-        tags: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> None:
-        name = self._run_names.pop(run_id, None)
-        if not name:
-            return
-
         self._send_event(
-            f"langchain.tool.{name}.error",
+            "langchain.tool.error",
             properties=dict(
                 run_id=str(run_id),
                 parent_run_id=str(parent_run_id) if parent_run_id else None,
-                tags=tags,
-                error=dict(message=str(error), stacktrace=traceback.format_exc()),
+                error=self._serialize_error(error),
+                **kwargs,
             ),
         )
 
-        # Unset the trace id if this trace has ended
-        if self._trace_id == str(run_id):
-            self._trace_id = None
+        self._on_end(run_id)
 
     def on_text(self, *args, **kwargs) -> None:
         pass
