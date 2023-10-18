@@ -21,34 +21,35 @@ except ImportError:
 
 
 class AutoblocksCallbackHandler(BaseCallbackHandler):
-    def __init__(
-        self,
-        trace_id: Optional[str] = None,
-        properties: Optional[Dict] = None,
-    ) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self._trace_id = trace_id
-        properties = dict(properties or {})
-        properties.update(
-            {
+        self._trace_id = None
+        self._tracer = AutoblocksTracer(
+            ingestion_key_from_env(),
+            properties={
                 "__langchainVersion": langchain.__version__,
                 "__langchainLanguage": "python",
-            }
+            },
         )
-        self._tracer = AutoblocksTracer(ingestion_key_from_env(), properties=properties)
 
     def _send_event(self, message: str, properties: Dict) -> None:
-        self._tracer.send_event(
+        self.tracer.send_event(
             message,
             trace_id=self._trace_id,
             properties=properties,
         )
 
-    def _on_start(self, run_id: UUID):
-        if not self._trace_id:
-            self._trace_id = str(run_id)
+    def _on_start(self, run_id: UUID) -> None:
+        if self.tracer.trace_id:
+            # Trace ID is being managed by the user
+            return
+        elif self._trace_id:
+            # Trace ID has already been set by this handler
+            return
 
-    def _on_end(self, run_id: UUID):
+        self._trace_id = str(run_id)
+
+    def _on_end(self, run_id: UUID) -> None:
         if self._trace_id == str(run_id):
             self._trace_id = None
 
@@ -59,6 +60,10 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
             message=str(error),
             traceback=traceback.format_exc(),
         )
+
+    @property
+    def tracer(self) -> AutoblocksTracer:
+        return self._tracer
 
     def on_chat_model_start(
         self,
@@ -222,6 +227,7 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         parent_run_id: Optional[UUID] = None,
         **kwargs: Any,
     ) -> None:
+        # Agent callbacks are only called within a chain run so we don't call on_start within this handler
         self._send_event(
             "langchain.agent.action",
             properties=dict(
@@ -252,6 +258,8 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
                 **kwargs,
             ),
         )
+
+        # Agent callbacks are only called within a chain run so we don't call on_end within this handler
 
     def on_tool_start(
         self,
