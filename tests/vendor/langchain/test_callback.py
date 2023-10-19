@@ -3,6 +3,7 @@ import os
 import uuid
 from unittest import mock
 
+import langchain
 import pytest
 from langchain.agents import AgentType
 from langchain.agents import initialize_agent
@@ -12,10 +13,6 @@ from langchain.tools import Tool
 
 from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks.vendor.langchain import AutoblocksCallbackHandler
-
-# Tests that we're sending the current langchain version.
-# Should update this whenever we update the version in pyproject.toml.
-CURRENT_LANGCHAIN_VERSION = "0.0.316"
 
 
 def decode_requests(requests):
@@ -39,7 +36,7 @@ def test_callback_sends_langchain_version(httpx, handler):
     llm.predict("hi!", callbacks=[handler])
 
     for req in decode_requests(httpx.get_requests()):
-        assert req["properties"]["__langchainVersion"] == CURRENT_LANGCHAIN_VERSION
+        assert req["properties"]["__langchainVersion"] == langchain.__version__
         assert req["properties"]["__langchainLanguage"] == "python"
 
 
