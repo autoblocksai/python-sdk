@@ -93,7 +93,7 @@ try:
     "ai.response",
     properties=dict(
       response=response,
-      latency=(time.time() - start_time) * 1000,
+      latency_ms=(time.time() - start_time) * 1000,
     ),
   )
 except Exception as error:
