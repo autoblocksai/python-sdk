@@ -2,10 +2,13 @@
 name = "autoblocksai"
 # The version is not maintained here. It's set in the release workflow via the version input.
 version = "0.0.0"
-description = ""
-authors = ["Autoblocks Engineering <engineering@autoblocks.ai>"]
+description = "Python client for Autoblocks"
 license = "MIT"
+authors = ["Autoblocks Engineering <engineering@autoblocks.ai>"]
 readme = "README.md"
+homepage = "https://github.com/autoblocksai/python-sdk"
+repository = "https://github.com/autoblocksai/python-sdk"
+documentation = "https://docs.autoblocks.ai/sdks/python"
 packages = [{include = "autoblocks"}]
 
 [tool.poetry.dependencies]
