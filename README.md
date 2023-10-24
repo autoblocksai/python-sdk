@@ -53,12 +53,12 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 messages = [
   {
     "role": "system",
-    "content": "You are a helpful assistant. You answer questions about a software product named Acme."
+    "content": "You are a helpful assistant. You answer questions about a software product named Acme.",
   },
   {
     "role": "user",
-    "content": "How do I sign up?"
-  }
+    "content": "How do I sign up?",
+  },
 ]
 request_params = dict(
   model="gpt-3.5-turbo",
@@ -67,7 +67,7 @@ request_params = dict(
   top_p=1,
   frequency_penalty=0,
   presence_penalty=0,
-  n=1
+  n=1,
 )
 
 tracer = AutoblocksTracer(
@@ -77,13 +77,13 @@ tracer = AutoblocksTracer(
   # All events sent below will include this property
   # alongside any other properties set in the send_event call
   properties=dict(
-    provider="openai"
-  )
+    provider="openai",
+  ),
 )
 
 tracer.send_event(
   "ai.request",
-  properties=request_params
+  properties=request_params,
 )
 
 try:
@@ -93,16 +93,16 @@ try:
     "ai.response",
     properties=dict(
       response=response,
-      latency=(time.time() - start_time) * 1000
-    )
+      latency=(time.time() - start_time) * 1000,
+    ),
   )
 except Exception as error:
   tracer.send_event(
     "ai.error",
     properties=dict(
       error_message=str(error),
-      stacktrace=traceback.format_exc()
-    )
+      stacktrace=traceback.format_exc(),
+    ),
   )
 
 # Simulate user feedback
