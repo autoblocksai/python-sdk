@@ -53,7 +53,7 @@ def camel_case_factory(values: List[Tuple[str, Any]]) -> Dict:
 
 
 class AutoblocksAPIClient:
-    def __init__(self, api_key: str, timeout: timedelta = timedelta(seconds=5)) -> None:
+    def __init__(self, api_key: str, timeout: timedelta = timedelta(seconds=10)) -> None:
         self._client = httpx.Client(
             base_url=API_ENDPOINT,
             headers={"Authorization": f"Bearer {api_key}"},
