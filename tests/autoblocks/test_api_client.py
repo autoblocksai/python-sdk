@@ -1,3 +1,5 @@
+from httpx import Timeout
+
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks.api.client import AutoblocksAPIClient
 from autoblocks.api.models import Event
@@ -10,6 +12,12 @@ from autoblocks.api.models import TraceFilterOperator
 from autoblocks.api.models import TracesResponse
 from autoblocks.api.models import View
 from tests.autoblocks.util import make_expected_body
+
+
+def test_client_default_values():
+    client = AutoblocksAPIClient("mock-api-key")
+    assert client._client.timeout == Timeout(10)
+    assert client._client.headers.get("authorization") == "Bearer mock-api-key"
 
 
 def test_get_views(httpx_mock):
