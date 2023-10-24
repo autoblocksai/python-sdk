@@ -1,6 +1,7 @@
 import os
 import time
 import uuid
+from datetime import timedelta
 
 from autoblocks.api.client import AutoblocksAPIClient
 from autoblocks.api.models import EventFilter
@@ -26,7 +27,7 @@ def main():
     if not AUTOBLOCKS_INGESTION_KEY:
         raise Exception("AUTOBLOCKS_INGESTION_KEY is required")
 
-    client = AutoblocksAPIClient(AUTOBLOCKS_API_KEY)
+    client = AutoblocksAPIClient(AUTOBLOCKS_API_KEY, timeout=timedelta(seconds=30))
     tracer = AutoblocksTracer(AUTOBLOCKS_INGESTION_KEY)
 
     # Make sure our view exists

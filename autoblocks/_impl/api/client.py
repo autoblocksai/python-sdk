@@ -1,5 +1,6 @@
 import logging
 from dataclasses import asdict
+from datetime import timedelta
 from typing import Any
 from typing import Dict
 from typing import List
@@ -52,10 +53,11 @@ def camel_case_factory(values: List[Tuple[str, Any]]) -> Dict:
 
 
 class AutoblocksAPIClient:
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, timeout: timedelta = timedelta(seconds=5)) -> None:
         self._client = httpx.Client(
             base_url=API_ENDPOINT,
             headers={"Authorization": f"Bearer {api_key}"},
+            timeout=timeout.total_seconds(),
         )
 
     def get_views(self) -> List[View]:
