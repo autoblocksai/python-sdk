@@ -33,6 +33,8 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         )
 
     def _send_event(self, message: str, properties: Dict) -> None:
+        # Remove None values from properties
+        properties = {k: v for k, v in properties.items() if v is not None}
         self.tracer.send_event(
             message,
             trace_id=self._trace_id,
