@@ -20,7 +20,7 @@ wrapt = "^1.15.0"
 pre-commit = "^3.3.3"
 pytest = "^7.4.0"
 pytest-httpx = "^0.22.0"
-langchain = "^0.0.317"
+langchain = "^0.0.326"
 openai = "^0.28.1"
 freezegun = "^1.2.2"
 
