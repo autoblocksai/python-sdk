@@ -13,7 +13,7 @@ packages = [{include = "autoblocks"}]
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
-httpx = "^0.24.0"
+httpx = "^0.25.0"
 wrapt = "^1.15.0"
 
 [tool.poetry.group.dev.dependencies]
