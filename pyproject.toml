@@ -13,8 +13,7 @@ packages = [{include = "autoblocks"}]
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
-httpx = "^0.24.0"
-wrapt = "^1.15.0"
+httpx = ">=0.24.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.3"
@@ -23,6 +22,7 @@ pytest-httpx = "^0.22.0"
 langchain = "^0.0.326"
 openai = "^0.28.1"
 freezegun = "^1.2.2"
+wrapt = "^1.15.0"
 
 [tool.poetry.scripts]
 e2e = "e2e.run:main"
