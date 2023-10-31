@@ -3,10 +3,10 @@
 ## Setup
 
 * Install [`pyenv`](https://github.com/pyenv/pyenv)
-  * Install python 3.11: `pyenv install 3.11`
+  * Install python 3.12: `pyenv install 3.12`
 * Install [`pyenv-virtualenv`](https://github.com/pyenv/pyenv-virtualenv)
 * Install [`poetry`](https://python-poetry.org/docs/#installation)
-* Create a virtualenv: `pyenv virtualenv 3.11 python-sdk`
+* Create a virtualenv: `pyenv virtualenv 3.12 python-sdk`
   * Activate the virtualenv: `pyenv activate python-sdk`
 * Install dependencies: `poetry install`
 * Run tests: `poetry run pytest`
@@ -25,6 +25,7 @@ strategy:
       - "3.9"
       - "3.10"
       - "3.11"
+      - "3.12"
 ```
 
 As versions are deprecated they should be removed from the test matrix and the minimum Python version in [`pyproject.toml`](./pyproject.toml) should be updated.
