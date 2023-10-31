@@ -4,8 +4,6 @@ import uuid
 from typing import Dict
 from typing import Optional
 
-import wrapt
-
 from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks._impl.tracer import AutoblocksTracer
 
@@ -102,6 +100,10 @@ def trace_openai(properties: Optional[Dict] = None, called=[False]) -> Autoblock
         import openai
     except ImportError:
         raise ImportError("You must have openai installed in order to use the trace_openai function.")
+    try:
+        import wrapt
+    except ImportError:
+        raise ImportError("You must have wrapt installed in order to use the trace_openai function.")
 
     if properties:
         tracer.update_properties(properties)
