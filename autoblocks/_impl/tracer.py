@@ -75,20 +75,15 @@ class AutoblocksTracer:
         """
         self._properties.update(properties)
 
-    def send_event(
+    def _send_event_unsafe(
         self,
-        message: str,
-        # Require all arguments after message to be specified via key=value
+        # Require all arguments to be specified via key=value
         *,
+        message: str,
         trace_id: Optional[str] = None,
         timestamp: Optional[str] = None,
         properties: Optional[Dict] = None,
     ) -> SendEventResponse:
-        """
-        Sends an event to the Autoblocks ingestion API.
-
-        Returns a SendEventResponse with the event's trace_id on success, otherwise None.
-        """
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
 
@@ -101,22 +96,42 @@ class AutoblocksTracer:
             log.error(f"Failed to generate replay headers: {err}", exc_info=True)
             replay_headers = None
 
+        req = self._client.post(
+            url=INGESTION_ENDPOINT,
+            json={
+                "message": message,
+                "traceId": trace_id,
+                "timestamp": timestamp,
+                "properties": merged_properties,
+            },
+            headers=replay_headers,
+        )
+        req.raise_for_status()
+        resp = req.json()
+        return SendEventResponse(trace_id=resp.get("traceId"))
+
+    def send_event(
+        self,
+        message: str,
+        # Require all arguments after message to be specified via key=value
+        *,
+        trace_id: Optional[str] = None,
+        timestamp: Optional[str] = None,
+        properties: Optional[Dict] = None,
+    ) -> SendEventResponse:
+        """
+        Sends an event to the Autoblocks ingestion API.
+
+        Always returns a SendEventResponse dataclass as the response. If sending
+        the event failed, the trace_id will be None.
+        """
         try:
-            req = self._client.post(
-                url=INGESTION_ENDPOINT,
-                json={
-                    "message": message,
-                    "traceId": trace_id,
-                    "timestamp": timestamp,
-                    "properties": merged_properties,
-                },
-                headers=replay_headers,
+            return self._send_event_unsafe(
+                message=message,
+                trace_id=trace_id,
+                timestamp=timestamp,
+                properties=properties,
             )
-            req.raise_for_status()
-            resp = req.json()
-            trace_id = resp.get("traceId")
         except Exception as err:
             log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
-            trace_id = None
-
-        return SendEventResponse(trace_id=trace_id)
+            return SendEventResponse(trace_id=None)
