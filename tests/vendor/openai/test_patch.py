@@ -34,6 +34,20 @@ def decode_requests(requests):
     return [json.loads(req.content.decode()) for req in requests]
 
 
+def check_trace_ids(requests):
+    # There should be one unique trace_id and it shouldn't be None
+    trace_ids = list(set(req["traceId"] for req in requests))
+    assert len(trace_ids) == 1
+    assert trace_ids[0] is not None
+
+
+def check_span_ids(requests):
+    # There should be one unique span_id and it shouldn't be None
+    span_ids = list(set(req["properties"]["span_id"] for req in requests))
+    assert len(span_ids) == 1
+    assert span_ids[0] is not None
+
+
 def test_patch_completion(httpx_mock, tracer):
     httpx_mock.add_response()
 
@@ -46,9 +60,8 @@ def test_patch_completion(httpx_mock, tracer):
     requests = decode_requests(httpx_mock.get_requests())
     assert len(requests) == 2
 
-    trace_ids = list(set(req["traceId"] for req in requests))
-    assert len(trace_ids) == 1
-    assert trace_ids[0] is not None
+    check_trace_ids(requests)
+    check_span_ids(requests)
 
     assert requests[0]["message"] == "ai.completion.request"
     assert requests[0]["timestamp"] == timestamp
@@ -93,6 +106,11 @@ def test_patch_completion_custom_event(httpx_mock, tracer):
     assert requests[1]["message"] == "ai.completion.response"
     assert requests[2]["message"] == "custom.message"
 
+    # The first two events should have the same span_id and the 3rd shouldn't have one
+    assert requests[0]["properties"]["span_id"] == requests[1]["properties"]["span_id"]
+    assert requests[0]["properties"]["span_id"] is not None
+    assert "span_id" not in requests[2]["properties"]
+
 
 def test_patch_chat_completion(httpx_mock, tracer):
     httpx_mock.add_response()
@@ -106,9 +124,8 @@ def test_patch_chat_completion(httpx_mock, tracer):
     requests = decode_requests(httpx_mock.get_requests())
     assert len(requests) == 2
 
-    trace_ids = list(set(req["traceId"] for req in requests))
-    assert len(trace_ids) == 1
-    assert trace_ids[0] is not None
+    check_trace_ids(requests)
+    check_span_ids(requests)
 
     assert requests[0]["message"] == "ai.completion.request"
     assert requests[0]["timestamp"] == timestamp
@@ -174,6 +191,11 @@ def test_patch_completion_makes_new_trace_id_for_each_openai_call(httpx_mock, tr
     assert requests[2]["traceId"] == requests[3]["traceId"]
     assert requests[0]["traceId"] != requests[2]["traceId"]
 
+    # First two should be the same span_id and last two should be same span_id and each group should be different
+    assert requests[0]["properties"]["span_id"] == requests[1]["properties"]["span_id"]
+    assert requests[2]["properties"]["span_id"] == requests[3]["properties"]["span_id"]
+    assert requests[0]["properties"]["span_id"] != requests[2]["properties"]["span_id"]
+
 
 def test_patch_completion_error(httpx_mock, tracer):
     httpx_mock.add_response()
@@ -191,9 +213,8 @@ def test_patch_completion_error(httpx_mock, tracer):
     requests = decode_requests(httpx_mock.get_requests())
     assert len(requests) == 2
 
-    trace_ids = list(set(req["traceId"] for req in requests))
-    assert len(trace_ids) == 1
-    assert trace_ids[0] is not None
+    check_trace_ids(requests)
+    check_span_ids(requests)
 
     assert requests[0]["message"] == "ai.completion.request"
     assert requests[0]["timestamp"] == timestamp
@@ -227,9 +248,8 @@ def test_patch_chat_completion_error(httpx_mock, tracer):
     requests = decode_requests(httpx_mock.get_requests())
     assert len(requests) == 2
 
-    trace_ids = list(set(req["traceId"] for req in requests))
-    assert len(trace_ids) == 1
-    assert trace_ids[0] is not None
+    check_trace_ids(requests)
+    check_span_ids(requests)
 
     assert requests[0]["message"] == "ai.completion.request"
     assert requests[0]["timestamp"] == timestamp

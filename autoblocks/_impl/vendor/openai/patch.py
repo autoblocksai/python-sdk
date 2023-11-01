@@ -47,10 +47,18 @@ def wrapper(wrapped, instance, args, kwargs):
         # when tracer.trace_id is not None, since we will never set it here.
         trace_id = str(uuid.uuid4())
 
+    # Similar to the comment above, we don't set this via tracer.update_properties
+    # because the tracer is returned from this function and meant to be used by the
+    # end user for additional events, and those events should not belong to this span.
+    span_id = str(uuid.uuid4())
+
     tracer.send_event(
         "ai.completion.request",
         trace_id=trace_id,
-        properties=_mask_request_kwargs(kwargs),
+        properties=dict(
+            span_id=span_id,
+            **_mask_request_kwargs(kwargs),
+        ),
     )
 
     start_time = time.perf_counter()
@@ -69,6 +77,7 @@ def wrapper(wrapped, instance, args, kwargs):
                 properties=dict(
                     latency_ms=latency_ms,
                     error=str(error),
+                    span_id=span_id,
                 ),
             )
         else:
@@ -77,6 +86,7 @@ def wrapper(wrapped, instance, args, kwargs):
                 trace_id=trace_id,
                 properties=dict(
                     latency_ms=latency_ms,
+                    span_id=span_id,
                     **response,
                 ),
             )
