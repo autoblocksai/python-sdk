@@ -81,11 +81,17 @@ class AutoblocksTracer:
         *,
         message: str,
         trace_id: Optional[str] = None,
+        span_id: Optional[str] = None,
+        parent_span_id: Optional[str] = None,
         timestamp: Optional[str] = None,
         properties: Optional[Dict] = None,
     ) -> SendEventResponse:
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
+        if span_id:
+            merged_properties["span_id"] = span_id
+        if parent_span_id:
+            merged_properties["parent_span_id"] = parent_span_id
 
         trace_id = trace_id or self._trace_id
         timestamp = timestamp or datetime.now(timezone.utc).isoformat()
@@ -116,6 +122,8 @@ class AutoblocksTracer:
         # Require all arguments after message to be specified via key=value
         *,
         trace_id: Optional[str] = None,
+        span_id: Optional[str] = None,
+        parent_span_id: Optional[str] = None,
         timestamp: Optional[str] = None,
         properties: Optional[Dict] = None,
     ) -> SendEventResponse:
@@ -129,6 +137,8 @@ class AutoblocksTracer:
             return self._send_event_unsafe(
                 message=message,
                 trace_id=trace_id,
+                span_id=span_id,
+                parent_span_id=parent_span_id,
                 timestamp=timestamp,
                 properties=properties,
             )
