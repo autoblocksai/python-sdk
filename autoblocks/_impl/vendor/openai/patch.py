@@ -13,7 +13,7 @@ tracer = AutoblocksTracer(
 )
 
 
-def _mask_request_kwargs(kwargs: Dict) -> Dict:
+def mask_request_kwargs(kwargs: Dict) -> Dict:
     masked = dict()
     keys_to_omit = [
         "api_base",
@@ -47,18 +47,13 @@ def wrapper(wrapped, instance, args, kwargs):
         # when tracer.trace_id is not None, since we will never set it here.
         trace_id = str(uuid.uuid4())
 
-    # Similar to the comment above, we don't set this via tracer.update_properties
-    # because the tracer is returned from this function and meant to be used by the
-    # end user for additional events, and those events should not belong to this span.
     span_id = str(uuid.uuid4())
 
     tracer.send_event(
         "ai.completion.request",
         trace_id=trace_id,
-        properties=dict(
-            span_id=span_id,
-            **_mask_request_kwargs(kwargs),
-        ),
+        span_id=span_id,
+        properties=mask_request_kwargs(kwargs),
     )
 
     start_time = time.perf_counter()
@@ -74,19 +69,19 @@ def wrapper(wrapped, instance, args, kwargs):
             tracer.send_event(
                 "ai.completion.error",
                 trace_id=trace_id,
+                span_id=span_id,
                 properties=dict(
                     latency_ms=latency_ms,
                     error=str(error),
-                    span_id=span_id,
                 ),
             )
         else:
             tracer.send_event(
                 "ai.completion.response",
                 trace_id=trace_id,
+                span_id=span_id,
                 properties=dict(
                     latency_ms=latency_ms,
-                    span_id=span_id,
                     **response,
                 ),
             )

@@ -576,3 +576,87 @@ def test_tracer_prod_handles_non_200(httpx_mock):
     tracer = AutoblocksTracer("mock-ingestion-key")
     resp = tracer.send_event("my-message")
     assert resp.trace_id is None
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
+def test_tracer_sends_span_id_as_property(httpx_mock):
+    httpx_mock.add_response(
+        url=INGESTION_ENDPOINT,
+        method="POST",
+        status_code=200,
+        json={"traceId": "my-trace-id"},
+        match_headers={"Authorization": "Bearer mock-ingestion-key"},
+        match_content=make_expected_body(
+            dict(
+                message="my-message",
+                traceId=None,
+                timestamp=timestamp,
+                properties=dict(span_id="my-span-id"),
+            )
+        ),
+    )
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    resp = tracer.send_event("my-message", span_id="my-span-id")
+
+    assert resp.trace_id == "my-trace-id"
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
+def test_tracer_sends_parent_span_id_as_property(httpx_mock):
+    httpx_mock.add_response(
+        url=INGESTION_ENDPOINT,
+        method="POST",
+        status_code=200,
+        json={"traceId": "my-trace-id"},
+        match_headers={"Authorization": "Bearer mock-ingestion-key"},
+        match_content=make_expected_body(
+            dict(
+                message="my-message",
+                traceId=None,
+                timestamp=timestamp,
+                properties=dict(parent_span_id="my-parent-span-id"),
+            )
+        ),
+    )
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    resp = tracer.send_event("my-message", parent_span_id="my-parent-span-id")
+
+    assert resp.trace_id == "my-trace-id"
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
+def test_tracer_sends_span_id_and_parent_span_id_as_property(httpx_mock):
+    httpx_mock.add_response(
+        url=INGESTION_ENDPOINT,
+        method="POST",
+        status_code=200,
+        json={"traceId": "my-trace-id"},
+        match_headers={"Authorization": "Bearer mock-ingestion-key"},
+        match_content=make_expected_body(
+            dict(
+                message="my-message",
+                traceId=None,
+                timestamp=timestamp,
+                properties=dict(span_id="my-span-id", parent_span_id="my-parent-span-id"),
+            )
+        ),
+    )
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    resp = tracer.send_event("my-message", span_id="my-span-id", parent_span_id="my-parent-span-id")
+
+    assert resp.trace_id == "my-trace-id"
