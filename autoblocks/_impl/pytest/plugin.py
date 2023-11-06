@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import List
 
 import pytest
-import wrapt
 
 from autoblocks._impl.config.constants import AUTOBLOCKS_REPLAY_ID
 from autoblocks._impl.util import make_replay_run
@@ -33,15 +32,21 @@ def pytest_sessionstart(session: pytest.Session):
     os.environ[AUTOBLOCKS_REPLAY_ID] = f"{home}-pytest-{now}"
 
 
-@wrapt.function_wrapper
-def set_trace_id_wrapper(wrapped, instance, args, kwargs):
-    tracer.set_trace_id(wrapped.__name__)
-    return wrapped(*args, **kwargs)
-
-
 def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config, items: List[pytest.Item]):
     if not config.getoption(autoblocks_enabled):
         return
+
+    try:
+        import wrapt
+    except ImportError:
+        raise ImportError(
+            "You must have wrapt installed in order to use the pytest plugin. Install it with `pip install wrapt`."
+        )
+
+    @wrapt.function_wrapper
+    def set_trace_id_wrapper(wrapped, instance, args, kwargs):
+        tracer.set_trace_id(wrapped.__name__)
+        return wrapped(*args, **kwargs)
 
     for item in items:
         item.obj = set_trace_id_wrapper(item.obj)
