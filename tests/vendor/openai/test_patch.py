@@ -7,7 +7,6 @@ from unittest import mock
 import freezegun
 import openai
 import pytest
-from openai import NotFoundError
 
 from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
@@ -216,7 +215,7 @@ def test_patch_completion_error(httpx, tracer):
             prompt="Say this is a test",
             temperature=0,
         )
-    except NotFoundError:
+    except openai.NotFoundError:
         pass
 
     requests = decode_requests(httpx.get_requests())
@@ -253,7 +252,7 @@ def test_patch_chat_completion_error(httpx, tracer):
                 {"role": "user", "content": "Hello!"},
             ],
         )
-    except NotFoundError:
+    except openai.NotFoundError:
         pass
 
     requests = decode_requests(httpx.get_requests())
