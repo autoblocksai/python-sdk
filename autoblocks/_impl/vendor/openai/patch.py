@@ -1,3 +1,4 @@
+import json
 import os
 import time
 import uuid
@@ -76,6 +77,15 @@ def wrapper(wrapped, instance, args, kwargs):
                 ),
             )
         else:
+            # openai v0 returns a dictionary and openai v1 returns a ChatCompletion or Completion
+            # pydantic BaseModel
+            if hasattr(response, "model_dump_json") and callable(response.model_dump_json):
+                # Pydantic v2
+                response = json.loads(response.model_dump_json())
+            elif hasattr(response, "json") and callable(response.json):
+                # Pydantic v1
+                response = json.loads(response.json())
+
             tracer.send_event(
                 "ai.completion.response",
                 trace_id=trace_id,
@@ -119,8 +129,14 @@ def trace_openai(properties: Optional[Dict] = None, called=[False]) -> Autoblock
     if properties:
         tracer.update_properties(properties)
 
-    wrapt.wrap_function_wrapper(openai, "Completion.create", wrapper)
-    wrapt.wrap_function_wrapper(openai, "ChatCompletion.create", wrapper)
+    if openai.__version__.startswith("0."):
+        wrapt.wrap_function_wrapper(openai, "Completion.create", wrapper)
+        wrapt.wrap_function_wrapper(openai, "ChatCompletion.create", wrapper)
+    elif openai.__version__.startswith("1."):
+        wrapt.wrap_function_wrapper(openai, "resources.Completions.create", wrapper)
+        wrapt.wrap_function_wrapper(openai, "resources.chat.Completions.create", wrapper)
+    else:
+        raise ValueError(f"Unsupported openai version: {openai.__version__}. Supported versions are 0.x and 1.x.")
 
     called[0] = True
 

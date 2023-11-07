@@ -7,9 +7,15 @@ from unittest import mock
 import freezegun
 import openai
 import pytest
+from openai import NotFoundError
 
 from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
+from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks.vendor.openai import trace_openai
+
+client = openai.OpenAI()
+
+timestamp = "2021-01-01T01:01:01.000001+00:00"
 
 
 @pytest.fixture
@@ -27,7 +33,20 @@ def freeze_time():
         yield
 
 
-timestamp = "2021-01-01T01:01:01.000001+00:00"
+@pytest.fixture
+def httpx(httpx_mock):
+    httpx_mock.add_response(
+        url=INGESTION_ENDPOINT,
+        headers={"content-type": "application/json"},
+        json={"traceId": "mock-trace-id"},
+    )
+    return httpx_mock
+
+
+@pytest.fixture
+def non_mocked_hosts():
+    """Prevents pytest-httpx from mocking out calls to OpenAI."""
+    return ["api.openai.com"]
 
 
 def decode_requests(requests):
@@ -48,16 +67,14 @@ def check_span_ids(requests):
     assert span_ids[0] is not None
 
 
-def test_patch_completion(httpx_mock, tracer):
-    httpx_mock.add_response()
-
-    openai.Completion.create(
+def test_patch_completion(httpx, tracer):
+    client.completions.create(
         model="gpt-3.5-turbo-instruct",
         prompt="Say this is a test",
         temperature=0,
     )
 
-    requests = decode_requests(httpx_mock.get_requests())
+    requests = decode_requests(httpx.get_requests())
     assert len(requests) == 2
 
     check_trace_ids(requests)
@@ -83,13 +100,11 @@ def test_patch_completion(httpx_mock, tracer):
     assert requests[1]["properties"]["usage"] is not None
 
 
-def test_patch_completion_custom_event(httpx_mock, tracer):
-    httpx_mock.add_response()
-
+def test_patch_completion_custom_event(httpx, tracer):
     trace_id = str(uuid.uuid4())
     tracer.set_trace_id(trace_id)
 
-    openai.Completion.create(
+    client.completions.create(
         model="gpt-3.5-turbo-instruct",
         prompt="Say this is a test",
         temperature=0,
@@ -97,7 +112,7 @@ def test_patch_completion_custom_event(httpx_mock, tracer):
 
     tracer.send_event("custom.message")
 
-    requests = decode_requests(httpx_mock.get_requests())
+    requests = decode_requests(httpx.get_requests())
     assert len(requests) == 3
 
     assert all(req["traceId"] == trace_id for req in requests)
@@ -112,16 +127,14 @@ def test_patch_completion_custom_event(httpx_mock, tracer):
     assert "span_id" not in requests[2]["properties"]
 
 
-def test_patch_chat_completion(httpx_mock, tracer):
-    httpx_mock.add_response()
-
-    openai.ChatCompletion.create(
+def test_patch_chat_completion(httpx, tracer):
+    client.chat.completions.create(
         model="gpt-3.5-turbo",
         temperature=0,
         messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "Hello!"}],
     )
 
-    requests = decode_requests(httpx_mock.get_requests())
+    requests = decode_requests(httpx.get_requests())
     assert len(requests) == 2
 
     check_trace_ids(requests)
@@ -150,39 +163,37 @@ def test_patch_chat_completion(httpx_mock, tracer):
     assert requests[1]["properties"]["usage"] is not None
 
 
-def test_patch_completion_doesnt_override_trace_id(httpx_mock, tracer):
-    httpx_mock.add_response()
-
+def test_patch_completion_doesnt_override_trace_id(httpx, tracer):
     trace_id = str(uuid.uuid4())
 
     # Since we're setting our own trace_id here,
     # the patch function shouldn't generate a new one.
     tracer.set_trace_id(trace_id)
 
-    openai.Completion.create(
+    client.completions.create(
         model="gpt-3.5-turbo-instruct",
         prompt="Say this is a test",
         temperature=0,
     )
 
-    requests = decode_requests(httpx_mock.get_requests())
+    requests = decode_requests(httpx.get_requests())
     assert len(requests) == 2
     assert all(req["traceId"] == trace_id for req in requests)
 
 
-def test_patch_completion_makes_new_trace_id_for_each_openai_call(httpx_mock, tracer):
+def test_patch_completion_makes_new_trace_id_for_each_openai_call(httpx, tracer):
     # We aren't setting a trace_id, so each openai call should generate its own.
-    openai.Completion.create(
+    client.completions.create(
         model="gpt-3.5-turbo-instruct",
         prompt="Say this is a test",
         temperature=0,
     )
-    openai.Completion.create(
+    client.completions.create(
         model="gpt-3.5-turbo-instruct",
         prompt="Say this is a test",
         temperature=0,
     )
-    requests = decode_requests(httpx_mock.get_requests())
+    requests = decode_requests(httpx.get_requests())
     assert len(requests) == 4
     assert all(req["traceId"] is not None for req in requests)
 
@@ -197,20 +208,18 @@ def test_patch_completion_makes_new_trace_id_for_each_openai_call(httpx_mock, tr
     assert requests[0]["properties"]["span_id"] != requests[2]["properties"]["span_id"]
 
 
-def test_patch_completion_error(httpx_mock, tracer):
-    httpx_mock.add_response()
-
+def test_patch_completion_error(httpx, tracer):
     try:
-        openai.Completion.create(
+        client.completions.create(
             # Invalid model
             model="fdsa",
             prompt="Say this is a test",
             temperature=0,
         )
-    except openai.InvalidRequestError:
+    except NotFoundError:
         pass
 
-    requests = decode_requests(httpx_mock.get_requests())
+    requests = decode_requests(httpx.get_requests())
     assert len(requests) == 2
 
     check_trace_ids(requests)
@@ -227,14 +236,16 @@ def test_patch_completion_error(httpx_mock, tracer):
     assert requests[1]["timestamp"] == timestamp
     assert requests[1]["properties"]["provider"] == "openai"
     assert requests[1]["properties"]["latency_ms"] is not None
-    assert requests[1]["properties"]["error"] == "The model `fdsa` does not exist"
+    assert (
+        requests[1]["properties"]["error"]
+        == "Error code: 404 - {'error': {'message': 'The model `fdsa` does not exist', "
+        "'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}"
+    )
 
 
-def test_patch_chat_completion_error(httpx_mock, tracer):
-    httpx_mock.add_response()
-
+def test_patch_chat_completion_error(httpx, tracer):
     try:
-        openai.ChatCompletion.create(
+        client.chat.completions.create(
             model="fdsa",
             temperature=0,
             messages=[
@@ -242,10 +253,10 @@ def test_patch_chat_completion_error(httpx_mock, tracer):
                 {"role": "user", "content": "Hello!"},
             ],
         )
-    except openai.InvalidRequestError:
+    except NotFoundError:
         pass
 
-    requests = decode_requests(httpx_mock.get_requests())
+    requests = decode_requests(httpx.get_requests())
     assert len(requests) == 2
 
     check_trace_ids(requests)
@@ -265,4 +276,8 @@ def test_patch_chat_completion_error(httpx_mock, tracer):
     assert requests[1]["timestamp"] == timestamp
     assert requests[1]["properties"]["provider"] == "openai"
     assert requests[1]["properties"]["latency_ms"] is not None
-    assert requests[1]["properties"]["error"] == "The model `fdsa` does not exist"
+    assert (
+        requests[1]["properties"]["error"]
+        == "Error code: 404 - {'error': {'message': 'The model `fdsa` does not exist', "
+        "'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}"
+    )
