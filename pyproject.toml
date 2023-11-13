@@ -18,7 +18,7 @@ httpx = ">=0.24.0"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.3"
 pytest = "^7.4.0"
-pytest-httpx = "^0.22.0"
+pytest-httpx = "^0.26.0"
 langchain = "^0.0.335"
 openai = "^1.0.0"
 freezegun = "^1.2.2"
