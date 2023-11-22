@@ -37,6 +37,9 @@ jobs:
       - name: Run pre-commit checks
         uses: pre-commit/action@v3.0.0
 
+      - name: Validate renovate config
+        run: npx --package renovate renovate-config-validator
+
   tests:
     runs-on: ubuntu-latest
 
