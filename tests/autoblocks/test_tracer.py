@@ -542,12 +542,27 @@ def test_tracer_prod_with_timestamp(httpx_mock):
     tracer.send_event("my-message", timestamp="2023-07-24T21:52:52.742Z")
 
 
-def test_tracer_prod_catches_errors(httpx_mock):
+def test_tracer_prod_swallows_errors(httpx_mock):
     httpx_mock.add_exception(Exception())
 
     tracer = AutoblocksTracer("mock-ingestion-key")
     resp = tracer.send_event("my-message")
     assert resp.trace_id is None
+
+
+@mock.patch.dict(
+    os.environ,
+    dict(AUTOBLOCKS_TRACER_THROW_ON_ERROR="1"),
+)
+def test_tracer_prod_throws_errors_when_configured(httpx_mock):
+    class MyCustomException(Exception):
+        pass
+
+    httpx_mock.add_exception(MyCustomException())
+
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    with pytest.raises(MyCustomException):
+        tracer.send_event("my-message")
 
 
 @mock.patch.dict(

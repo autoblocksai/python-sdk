@@ -9,6 +9,7 @@ from typing import Optional
 import httpx
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
+from autoblocks._impl.util import autoblocks_tracer_throw_on_error
 from autoblocks._impl.util import make_replay_headers
 
 log = logging.getLogger(__name__)
@@ -143,5 +144,8 @@ class AutoblocksTracer:
                 properties=properties,
             )
         except Exception as err:
+            if autoblocks_tracer_throw_on_error():
+                raise err
+
             log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
             return SendEventResponse(trace_id=None)

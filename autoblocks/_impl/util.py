@@ -13,6 +13,7 @@ from typing import Optional
 
 from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks._impl.config.constants import AUTOBLOCKS_REPLAY_ID
+from autoblocks._impl.config.constants import AUTOBLOCKS_TRACER_THROW_ON_ERROR
 
 log = logging.getLogger(__name__)
 
@@ -314,3 +315,7 @@ def ingestion_key_from_env() -> str:
     if not ingestion_key:
         raise ValueError(f"The {AUTOBLOCKS_INGESTION_KEY} environment variable isn't set.")
     return ingestion_key
+
+
+def autoblocks_tracer_throw_on_error() -> bool:
+    return os.environ.get(AUTOBLOCKS_TRACER_THROW_ON_ERROR) == "1"
