@@ -12,20 +12,23 @@ from autoblocks._impl.vendor.openai.patch import tracer
 
 log = logging.getLogger(__name__)
 autoblocks_enabled = "--autoblocks"
+openai_tracing_enabled = "--trace-openai"
 
 
 def pytest_addoption(parser: pytest.Parser):
     parser.addoption(autoblocks_enabled, action="store_true", help="Enable Autoblocks replays.")
+    parser.addoption(openai_tracing_enabled, action="store_true", help="Enable OpenAI automated tracing.")
 
 
 def pytest_sessionstart(session: pytest.Session):
     if not session.config.getoption(autoblocks_enabled):
         return
 
-    try:
-        trace_openai()
-    except Exception as err:
-        log.error(f"trace_openai() failed: {err}", exc_info=True)
+    if session.config.getoption(openai_tracing_enabled):
+        try:
+            trace_openai()
+        except Exception as err:
+            log.error(f"trace_openai() failed: {err}", exc_info=True)
 
     home = os.path.basename(os.path.expanduser("~"))
     now = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -34,6 +37,9 @@ def pytest_sessionstart(session: pytest.Session):
 
 def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config, items: List[pytest.Item]):
     if not config.getoption(autoblocks_enabled):
+        return
+
+    if not config.getoption(openai_tracing_enabled):
         return
 
     try:
