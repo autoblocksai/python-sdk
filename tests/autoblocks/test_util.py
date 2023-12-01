@@ -15,6 +15,7 @@ def test_get_local_commit_data_real():
     # Do sanity checks
     assert len(commit.sha) == 40
     assert commit.commit_message
+    assert "\n" not in commit.commit_message
     assert commit.committer_name
     assert "@" in commit.committer_email
     assert commit.author_name
@@ -44,7 +45,7 @@ def test_get_local_commit_data_mocked():
     assert commit.committer_name == "commit_message=Nicole White"
     assert commit.committer_email == "nicole@autoblocks.ai"
     assert commit.committed_date == "2023-08-05T18:48:50-04:00"
-    assert commit.commit_message == "Line 1\nLine 2\nLine 3"
+    assert commit.commit_message == "Line 1"
 
 
 def test_get_local_repo_name():

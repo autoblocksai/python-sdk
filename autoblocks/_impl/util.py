@@ -169,8 +169,10 @@ def get_local_commit_data(sha: Optional[str]) -> Commit:
         key, value = line.split("=", maxsplit=1)
 
         if key == commit_message_key:
-            # Once we've reached the commit message key, the remaining lines are the commit message
-            data[commit_message_key] = "\n".join([value, *lines])
+            # Once we've reached the commit message key, the remaining lines are the commit message.
+            # We only keep the first line of the commit message, though, since some commit
+            # messages can be very long.
+            data[commit_message_key] = value
             break
 
         data[key] = value
