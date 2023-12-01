@@ -1,4 +1,3 @@
-import json
 import os
 import time
 import uuid
@@ -7,6 +6,7 @@ from typing import Optional
 
 from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks._impl.tracer import AutoblocksTracer
+from autoblocks._impl.vendor.openai.util import serialize_completion
 
 tracer = AutoblocksTracer(
     os.environ.get(AUTOBLOCKS_INGESTION_KEY),
@@ -77,22 +77,13 @@ def wrapper(wrapped, instance, args, kwargs):
                 ),
             )
         else:
-            # openai v0 returns a dictionary and openai v1 returns a ChatCompletion or Completion
-            # pydantic BaseModel
-            if hasattr(response, "model_dump_json") and callable(response.model_dump_json):
-                # Pydantic v2
-                response = json.loads(response.model_dump_json())
-            elif hasattr(response, "json") and callable(response.json):
-                # Pydantic v1
-                response = json.loads(response.json())
-
             tracer.send_event(
                 "ai.completion.response",
                 trace_id=trace_id,
                 span_id=span_id,
                 properties=dict(
                     latency_ms=latency_ms,
-                    **response,
+                    **serialize_completion(response),
                 ),
             )
 
