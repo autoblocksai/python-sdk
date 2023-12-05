@@ -10,7 +10,7 @@
     {
       "groupName": "all non-major dev dependencies",
       "groupSlug": "all-minor-patch-dev",
-      "matchDepTypes": ["dev-dependencies"],
+      "matchDepTypes": ["dev"],
       "matchPackagePatterns": ["*"],
       "matchUpdateTypes": ["minor", "patch"]
     }
