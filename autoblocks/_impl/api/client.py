@@ -111,4 +111,8 @@ class AutoblocksAPIClient:
         req = self._client.get(f"/datasets/{dataset_id}")
         req.raise_for_status()
         resp = req.json()
-        return DatasetWithItems(id=resp["id"], name=resp["name"], items=[DatasetItem(id=item["id"], input=item["input"], output=item["output"]) for item in resp])
+        return DatasetWithItems(
+            id=resp["id"],
+            name=resp["name"],
+            items=[DatasetItem(id=item["id"], input=item["input"], output=item["output"]) for item in resp]
+        )
