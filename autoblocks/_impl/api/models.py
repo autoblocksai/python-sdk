@@ -26,16 +26,19 @@ class View:
     id: str
     name: str
 
+
 @dataclass
 class Dataset:
     id: str
     name: str
+
 
 @dataclass
 class DatasetItem:
     id: str
     input: str
     output: str
+
 
 @dataclass
 class TracesResponse:
