@@ -17,6 +17,8 @@ from autoblocks._impl.api.models import Trace
 from autoblocks._impl.api.models import TraceFilter
 from autoblocks._impl.api.models import TracesResponse
 from autoblocks._impl.api.models import View
+from autoblocks._impl.api.models import Dataset
+from autoblocks._impl.api.models import DatasetItem
 from autoblocks._impl.config.constants import API_ENDPOINT
 
 log = logging.getLogger(__name__)
@@ -97,3 +99,15 @@ class AutoblocksAPIClient:
         )
         req.raise_for_status()
         return make_traces_response(req.json())
+
+    def get_datasets(self) -> List[Dataset]:
+        req = self._client.get("/datasets")
+        req.raise_for_status()
+        resp = req.json()
+        return [Dataset(id=dataset["id"], name=dataset["name"]) for dataset in resp]
+
+    def get_dataset_items(self, dataset_id: str) -> List[DatasetItem]:
+        req = self._client.get(f"/datasets/{dataset_id}/items")
+        req.raise_for_status()
+        resp = req.json()
+        return [DatasetItem(id=item["id"], input=item["input"], output=item["output"]) for item in resp]

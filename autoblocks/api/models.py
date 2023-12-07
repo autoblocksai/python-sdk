@@ -9,3 +9,5 @@ from autoblocks._impl.api.models import TraceFilter  # noqa: F401
 from autoblocks._impl.api.models import TraceFilterOperator  # noqa: F401
 from autoblocks._impl.api.models import TracesResponse  # noqa: F401
 from autoblocks._impl.api.models import View  # noqa: F401
+from autoblocks._impl.api.models import Dataset  # noqa: F401
+from autoblocks._impl.api.models import DatasetItem  # noqa: F401
