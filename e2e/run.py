@@ -33,7 +33,7 @@ def main():
 
     # Make sure dataset and items exists
     datasets = client.get_datasets()
-    if E2E_TESTS_VIEW_ID not in (dataset.id for dataset in datasets):
+    if E2E_TESTS_DATASET_ID not in (dataset.id for dataset in datasets):
         raise Exception(f"Dataset {E2E_TESTS_DATASET_ID} not found!")
 
     dataset = client.get_dataset(E2E_TESTS_DATASET_ID)
