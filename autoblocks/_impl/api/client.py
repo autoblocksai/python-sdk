@@ -13,6 +13,7 @@ import httpx
 from autoblocks._impl.api.models import AbsoluteTimeFilter
 from autoblocks._impl.api.models import Dataset
 from autoblocks._impl.api.models import DatasetItem
+from autoblocks._impl.api.models import DatasetWithItems
 from autoblocks._impl.api.models import Event
 from autoblocks._impl.api.models import RelativeTimeFilter
 from autoblocks._impl.api.models import Trace
@@ -106,8 +107,8 @@ class AutoblocksAPIClient:
         resp = req.json()
         return [Dataset(id=dataset["id"], name=dataset["name"]) for dataset in resp]
 
-    def get_dataset_items(self, dataset_id: str) -> List[DatasetItem]:
-        req = self._client.get(f"/datasets/{dataset_id}/items")
+    def get_dataset(self, dataset_id: str) -> DatasetWithItems:
+        req = self._client.get(f"/datasets/{dataset_id}")
         req.raise_for_status()
         resp = req.json()
-        return [DatasetItem(id=item["id"], input=item["input"], output=item["output"]) for item in resp]
+        return DatasetWithItems(id=resp["id"], name=resp["name"], items=[DatasetItem(id=item["id"], input=item["input"], output=item["output"]) for item in resp])

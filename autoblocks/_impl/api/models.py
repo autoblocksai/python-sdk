@@ -41,6 +41,11 @@ class DatasetItem:
 
 
 @dataclass
+class DatasetWithItems(Dataset):
+    items: List[DatasetItem]
+
+
+@dataclass
 class TracesResponse:
     next_cursor: Optional[str]
     traces: List[Trace]

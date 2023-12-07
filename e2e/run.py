@@ -36,8 +36,8 @@ def main():
     if E2E_TESTS_VIEW_ID not in (dataset.id for dataset in datasets):
         raise Exception(f"Dataset {E2E_TESTS_DATASET_ID} not found!")
 
-    datasetItems = client.get_dataset_items(E2E_TESTS_DATASET_ID)
-    if len(datasetItems) == 0:
+    dataset = client.get_dataset(E2E_TESTS_DATASET_ID)
+    if len(dataset.items) == 0:
         raise Exception(f"Dataset {E2E_TESTS_DATASET_ID} is empty!")
 
     # Make sure our view exists
