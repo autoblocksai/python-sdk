@@ -114,5 +114,5 @@ class AutoblocksAPIClient:
         return DatasetWithItems(
             id=resp["id"],
             name=resp["name"],
-            items=[DatasetItem(id=item["id"], input=item["input"], output=item["output"]) for item in resp]
+            items=[DatasetItem(id=item["id"], input=item["input"], output=item["output"]) for item in resp],
         )
