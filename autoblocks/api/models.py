@@ -1,4 +1,7 @@
 from autoblocks._impl.api.models import AbsoluteTimeFilter  # noqa: F401
+from autoblocks._impl.api.models import Dataset  # noqa: F401
+from autoblocks._impl.api.models import DatasetItem  # noqa: F401
+from autoblocks._impl.api.models import DatasetWithItems  # noqa: F401
 from autoblocks._impl.api.models import Event  # noqa: F401
 from autoblocks._impl.api.models import EventFilter  # noqa: F401
 from autoblocks._impl.api.models import EventFilterOperator  # noqa: F401

@@ -28,6 +28,24 @@ class View:
 
 
 @dataclass
+class Dataset:
+    id: str
+    name: str
+
+
+@dataclass
+class DatasetItem:
+    id: str
+    input: str
+    output: str
+
+
+@dataclass
+class DatasetWithItems(Dataset):
+    items: List[DatasetItem]
+
+
+@dataclass
 class TracesResponse:
     next_cursor: Optional[str]
     traces: List[Trace]

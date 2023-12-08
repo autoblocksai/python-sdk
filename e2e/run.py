@@ -15,8 +15,9 @@ from autoblocks.tracer import AutoblocksTracer
 AUTOBLOCKS_API_KEY = os.environ.get("AUTOBLOCKS_API_KEY")
 AUTOBLOCKS_INGESTION_KEY = os.environ.get("AUTOBLOCKS_INGESTION_KEY")
 
-# We've created a view in our CI org to be used in CI tests.
+# We've created a view and a dataset in our CI org to be used in CI tests.
 # It has one filter, message == 'sdk.e2e', and its timespan is "last 1 hour"
+E2E_TESTS_DATASET_ID = "clpup7f9400075us75nin99f0"
 E2E_TESTS_VIEW_ID = "cllmlk8py0003l608vd83dc03"
 E2E_TESTS_EXPECTED_MESSAGE = "sdk.e2e"
 
@@ -29,6 +30,15 @@ def main():
 
     client = AutoblocksAPIClient(AUTOBLOCKS_API_KEY, timeout=timedelta(seconds=30))
     tracer = AutoblocksTracer(AUTOBLOCKS_INGESTION_KEY)
+
+    # Make sure dataset and items exists
+    datasets = client.get_datasets()
+    if E2E_TESTS_DATASET_ID not in (dataset.id for dataset in datasets):
+        raise Exception(f"Dataset {E2E_TESTS_DATASET_ID} not found!")
+
+    dataset = client.get_dataset(E2E_TESTS_DATASET_ID)
+    if len(dataset.items) == 0:
+        raise Exception(f"Dataset {E2E_TESTS_DATASET_ID} is empty!")
 
     # Make sure our view exists
     views = client.get_views()
