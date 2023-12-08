@@ -10,6 +10,7 @@
   * Activate the virtualenv: `pyenv activate python-sdk`
 * Install dependencies: `poetry install`
 * Run tests: `poetry run pytest`
+* Install pre-commit: `pre-commit install`
 
 ## Supported Python Versions
 
