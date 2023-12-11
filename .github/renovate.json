@@ -13,6 +13,10 @@
       "matchDepTypes": ["dev"],
       "matchPackagePatterns": ["*"],
       "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "matchPackageNames": ["pytest-httpx"],
+      "enabled": false
     }
   ]
 }
