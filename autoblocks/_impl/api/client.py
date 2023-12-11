@@ -25,25 +25,26 @@ from autoblocks._impl.config.constants import API_ENDPOINT
 log = logging.getLogger(__name__)
 
 
+def make_trace_response(data: Dict) -> Trace:
+    return Trace(
+        id=data["id"],
+        events=[
+            Event(
+                id=event["id"],
+                trace_id=event["traceId"],
+                message=event["message"],
+                timestamp=event["timestamp"],
+                properties=event.get("properties") or {},
+            )
+            for event in data["events"]
+        ],
+    )
+
+
 def make_traces_response(data: Dict) -> TracesResponse:
     return TracesResponse(
         next_cursor=data.get("nextCursor"),
-        traces=[
-            Trace(
-                id=trace["id"],
-                events=[
-                    Event(
-                        id=event["id"],
-                        trace_id=trace["id"],
-                        message=event["message"],
-                        timestamp=event["timestamp"],
-                        properties=event.get("properties") or {},
-                    )
-                    for event in trace["events"]
-                ],
-            )
-            for trace in data["traces"]
-        ],
+        traces=[make_trace_response(trace) for trace in data["traces"]],
     )
 
 
@@ -68,6 +69,11 @@ class AutoblocksAPIClient:
         req.raise_for_status()
         resp = req.json()
         return [View(id=view["id"], name=view["name"]) for view in resp]
+
+    def get_trace(self, trace_id: str) -> Trace:
+        req = self._client.get(f"/traces/{trace_id}")
+        req.raise_for_status()
+        return make_trace_response(req.json())
 
     def get_traces_from_view(self, view_id: str, *, page_size: int, cursor: Optional[str] = None) -> TracesResponse:
         req = self._client.get(

@@ -15,10 +15,10 @@ from autoblocks.tracer import AutoblocksTracer
 AUTOBLOCKS_API_KEY = os.environ.get("AUTOBLOCKS_API_KEY")
 AUTOBLOCKS_INGESTION_KEY = os.environ.get("AUTOBLOCKS_INGESTION_KEY")
 
-# We've created a view and a dataset in our CI org to be used in CI tests.
-# It has one filter, message == 'sdk.e2e', and its timespan is "last 1 hour"
+# The below are entities in our Autoblocks CI org that we use for testing.
 E2E_TESTS_DATASET_ID = "clpup7f9400075us75nin99f0"
 E2E_TESTS_VIEW_ID = "cllmlk8py0003l608vd83dc03"
+E2E_TESTS_TRACE_ID = "4943bb26-3526-4e9c-bcd1-62f08baa621a"
 E2E_TESTS_EXPECTED_MESSAGE = "sdk.e2e"
 
 
@@ -39,6 +39,16 @@ def main():
     dataset = client.get_dataset(E2E_TESTS_DATASET_ID)
     if len(dataset.items) == 0:
         raise Exception(f"Dataset {E2E_TESTS_DATASET_ID} is empty!")
+
+    # Test that we can fetch a trace by ID
+    trace = client.get_trace(E2E_TESTS_TRACE_ID)
+    print(f"Found trace {trace.id}!")
+    assert trace.id == E2E_TESTS_TRACE_ID
+    assert trace.events[0].id == "ee9dd0c7-daa4-4086-8d6c-b9706f435a68"
+    assert trace.events[0].trace_id == E2E_TESTS_TRACE_ID
+    assert trace.events[0].message == "langchain.chain.start"
+    assert trace.events[0].timestamp == "2023-12-11T12:27:26.831Z"
+    assert trace.events[0].properties["inputs"]["input"] == "What is today's date? What is that date divided by 2?"
 
     # Make sure our view exists
     views = client.get_views()
