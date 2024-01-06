@@ -9,7 +9,7 @@ from typing import Optional
 import httpx
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
-from autoblocks._impl.util import autoblocks_tracer_throw_on_error
+from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import make_replay_headers
 
 log = logging.getLogger(__name__)
@@ -23,9 +23,7 @@ class SendEventResponse:
 class AutoblocksTracer:
     def __init__(
         self,
-        ingestion_key: str,
-        # Require all arguments after ingestion_key to be specified via key=value
-        *,
+        ingestion_key: Optional[str] = None,
         # Initialize the tracer with a trace_id. All events sent with this tracer will
         # send this trace ID unless overwritten by:
         # - calling set_trace_id
@@ -44,6 +42,11 @@ class AutoblocksTracer:
         self._trace_id: Optional[str] = trace_id
         self._properties: Dict = properties or {}
 
+        ingestion_key = ingestion_key or AutoblocksEnvVar.INGESTION_KEY.get()
+        if not ingestion_key:
+            raise ValueError(
+                f"You must provide an ingestion_key or set the {AutoblocksEnvVar.INGESTION_KEY} environment variable."
+            )
         self._client = httpx.Client(
             headers={"Authorization": f"Bearer {ingestion_key}"},
             timeout=timeout.total_seconds(),
@@ -144,7 +147,7 @@ class AutoblocksTracer:
                 properties=properties,
             )
         except Exception as err:
-            if autoblocks_tracer_throw_on_error():
+            if AutoblocksEnvVar.TRACER_THROW_ON_ERROR.get() == "1":
                 raise err
 
             log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)

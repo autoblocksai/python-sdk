@@ -24,8 +24,20 @@ def freeze_time():
 timestamp = "2021-01-01T01:01:01.000001+00:00"
 
 
-def test_client_default_values():
+def test_client_init_with_key():
     tracer = AutoblocksTracer("mock-ingestion-key")
+    assert tracer._client.timeout == Timeout(5)
+    assert tracer._client.headers.get("authorization") == "Bearer mock-ingestion-key"
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "AUTOBLOCKS_INGESTION_KEY": "mock-ingestion-key",
+    },
+)
+def test_client_init_with_env_var():
+    tracer = AutoblocksTracer()
     assert tracer._client.timeout == Timeout(5)
     assert tracer._client.headers.get("authorization") == "Bearer mock-ingestion-key"
 

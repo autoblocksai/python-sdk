@@ -1,17 +1,13 @@
-import os
 import time
 import uuid
 from typing import Dict
 from typing import Optional
 
-from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks._impl.tracer import AutoblocksTracer
+from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.vendor.openai.util import serialize_completion
 
-tracer = AutoblocksTracer(
-    os.environ.get(AUTOBLOCKS_INGESTION_KEY),
-    properties=dict(provider="openai"),
-)
+tracer: AutoblocksTracer = None
 
 
 def mask_request_kwargs(kwargs: Dict) -> Dict:
@@ -35,6 +31,9 @@ def wrapper(wrapped, instance, args, kwargs):
     See https://github.com/GrahamDumpleton/wrapt/blob/develop/blog/11-safely-applying-monkey-patches-in-python.md
     for more details on monkey patching via wrapt.
     """
+    if not tracer:
+        return wrapped(*args, **kwargs)
+
     error = None
     response = None
 
@@ -90,16 +89,15 @@ def wrapper(wrapped, instance, args, kwargs):
     return response
 
 
-def trace_openai(properties: Optional[Dict] = None, called=[False]) -> AutoblocksTracer:
-    # Using a mutable default argument (which is only set once)
-    # to track whether this function has been called before
-    # to prevent patching openai multiple times.
-    if called[0]:
+def trace_openai(properties: Optional[Dict] = None) -> AutoblocksTracer:
+    global tracer
+
+    if tracer:
         return tracer
 
-    if not os.environ.get(AUTOBLOCKS_INGESTION_KEY):
+    if not AutoblocksEnvVar.INGESTION_KEY.get():
         raise ValueError(
-            f"You must set the {AUTOBLOCKS_INGESTION_KEY} environment variable in order to use trace_openai."
+            f"You must set the {AutoblocksEnvVar.INGESTION_KEY} environment variable in order to use trace_openai."
         )
 
     try:
@@ -117,6 +115,9 @@ def trace_openai(properties: Optional[Dict] = None, called=[False]) -> Autoblock
             "Install it with `pip install wrapt`."
         )
 
+    tracer = AutoblocksTracer(
+        properties=dict(provider="openai"),
+    )
     if properties:
         tracer.update_properties(properties)
 
@@ -128,7 +129,5 @@ def trace_openai(properties: Optional[Dict] = None, called=[False]) -> Autoblock
         wrapt.wrap_function_wrapper(openai, "resources.chat.Completions.create", wrapper)
     else:
         raise ValueError(f"Unsupported openai version: {openai.__version__}. Supported versions are 0.x and 1.x.")
-
-    called[0] = True
 
     return tracer

@@ -7,7 +7,6 @@ from typing import Union
 from uuid import UUID
 
 from autoblocks._impl.tracer import AutoblocksTracer
-from autoblocks._impl.util import ingestion_key_from_env
 
 try:
     import langchain
@@ -25,7 +24,6 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         super().__init__()
         self._trace_id = None
         self._tracer = AutoblocksTracer(
-            ingestion_key_from_env(),
             properties={
                 "__langchainVersion": langchain.__version__,
                 "__langchainLanguage": "python",

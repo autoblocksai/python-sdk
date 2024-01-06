@@ -5,7 +5,7 @@ from typing import List
 
 import pytest
 
-from autoblocks._impl.config.constants import AUTOBLOCKS_REPLAY_ID
+from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import make_replay_run
 from autoblocks._impl.vendor.openai.patch import trace_openai
 from autoblocks._impl.vendor.openai.patch import tracer
@@ -32,7 +32,7 @@ def pytest_sessionstart(session: pytest.Session):
 
     home = os.path.basename(os.path.expanduser("~"))
     now = datetime.now().strftime("%Y%m%d-%H%M%S")
-    os.environ[AUTOBLOCKS_REPLAY_ID] = f"{home}-pytest-{now}"
+    os.environ[AutoblocksEnvVar.REPLAY_ID.value] = f"{home}-pytest-{now}"
 
 
 def pytest_collection_modifyitems(session: pytest.Session, config: pytest.Config, items: List[pytest.Item]):
@@ -69,4 +69,4 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config: pytest.Config)
         terminalreporter.write_line(f"View your replay: {run_html_url}")
         terminalreporter.write_sep("=", blue=True, bold=True)
 
-    os.environ.pop(AUTOBLOCKS_REPLAY_ID, None)
+    os.environ.pop(AutoblocksEnvVar.REPLAY_ID.value, None)
