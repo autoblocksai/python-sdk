@@ -2,6 +2,7 @@ import json
 import os
 import uuid
 from datetime import datetime
+from datetime import timedelta
 from unittest import mock
 
 import freezegun
@@ -20,6 +21,11 @@ from tests.autoblocks.util import make_expected_body
 def freeze_time():
     with freezegun.freeze_time(datetime(2021, 1, 1, 1, 1, 1, 1)):
         yield
+
+
+@pytest.fixture(autouse=True)
+def reset_client():
+    AutoblocksTracer._client = None
 
 
 timestamp = "2021-01-01T01:01:01.000001+00:00"
@@ -729,3 +735,48 @@ def test_tracer_start_span(*args, **kwargs):
 
     assert tracer._properties.get("span_id") is None
     assert tracer._properties.get("parent_span_id") is None
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+        "AUTOBLOCKS_INGESTION_KEY": "key",
+    },
+)
+def test_tracer_single_client():
+    tracer1 = AutoblocksTracer()
+    assert tracer1._client is not None
+    tracer2 = AutoblocksTracer()
+    assert tracer2._client is tracer1._client
+    assert id(tracer2._client) == id(tracer1._client)
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
+def test_tracer_single_client_throws_on_different_keys():
+    tracer = AutoblocksTracer("key1")
+    assert tracer._client is not None
+
+    with pytest.raises(ValueError):
+        AutoblocksTracer("key2")
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+    },
+)
+def test_tracer_single_client_throws_on_different_timeouts():
+    AutoblocksTracer._client = None
+
+    tracer = AutoblocksTracer("key1", timeout=timedelta(seconds=5))
+    assert tracer._client is not None
+
+    with pytest.raises(ValueError):
+        AutoblocksTracer("key1", timeout=timedelta(seconds=10))

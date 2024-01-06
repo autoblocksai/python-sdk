@@ -23,6 +23,8 @@ class SendEventResponse:
 
 
 class AutoblocksTracer:
+    _client: Optional[httpx.Client] = None
+
     def __init__(
         self,
         ingestion_key: Optional[str] = None,
@@ -49,10 +51,22 @@ class AutoblocksTracer:
             raise ValueError(
                 f"You must provide an ingestion_key or set the {AutoblocksEnvVar.INGESTION_KEY} environment variable."
             )
-        self._client = httpx.Client(
-            headers={"Authorization": f"Bearer {ingestion_key}"},
-            timeout=timeout.total_seconds(),
-        )
+
+        if not AutoblocksTracer._client:
+            AutoblocksTracer._client = httpx.Client(
+                headers={"Authorization": f"Bearer {ingestion_key}"},
+                timeout=timeout.total_seconds(),
+            )
+            return
+
+        if AutoblocksTracer._client.headers.get("authorization") != f"Bearer {ingestion_key}":
+            raise ValueError(
+                "You must use the same configuration for all AutoblocksTracer instances in your application."
+            )
+        if AutoblocksTracer._client.timeout != httpx.Timeout(timeout.total_seconds()):
+            raise ValueError(
+                "You must use the same configuration for all AutoblocksTracer instances in your application."
+            )
 
     def set_trace_id(self, trace_id: str) -> None:
         """
