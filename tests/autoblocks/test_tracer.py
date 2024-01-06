@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 from datetime import datetime
 from unittest import mock
 
@@ -687,3 +688,44 @@ def test_tracer_sends_span_id_and_parent_span_id_as_property(httpx_mock):
     resp = tracer.send_event("my-message", span_id="my-span-id", parent_span_id="my-parent-span-id")
 
     assert resp.trace_id == "my-trace-id"
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "GITHUB_ACTIONS": "",
+        "AUTOBLOCKS_INGESTION_KEY": "key",
+    },
+)
+@mock.patch.object(
+    uuid,
+    "uuid4",
+    side_effect=[f"mock-uuid-{i}" for i in range(10)],
+)
+def test_tracer_start_span(*args, **kwargs):
+    tracer = AutoblocksTracer()
+
+    assert tracer._properties.get("span_id") is None
+    assert tracer._properties.get("parent_span_id") is None
+
+    with tracer.start_span():
+        assert tracer._properties["span_id"] == "mock-uuid-0"
+        assert tracer._properties.get("parent_span_id") is None
+
+        with tracer.start_span():
+            assert tracer._properties["span_id"] == "mock-uuid-1"
+            assert tracer._properties["parent_span_id"] == "mock-uuid-0"
+
+            with tracer.start_span():
+                assert tracer._properties["span_id"] == "mock-uuid-2"
+                assert tracer._properties["parent_span_id"] == "mock-uuid-1"
+
+        with tracer.start_span():
+            assert tracer._properties["span_id"] == "mock-uuid-3"
+            assert tracer._properties["parent_span_id"] == "mock-uuid-0"
+
+        assert tracer._properties["span_id"] == "mock-uuid-0"
+        assert tracer._properties.get("parent_span_id") is None
+
+    assert tracer._properties.get("span_id") is None
+    assert tracer._properties.get("parent_span_id") is None

@@ -1,4 +1,6 @@
 import logging
+import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from datetime import timedelta
@@ -78,6 +80,27 @@ class AutoblocksTracer:
         Update the properties for all events sent by this tracer.
         """
         self._properties.update(properties)
+
+    @contextmanager
+    def start_span(self):
+        props = dict(span_id=str(uuid.uuid4()))
+        prev_span_id = self._properties.get("span_id")
+        prev_parent_span_id = self._properties.get("parent_span_id")
+        if prev_span_id:
+            props["parent_span_id"] = prev_span_id
+        self.update_properties(props)
+
+        try:
+            yield
+        finally:
+            props = dict(self._properties)
+            props.pop("span_id", None)
+            props.pop("parent_span_id", None)
+            if prev_parent_span_id:
+                props["parent_span_id"] = prev_parent_span_id
+            if prev_span_id:
+                props["span_id"] = prev_span_id
+            self.set_properties(props)
 
     def _send_event_unsafe(
         self,
