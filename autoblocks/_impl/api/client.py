@@ -21,6 +21,7 @@ from autoblocks._impl.api.models import TraceFilter
 from autoblocks._impl.api.models import TracesResponse
 from autoblocks._impl.api.models import View
 from autoblocks._impl.config.constants import API_ENDPOINT
+from autoblocks._impl.util import AutoblocksEnvVar
 
 log = logging.getLogger(__name__)
 
@@ -57,7 +58,10 @@ def camel_case_factory(values: List[Tuple[str, Any]]) -> Dict:
 
 
 class AutoblocksAPIClient:
-    def __init__(self, api_key: str, timeout: timedelta = timedelta(seconds=10)) -> None:
+    def __init__(self, api_key: Optional[str] = None, timeout: timedelta = timedelta(seconds=10)) -> None:
+        api_key = api_key or AutoblocksEnvVar.API_KEY.get()
+        if not api_key:
+            raise ValueError(f"You must provide an api_key or set the {AutoblocksEnvVar.API_KEY} environment variable.")
         self._client = httpx.Client(
             base_url=API_ENDPOINT,
             headers={"Authorization": f"Bearer {api_key}"},

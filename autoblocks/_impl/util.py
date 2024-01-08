@@ -11,10 +11,6 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
-from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
-from autoblocks._impl.config.constants import AUTOBLOCKS_REPLAY_ID
-from autoblocks._impl.config.constants import AUTOBLOCKS_TRACER_THROW_ON_ERROR
-
 log = logging.getLogger(__name__)
 
 
@@ -22,6 +18,16 @@ class StrEnum(str, Enum):
     def __str__(self) -> str:
         # https://stackoverflow.com/a/74440069
         return str.__str__(self)
+
+
+class AutoblocksEnvVar(StrEnum):
+    API_KEY = "AUTOBLOCKS_API_KEY"
+    INGESTION_KEY = "AUTOBLOCKS_INGESTION_KEY"
+    REPLAY_ID = "AUTOBLOCKS_REPLAY_ID"
+    TRACER_THROW_ON_ERROR = "AUTOBLOCKS_TRACER_THROW_ON_ERROR"
+
+    def get(self) -> Optional[str]:
+        return os.environ.get(self.value)
 
 
 class Provider(StrEnum):
@@ -182,12 +188,13 @@ def get_local_commit_data(sha: Optional[str]) -> Commit:
 
 
 def make_replay_run() -> Optional[ReplayRun]:
-    replay_id = os.environ.get(AUTOBLOCKS_REPLAY_ID)
+    replay_id = AutoblocksEnvVar.REPLAY_ID.get()
 
     if os.environ.get("GITHUB_ACTIONS"):
         if replay_id:
             log.warning(
-                f"Ignoring {AUTOBLOCKS_REPLAY_ID}={replay_id} environment variable while in GitHub Actions context."
+                f"Ignoring {AutoblocksEnvVar.REPLAY_ID}={replay_id} "
+                f"environment variable while in GitHub Actions context."
             )
 
         # GitHub Actions
@@ -308,14 +315,3 @@ def make_replay_headers() -> Optional[Dict]:
     if replay_run:
         return replay_run.to_http_headers()
     return None
-
-
-def ingestion_key_from_env() -> str:
-    ingestion_key = os.environ.get(AUTOBLOCKS_INGESTION_KEY)
-    if not ingestion_key:
-        raise ValueError(f"The {AUTOBLOCKS_INGESTION_KEY} environment variable isn't set.")
-    return ingestion_key
-
-
-def autoblocks_tracer_throw_on_error() -> bool:
-    return os.environ.get(AUTOBLOCKS_TRACER_THROW_ON_ERROR) == "1"

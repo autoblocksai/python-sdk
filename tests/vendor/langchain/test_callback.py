@@ -11,7 +11,7 @@ from langchain.chains import LLMMathChain
 from langchain.llms import OpenAI
 from langchain.tools import Tool
 
-from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
+from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks.vendor.langchain import AutoblocksCallbackHandler
 
 
@@ -21,7 +21,7 @@ def decode_requests(requests):
 
 @pytest.fixture
 def handler():
-    with mock.patch.dict(os.environ, {AUTOBLOCKS_INGESTION_KEY: "mock-ingestion-key"}):
+    with mock.patch.dict(os.environ, {AutoblocksEnvVar.INGESTION_KEY.value: "mock-ingestion-key"}):
         return AutoblocksCallbackHandler()
 
 

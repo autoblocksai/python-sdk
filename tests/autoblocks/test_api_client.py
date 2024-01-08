@@ -1,3 +1,6 @@
+import os
+from unittest import mock
+
 from httpx import Timeout
 
 from autoblocks._impl.config.constants import API_ENDPOINT
@@ -14,8 +17,20 @@ from autoblocks.api.models import View
 from tests.autoblocks.util import make_expected_body
 
 
-def test_client_default_values():
+def test_client_init_with_key():
     client = AutoblocksAPIClient("mock-api-key")
+    assert client._client.timeout == Timeout(10)
+    assert client._client.headers.get("authorization") == "Bearer mock-api-key"
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "AUTOBLOCKS_API_KEY": "mock-api-key",
+    },
+)
+def test_client_init_with_env_var():
+    client = AutoblocksAPIClient()
     assert client._client.timeout == Timeout(10)
     assert client._client.headers.get("authorization") == "Bearer mock-api-key"
 

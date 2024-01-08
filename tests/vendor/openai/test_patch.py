@@ -8,7 +8,6 @@ import freezegun
 import openai
 import pytest
 
-from autoblocks._impl.config.constants import AUTOBLOCKS_INGESTION_KEY
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks.vendor.openai import trace_openai
 
@@ -19,7 +18,7 @@ timestamp = "2021-01-01T01:01:01.000001+00:00"
 
 @pytest.fixture
 def tracer():
-    with mock.patch.dict(os.environ, {AUTOBLOCKS_INGESTION_KEY: "mock-ingestion-key"}):
+    with mock.patch.dict(os.environ, {"AUTOBLOCKS_INGESTION_KEY": "mock-ingestion-key"}):
         tracer = trace_openai()
         trace_openai()  # call multiple times to ensure that the patch is idempotent
         tracer.set_trace_id(None)  # reset the trace id

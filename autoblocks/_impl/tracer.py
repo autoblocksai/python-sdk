@@ -1,4 +1,6 @@
 import logging
+import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from datetime import timedelta
@@ -9,7 +11,7 @@ from typing import Optional
 import httpx
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
-from autoblocks._impl.util import autoblocks_tracer_throw_on_error
+from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import make_replay_headers
 
 log = logging.getLogger(__name__)
@@ -21,11 +23,11 @@ class SendEventResponse:
 
 
 class AutoblocksTracer:
+    _client: Optional[httpx.Client] = None
+
     def __init__(
         self,
-        ingestion_key: str,
-        # Require all arguments after ingestion_key to be specified via key=value
-        *,
+        ingestion_key: Optional[str] = None,
         # Initialize the tracer with a trace_id. All events sent with this tracer will
         # send this trace ID unless overwritten by:
         # - calling set_trace_id
@@ -44,10 +46,27 @@ class AutoblocksTracer:
         self._trace_id: Optional[str] = trace_id
         self._properties: Dict = properties or {}
 
-        self._client = httpx.Client(
-            headers={"Authorization": f"Bearer {ingestion_key}"},
-            timeout=timeout.total_seconds(),
-        )
+        ingestion_key = ingestion_key or AutoblocksEnvVar.INGESTION_KEY.get()
+        if not ingestion_key:
+            raise ValueError(
+                f"You must provide an ingestion_key or set the {AutoblocksEnvVar.INGESTION_KEY} environment variable."
+            )
+
+        if not AutoblocksTracer._client:
+            AutoblocksTracer._client = httpx.Client(
+                headers={"Authorization": f"Bearer {ingestion_key}"},
+                timeout=timeout.total_seconds(),
+            )
+            return
+
+        if AutoblocksTracer._client.headers.get("authorization") != f"Bearer {ingestion_key}":
+            raise ValueError(
+                "You must use the same configuration for all AutoblocksTracer instances in your application."
+            )
+        if AutoblocksTracer._client.timeout != httpx.Timeout(timeout.total_seconds()):
+            raise ValueError(
+                "You must use the same configuration for all AutoblocksTracer instances in your application."
+            )
 
     def set_trace_id(self, trace_id: str) -> None:
         """
@@ -75,6 +94,27 @@ class AutoblocksTracer:
         Update the properties for all events sent by this tracer.
         """
         self._properties.update(properties)
+
+    @contextmanager
+    def start_span(self):
+        props = dict(span_id=str(uuid.uuid4()))
+        prev_span_id = self._properties.get("span_id")
+        prev_parent_span_id = self._properties.get("parent_span_id")
+        if prev_span_id:
+            props["parent_span_id"] = prev_span_id
+        self.update_properties(props)
+
+        try:
+            yield
+        finally:
+            props = dict(self._properties)
+            props.pop("span_id", None)
+            props.pop("parent_span_id", None)
+            if prev_parent_span_id:
+                props["parent_span_id"] = prev_parent_span_id
+            if prev_span_id:
+                props["span_id"] = prev_span_id
+            self.set_properties(props)
 
     def _send_event_unsafe(
         self,
@@ -144,7 +184,7 @@ class AutoblocksTracer:
                 properties=properties,
             )
         except Exception as err:
-            if autoblocks_tracer_throw_on_error():
+            if AutoblocksEnvVar.TRACER_THROW_ON_ERROR.get() == "1":
                 raise err
 
             log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
