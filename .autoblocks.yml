@@ -1,0 +1,8 @@
+autogenerate:
+  prompts:
+    outfile: e2e/prompts.py
+
+    prompts:
+      - id: used-by-ci-dont-delete
+        major_versions:
+          - 2

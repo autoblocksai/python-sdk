@@ -14,6 +14,8 @@ packages = [{include = "autoblocks"}]
 [tool.poetry.dependencies]
 python = "^3.8.1"
 httpx = ">=0.24.0"
+click = ">=8.0.0"
+pyyaml = ">=6.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.3"
@@ -23,9 +25,11 @@ langchain = "^0.1.0"
 openai = "^1.0.0"
 freezegun = "^1.2.2"
 wrapt = "^1.15.0"
+pydantic = "^2.5.3"
 
 [tool.poetry.scripts]
 e2e = "e2e.run:main"
+autoblocks = "autoblocks._impl.cli.main:main"
 
 # This allows users to run their pytest suite with our plugin via `pytest --autoblocks`.
 # See:
