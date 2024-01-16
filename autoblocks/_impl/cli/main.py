@@ -64,6 +64,7 @@ def generate(config_path: Optional[str]):
     config = read_config(config_path)
 
     write_generated_code_for_config(config.autogenerate.prompts)
+    click.echo(f"Successfully generated prompts at {config.autogenerate.prompts.outfile}")
 
 
 def main():
