@@ -10,7 +10,11 @@ from autoblocks.api.models import RelativeTimeFilter
 from autoblocks.api.models import SystemEventFilterKey
 from autoblocks.api.models import TraceFilter
 from autoblocks.api.models import TraceFilterOperator
+from autoblocks.prompts.models import WeightedMinorVersion
 from autoblocks.tracer import AutoblocksTracer
+
+from .prompts import UsedByCiDontDeleteMinorVersion
+from .prompts import UsedByCiDontDeletePromptManager
 
 AUTOBLOCKS_API_KEY = os.environ.get("AUTOBLOCKS_API_KEY")
 AUTOBLOCKS_INGESTION_KEY = os.environ.get("AUTOBLOCKS_INGESTION_KEY")
@@ -97,3 +101,95 @@ def main():
         sleep_seconds = 5
         print(f"Couldn't find trace {test_trace_id} yet, waiting {sleep_seconds} seconds. {retries} tries left.")
         time.sleep(sleep_seconds)
+
+    test_prompt_manager()
+    test_prompt_manager_latest()
+    test_prompt_manager_weighted()
+
+
+def test_prompt_manager():
+    mgr = UsedByCiDontDeletePromptManager(
+        UsedByCiDontDeleteMinorVersion.v1,
+    )
+
+    with mgr.exec() as ctx:
+        assert ctx.params.frequency_penalty == 0
+        assert ctx.params.max_tokens == 256
+        assert ctx.params.model == "gpt-4"
+        assert ctx.params.presence_penalty == -0.3
+        assert ctx.params.temperature == 0.7
+        assert ctx.params.top_p == 1
+
+        assert (
+            ctx.render.template_a(
+                name="Alice",
+                weather="sunny",
+            )
+            == "Hello, Alice! The weather is sunny today."
+        )
+
+        # # TODO: add support for optional params
+        # assert ctx.render.template_b(
+        #     name="Alice",
+        # ) == "Hello! My name is Alice."
+
+        assert (
+            ctx.render.template_b(
+                name="Alice",
+                optional="Bob",
+            )
+            == "Hello Bob! My name is Alice."
+        )
+
+        assert ctx.render.template_c() == "I am template c and I have no params"
+
+        assert ctx.track() == {
+            "id": "used-by-ci-dont-delete",
+            "version": "2.1",
+            "templates": [
+                {
+                    "id": "template-a",
+                    "version": "1.0",
+                    "template": "Hello, {{ name }}! The weather is {{ weather }} today.",
+                },
+                {
+                    "id": "template-b",
+                    "version": "1.1",
+                    "template": "Hello {{ optional? }}! My name is {{ name }}.",
+                },
+                {
+                    "id": "template-c",
+                    "version": "1.0",
+                    "template": "I am template c and I have no params",
+                },
+            ],
+        }
+
+
+def test_prompt_manager_latest():
+    mgr = UsedByCiDontDeletePromptManager(
+        UsedByCiDontDeleteMinorVersion.LATEST,
+    )
+
+    with mgr.exec() as ctx:
+        assert ctx.params.model == "gpt-4"
+        assert ctx.track()["version"] == "2.3"
+
+
+def test_prompt_manager_weighted():
+    mgr = UsedByCiDontDeletePromptManager(
+        [
+            WeightedMinorVersion(
+                version=UsedByCiDontDeleteMinorVersion.LATEST,
+                weight=1,
+            ),
+            WeightedMinorVersion(
+                version=UsedByCiDontDeleteMinorVersion.v0,
+                weight=1,
+            ),
+        ]
+    )
+
+    with mgr.exec() as ctx:
+        assert ctx.params.model == "gpt-4"
+        assert ctx.track()["version"] in ("2.0", "2.3")
