@@ -144,10 +144,6 @@ def indent(times: int = 1, size: int = 4) -> str:
 def generate_params_class_code(prompt: Prompt) -> str:
     auto = f"class {prompt.params_class_name}(FrozenModel):\n"
 
-    if not prompt.params:
-        auto += f"{indent()}pass\n"
-        return auto
-
     for key, value in prompt.params.items():
         type_hint = infer_type(value)
         if type_hint is None:
@@ -205,12 +201,23 @@ def generate_template_renderer_class_code(prompt: Prompt) -> str:
 def generate_execution_context_class_code(prompt: Prompt) -> str:
     auto = f"class {prompt.execution_context_class_name}(\n"
     auto += f"{indent()}PromptExecutionContext[\n"
-    auto += f"{indent(2)}{prompt.params_class_name},\n"
+    auto += f"{indent(2)}{prompt.params_class_name if prompt.params else 'None'},\n"
     auto += f"{indent(2)}{prompt.template_renderer_class_name},\n"
     auto += f"{indent()}],\n"
     auto += "):\n"
-    auto += f"{indent()}__params_class__ = {prompt.params_class_name}\n"
+    auto += f"{indent()}__params_class__ = {prompt.params_class_name if prompt.params else 'None'}\n"
     auto += f"{indent()}__template_renderer_class__ = {prompt.template_renderer_class_name}\n"
+
+    if not prompt.params:
+        # Override the params() method and return None
+        # if there are no params. This improves type
+        # hinting when attempting to access params
+        # that don't exist on the execution context.
+        auto += "\n"
+        auto += f"{indent()}@property\n"
+        auto += f"{indent()}def params(self) -> None:\n"
+        auto += f"{indent(2)}return None\n"
+
     return auto
 
 
@@ -241,12 +248,16 @@ def generate_prompt_manager_class_code(prompt: Prompt) -> str:
 def generate_code_for_prompt(prompt: Prompt) -> str:
     return "\n\n".join(
         [
-            generate_params_class_code(prompt),
-            generate_template_renderer_class_code(prompt),
-            generate_execution_context_class_code(prompt),
-            generate_minor_versions_enum_code(prompt),
-            generate_prompt_manager_class_code(prompt),
-        ]
+            x
+            for x in [
+                generate_params_class_code(prompt) if prompt.params else None,
+                generate_template_renderer_class_code(prompt),
+                generate_execution_context_class_code(prompt),
+                generate_minor_versions_enum_code(prompt),
+                generate_prompt_manager_class_code(prompt),
+            ]
+            if x is not None
+        ],
     )
 
 
