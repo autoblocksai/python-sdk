@@ -14,6 +14,8 @@ from autoblocks.prompts.models import WeightedMinorVersion
 from autoblocks.tracer import AutoblocksTracer
 
 from .prompts import UsedByCiDontDeleteMinorVersion
+from .prompts import UsedByCiDontDeleteNoParamsMinorVersion
+from .prompts import UsedByCiDontDeleteNoParamsPromptManager
 from .prompts import UsedByCiDontDeletePromptManager
 
 AUTOBLOCKS_API_KEY = os.environ.get("AUTOBLOCKS_API_KEY")
@@ -193,3 +195,12 @@ def test_prompt_manager_weighted():
     with mgr.exec() as ctx:
         assert ctx.params.model == "gpt-4"
         assert ctx.track()["version"] in ("2.0", "2.3")
+
+
+def test_prompt_manager_no_model_params():
+    mgr = UsedByCiDontDeleteNoParamsPromptManager(
+        UsedByCiDontDeleteNoParamsMinorVersion.v0,
+    )
+
+    with mgr.exec() as prompt:
+        assert prompt.params is None

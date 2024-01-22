@@ -288,7 +288,7 @@ def make_prompts_from_api_response(data: List[Dict], config: AutogeneratePrompts
     for (prompt_id, major_version), (row, minor_versions) in by_major_version.items():
         try:
             params = row["params"]["params"] or {}
-        except KeyError:
+        except (KeyError, TypeError):
             params = {}
 
         templates = []
@@ -317,10 +317,12 @@ def make_prompts_from_api_response(data: List[Dict], config: AutogeneratePrompts
 
 
 def generate_code_for_config(config: AutogeneratePromptsConfig) -> str:
-    data = httpx.get(
+    resp = httpx.get(
         f"{API_ENDPOINT}/prompts",
         headers={"Authorization": f"Bearer {AutoblocksEnvVar.API_KEY.get()}"},
-    ).json()
+    )
+    resp.raise_for_status()
+    data = resp.json()
 
     prompts = make_prompts_from_api_response(data, config)
 
