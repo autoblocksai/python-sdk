@@ -88,3 +88,49 @@ class UsedByCiDontDeletePromptManager(
     __prompt_id__ = "used-by-ci-dont-delete"
     __prompt_major_version__ = "2"
     __execution_context_class__ = UsedByCiDontDeleteExecutionContext
+
+
+class UsedByCiDontDeleteNoParamsTemplateRenderer(TemplateRenderer):
+    __name_mapper__ = {
+        "name": "name",
+    }
+
+    def my_template_id(
+        self,
+        *,
+        name: str,
+    ) -> str:
+        return self._render(
+            "my-template-id",
+            name=name,
+        )
+
+
+class UsedByCiDontDeleteNoParamsExecutionContext(
+    PromptExecutionContext[
+        None,
+        UsedByCiDontDeleteNoParamsTemplateRenderer,
+    ],
+):
+    __params_class__ = None
+    __template_renderer_class__ = UsedByCiDontDeleteNoParamsTemplateRenderer
+
+    @property
+    def params(self) -> None:
+        return None
+
+
+class UsedByCiDontDeleteNoParamsMinorVersion(Enum):
+    v0 = "0"
+    LATEST = "latest"
+
+
+class UsedByCiDontDeleteNoParamsPromptManager(
+    AutoblocksPromptManager[
+        UsedByCiDontDeleteNoParamsExecutionContext,
+        UsedByCiDontDeleteNoParamsMinorVersion,
+    ],
+):
+    __prompt_id__ = "used-by-ci-dont-delete-no-params"
+    __prompt_major_version__ = "1"
+    __execution_context_class__ = UsedByCiDontDeleteNoParamsExecutionContext
