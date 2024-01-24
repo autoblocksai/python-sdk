@@ -1,3 +1,4 @@
+import json
 import traceback
 from typing import Any
 from typing import Dict
@@ -30,9 +31,20 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
             },
         )
 
+    @staticmethod
+    def _serialize(x) -> Any:
+        # openai v0 returns dictionaries and openai v1 returns pydantic BaseModels
+        if hasattr(x, "model_dump_json") and callable(x.model_dump_json):
+            # Pydantic v2
+            return json.loads(x.model_dump_json())
+        elif hasattr(x, "json") and callable(x.json):
+            # Pydantic v1
+            return json.loads(x.json())
+        return x
+
     def _send_event(self, message: str, properties: Dict) -> None:
         # Remove None values from properties
-        properties = {k: v for k, v in properties.items() if v is not None}
+        properties = {k: self._serialize(v) for k, v in properties.items() if v is not None}
         self.tracer.send_event(
             message,
             trace_id=self._trace_id,
