@@ -40,6 +40,9 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         elif hasattr(x, "json") and callable(x.json):
             # Pydantic v1
             return json.loads(x.json())
+        elif hasattr(x, "to_json") and callable(x.to_json):
+            # LangChain Serializable
+            return x.to_json()
         return x
 
     def _send_event(self, message: str, properties: Dict) -> None:
