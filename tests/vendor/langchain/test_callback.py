@@ -31,6 +31,13 @@ def httpx(httpx_mock):
     return httpx_mock
 
 
+def test_callback_handler_filter(handler):
+    assert handler._filter("sk-123") == "<redacted>"
+    assert handler._filter(dict(api_key="123")) == dict()
+    assert handler._filter(dict(x=dict(y=dict(api_key="1234", z="123")))) == dict(x=dict(y=dict(z="123")))
+    assert handler._filter(dict(x=dict(y=dict(z="sk-123")))) == dict(x=dict(y=dict(z="<redacted>")))
+
+
 def test_callback_sends_langchain_version(httpx, handler):
     llm = OpenAI()
     llm.predict("hi!", callbacks=[handler])

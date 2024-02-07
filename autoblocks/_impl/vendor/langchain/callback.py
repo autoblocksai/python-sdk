@@ -32,7 +32,7 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
         )
 
     @staticmethod
-    def _serialize(x) -> Any:
+    def _serialize(x: Any) -> Any:
         # openai v0 returns dictionaries and openai v1 returns pydantic BaseModels
         if hasattr(x, "model_dump_json") and callable(x.model_dump_json):
             # Pydantic v2
@@ -45,9 +45,24 @@ class AutoblocksCallbackHandler(BaseCallbackHandler):
             return x.to_json()
         return x
 
+    def _filter(self, x: Any) -> Any:
+        disallow_dict_keys = [
+            "api_key",
+        ]
+        disallow_str_prefixes = [
+            "sk-",
+        ]
+        if isinstance(x, dict):
+            return {k: self._filter(v) for k, v in x.items() if k not in disallow_dict_keys}
+        if isinstance(x, str):
+            if any(x.startswith(prefix) for prefix in disallow_str_prefixes):
+                return "<redacted>"
+        return x
+
     def _send_event(self, message: str, properties: Dict) -> None:
         # Remove None values from properties
         properties = {k: self._serialize(v) for k, v in properties.items() if v is not None}
+        properties = self._filter(properties)
         self.tracer.send_event(
             message,
             trace_id=self._trace_id,
