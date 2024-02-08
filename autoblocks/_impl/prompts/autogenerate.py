@@ -127,7 +127,9 @@ def infer_type(value: Any) -> Optional[str]:
         return "str"
     elif isinstance(value, bool):
         return "bool"
-    elif isinstance(value, (int, float)):
+    elif isinstance(value, int):
+        return "int"
+    elif isinstance(value, float):
         return "float"
     elif isinstance(value, list):
         if len(value) > 0:
