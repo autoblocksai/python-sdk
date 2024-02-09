@@ -53,8 +53,8 @@ def test_parse_template_params():
 
 def test_infer_type():
     assert infer_type("") == "str"
-    assert infer_type(0) == "float"
-    assert infer_type(0.0) == "float"
+    assert infer_type(0) == "Union[float, int]"
+    assert infer_type(0.0) == "Union[float, int]"
     assert infer_type(True) == "bool"
     assert infer_type(False) == "bool"
     assert infer_type([""]) == "List[str]"
@@ -212,6 +212,7 @@ def test_write(httpx_mock):
 
 from enum import Enum
 from typing import List  # noqa: F401
+from typing import Union  # noqa: F401
 
 import pydantic
 
@@ -222,12 +223,12 @@ from autoblocks.prompts.renderer import TemplateRenderer
 
 
 class PromptAParams(FrozenModel):
-    frequency_penalty: float = pydantic.Field(..., alias="frequencyPenalty")
-    max_tokens: float = pydantic.Field(..., alias="maxTokens")
+    frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
+    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
     model: str = pydantic.Field(..., alias="model")
-    presence_penalty: float = pydantic.Field(..., alias="presencePenalty")
-    temperature: float = pydantic.Field(..., alias="temperature")
-    top_p: float = pydantic.Field(..., alias="topP")
+    presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
+    temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
+    top_p: Union[float, int] = pydantic.Field(..., alias="topP")
 
 
 class PromptATemplateRenderer(TemplateRenderer):
@@ -290,12 +291,12 @@ class PromptAPromptManager(
 
 
 class PromptB1Params(FrozenModel):
-    frequency_penalty: float = pydantic.Field(..., alias="frequencyPenalty")
-    max_tokens: float = pydantic.Field(..., alias="maxTokens")
+    frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
+    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
     model: str = pydantic.Field(..., alias="model")
-    presence_penalty: float = pydantic.Field(..., alias="presencePenalty")
-    temperature: float = pydantic.Field(..., alias="temperature")
-    top_p: float = pydantic.Field(..., alias="topP")
+    presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
+    temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
+    top_p: Union[float, int] = pydantic.Field(..., alias="topP")
 
 
 class PromptB1TemplateRenderer(TemplateRenderer):

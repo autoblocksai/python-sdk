@@ -73,6 +73,7 @@ HEADER = """####################################################################
 
 from enum import Enum
 from typing import List  # noqa: F401
+from typing import Union  # noqa: F401
 
 import pydantic
 
@@ -128,7 +129,10 @@ def infer_type(value: Any) -> Optional[str]:
     elif isinstance(value, bool):
         return "bool"
     elif isinstance(value, (int, float)):
-        return "float"
+        # The default union mode in pydantic is "smart" mode,
+        # which will use the most specific type possible.
+        # https://docs.pydantic.dev/latest/concepts/unions/
+        return "Union[float, int]"
     elif isinstance(value, list):
         if len(value) > 0:
             # TODO: switch this to list[type] once we drop support for 3.8
