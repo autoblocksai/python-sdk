@@ -35,7 +35,7 @@ jobs:
           python-version-file: ".python-version"
 
       - name: Run pre-commit checks
-        uses: pre-commit/action@v3.0.0
+        uses: pre-commit/action@v3.0.1
 
       - name: Validate renovate config
         run: npx --package renovate renovate-config-validator --strict
