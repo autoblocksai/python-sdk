@@ -53,10 +53,14 @@ class HeadlessPrompt(FrozenModel):
 
     @property
     def major_version(self) -> str:
+        if self.version == UNDEPLOYED:
+            return UNDEPLOYED
         return self.version.split(".")[0]
 
     @property
     def minor_version(self) -> str:
+        if self.version == UNDEPLOYED:
+            return UNDEPLOYED
         return self.version.split(".")[1]
 
 
