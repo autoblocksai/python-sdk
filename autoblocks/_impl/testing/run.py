@@ -60,6 +60,8 @@ def init_global_vars() -> None:
     )
     background_thread.start()
 
+    started = True
+
 
 async def send_error(
     test_id: str,
@@ -155,7 +157,7 @@ async def run_test_case(
     test_id: str,
     test_case: BaseTestCase,
     evaluators: List[BaseEvaluator],
-    fn: Callable[[BaseTestCase], Any],
+    fn: Callable,
     max_evaluator_concurrency: int,
 ):
     current_test_id_var.set(test_id)
@@ -216,13 +218,20 @@ async def async_run_test_suite(
     test_id: str,
     test_cases: List[BaseTestCase],
     evaluators: List[BaseEvaluator],
-    fn: Callable[[BaseTestCase], Any],
+    fn: Callable,
     max_test_case_concurrency: int,
     max_evaluator_concurrency: int,
 ):
+    if not test_cases:
+        logger.error(f"[{test_id}] No test cases provided.")
+        return
     for test_case in test_cases:
-        if not dataclasses.is_dataclass(test_case):
-            logger.error(f"Test case {test_case} is not a dataclass. All test cases must be a dataclass.")
+        if not isinstance(test_case, BaseTestCase):
+            logger.error(f"[{test_id}] Test case {test_case} does not implement BaseTestCase.")
+            return
+    for evaluator in evaluators:
+        if not isinstance(evaluator, BaseEvaluator):
+            logger.error(f"[{test_id}] Evaluator {evaluator} does not implement BaseEvaluator.")
             return
 
     await client.post("/start", json=dict(testExternalId=test_id))
@@ -248,7 +257,7 @@ def run_test_suite(
     id: str,
     test_cases: List[BaseTestCase],
     evaluators: List[BaseEvaluator],
-    fn: Callable[[BaseTestCase], Any],
+    fn: Callable,
     # How many test cases to run concurrently
     max_test_case_concurrency: int = 10,
     # How many evaluators to run concurrently on the result of a test case
