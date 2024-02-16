@@ -480,7 +480,7 @@ class PromptB2PromptManager(
     __execution_context_class__ = PromptB2ExecutionContext
 
 
-class PromptCParams(FrozenModel):
+class PromptCUndeployedParams(FrozenModel):
     frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
     max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
     model: str = pydantic.Field(..., alias="model")
@@ -489,7 +489,7 @@ class PromptCParams(FrozenModel):
     top_p: Union[float, int] = pydantic.Field(..., alias="topP")
 
 
-class PromptCTemplateRenderer(TemplateRenderer):
+class PromptCUndeployedTemplateRenderer(TemplateRenderer):
     __name_mapper__ = {}
 
     def template(
@@ -500,29 +500,29 @@ class PromptCTemplateRenderer(TemplateRenderer):
         )
 
 
-class PromptCExecutionContext(
+class PromptCUndeployedExecutionContext(
     PromptExecutionContext[
-        PromptCParams,
-        PromptCTemplateRenderer,
+        PromptCUndeployedParams,
+        PromptCUndeployedTemplateRenderer,
     ],
 ):
-    __params_class__ = PromptCParams
-    __template_renderer_class__ = PromptCTemplateRenderer
+    __params_class__ = PromptCUndeployedParams
+    __template_renderer_class__ = PromptCUndeployedTemplateRenderer
 
 
-class PromptCMinorVersion(Enum):
+class PromptCUndeployedMinorVersion(Enum):
     DANGEROUSLY_USE_UNDEPLOYED = "undeployed"
 
 
-class PromptCPromptManager(
+class PromptCUndeployedPromptManager(
     AutoblocksPromptManager[
-        PromptCExecutionContext,
-        PromptCMinorVersion,
+        PromptCUndeployedExecutionContext,
+        PromptCUndeployedMinorVersion,
     ],
 ):
     __prompt_id__ = "prompt-c"
     __prompt_major_version__ = "undeployed"
-    __execution_context_class__ = PromptCExecutionContext
+    __execution_context_class__ = PromptCUndeployedExecutionContext
 """
 
     m.assert_called_once_with("test.py", "w")
