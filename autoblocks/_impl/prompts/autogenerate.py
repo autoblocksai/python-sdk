@@ -192,12 +192,15 @@ def generate_template_renderer_class_code(prompt: Prompt) -> str:
         for param in template.params:
             name_mapper[param.name] = param.snake_case_name
 
-    auto += f"{indent()}__name_mapper__ = {{\n"
+    if name_mapper:
+        auto += f"{indent()}__name_mapper__ = {{\n"
 
-    for key in sorted(name_mapper.keys()):
-        auto += f'{indent(2)}"{key}": "{name_mapper[key]}",\n'
+        for key in sorted(name_mapper.keys()):
+            auto += f'{indent(2)}"{key}": "{name_mapper[key]}",\n'
 
-    auto += f"{indent()}}}\n\n"
+        auto += f"{indent()}}}\n\n"
+    else:
+        auto += f"{indent()}__name_mapper__ = {{}}\n\n"
 
     auto += "\n".join(generate_template_render_method_code(template) for template in prompt.templates)
 
@@ -343,7 +346,7 @@ def generate_code_for_config(config: AutogeneratePromptsConfig) -> str:
     data = resp.json()
 
     # Get undeployed prompts as well
-    for prompt_id in set(d["id"] for d in data):
+    for prompt_id in set(p.id for p in config.prompts):
         resp = httpx.get(
             f"{API_ENDPOINT}/prompts/{prompt_id}/major/{UNDEPLOYED}/minor/{UNDEPLOYED}",
             headers={"Authorization": f"Bearer {AutoblocksEnvVar.API_KEY.get()}"},
