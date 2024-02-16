@@ -109,6 +109,8 @@ def main():
     test_prompt_manager()
     test_prompt_manager_latest()
     test_prompt_manager_weighted()
+    test_prompt_manager_no_model_params()
+    test_prompt_manager_no_model_params_undeployed()
 
 
 def test_prompt_manager():
