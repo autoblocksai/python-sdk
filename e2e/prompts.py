@@ -4,6 +4,7 @@
 
 from enum import Enum
 from typing import List  # noqa: F401
+from typing import Union  # noqa: F401
 
 import pydantic
 
@@ -14,12 +15,12 @@ from autoblocks.prompts.renderer import TemplateRenderer
 
 
 class UsedByCiDontDeleteParams(FrozenModel):
-    top_p: float = pydantic.Field(..., alias="topP")
+    top_p: Union[float, int] = pydantic.Field(..., alias="topP")
     model: str = pydantic.Field(..., alias="model")
-    max_tokens: float = pydantic.Field(..., alias="maxTokens")
-    temperature: float = pydantic.Field(..., alias="temperature")
-    presence_penalty: float = pydantic.Field(..., alias="presencePenalty")
-    frequency_penalty: float = pydantic.Field(..., alias="frequencyPenalty")
+    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
+    temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
+    presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
+    frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
 
 
 class UsedByCiDontDeleteTemplateRenderer(TemplateRenderer):
@@ -92,16 +93,19 @@ class UsedByCiDontDeletePromptManager(
 
 class UsedByCiDontDeleteNoParamsTemplateRenderer(TemplateRenderer):
     __name_mapper__ = {
+        "date": "date",
         "name": "name",
     }
 
     def my_template_id(
         self,
         *,
+        date: str,
         name: str,
     ) -> str:
         return self._render(
             "my-template-id",
+            date=date,
             name=name,
         )
 
@@ -121,8 +125,7 @@ class UsedByCiDontDeleteNoParamsExecutionContext(
 
 
 class UsedByCiDontDeleteNoParamsMinorVersion(Enum):
-    v0 = "0"
-    LATEST = "latest"
+    DANGEROUSLY_USE_UNDEPLOYED = "undeployed"
 
 
 class UsedByCiDontDeleteNoParamsPromptManager(
@@ -132,5 +135,5 @@ class UsedByCiDontDeleteNoParamsPromptManager(
     ],
 ):
     __prompt_id__ = "used-by-ci-dont-delete-no-params"
-    __prompt_major_version__ = "1"
+    __prompt_major_version__ = "undeployed"
     __execution_context_class__ = UsedByCiDontDeleteNoParamsExecutionContext

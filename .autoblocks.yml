@@ -9,4 +9,4 @@ autogenerate:
 
       - id: used-by-ci-dont-delete-no-params
         major_versions:
-          - 1
+          - dangerously-use-undeployed

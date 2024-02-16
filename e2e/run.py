@@ -199,7 +199,7 @@ def test_prompt_manager_weighted():
 
 def test_prompt_manager_no_model_params():
     mgr = UsedByCiDontDeleteNoParamsPromptManager(
-        UsedByCiDontDeleteNoParamsMinorVersion.v0,
+        UsedByCiDontDeleteNoParamsMinorVersion.DANGEROUSLY_USE_UNDEPLOYED,
     )
 
     with mgr.exec() as prompt:

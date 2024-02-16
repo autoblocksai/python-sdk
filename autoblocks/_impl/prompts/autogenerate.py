@@ -9,7 +9,9 @@ from typing import Tuple
 import httpx
 
 from autoblocks._impl.config.constants import API_ENDPOINT
+from autoblocks._impl.prompts.constants import DANGEROUSLY_USE_UNDEPLOYED_ENUM_VALUE_NAME
 from autoblocks._impl.prompts.constants import LATEST
+from autoblocks._impl.prompts.constants import UNDEPLOYED
 from autoblocks._impl.prompts.models import AutogeneratePromptsConfig
 from autoblocks._impl.prompts.models import FrozenModel
 from autoblocks._impl.util import AutoblocksEnvVar
@@ -228,10 +230,13 @@ def generate_execution_context_class_code(prompt: Prompt) -> str:
 def generate_minor_versions_enum_code(prompt: Prompt) -> str:
     auto = f"class {prompt.minor_version_enum_class_name}(Enum):\n"
 
-    for version in prompt.minor_versions:
-        auto += f'{indent()}v{version} = "{version}"\n'
+    if prompt.major_version == UNDEPLOYED:
+        auto += f'{indent()}{DANGEROUSLY_USE_UNDEPLOYED_ENUM_VALUE_NAME} = "{UNDEPLOYED}"\n'
+    else:
+        for version in prompt.minor_versions:
+            auto += f'{indent()}v{version} = "{version}"\n'
 
-    auto += f'{indent()}LATEST = "{LATEST}"\n'
+        auto += f'{indent()}LATEST = "{LATEST}"\n'
 
     return auto
 
@@ -265,19 +270,28 @@ def generate_code_for_prompt(prompt: Prompt) -> str:
     )
 
 
-def make_prompts_from_api_response(data: List[Dict], config: AutogeneratePromptsConfig) -> List[Prompt]:
+def make_prompts_from_api_response_and_config(data: List[Dict], config: AutogeneratePromptsConfig) -> List[Prompt]:
     # Map of prompt id to set of major versions to autogenerate code for
     generate_for: Dict[str, Set[str]] = {}
     for prompt in config.prompts:
-        generate_for[prompt.id] = set(prompt.major_versions_as_str())
+        generate_for[prompt.id] = set(prompt.major_versions)
 
     # Map of (prompt id, major version) to (any prompt w/ that major version, list of minor versions)
     by_major_version: Dict[Tuple[str, str], Tuple[Dict, List[str]]] = {}
     for row in data:
         prompt_id = row["id"]
+
         if prompt_id not in generate_for:
             continue
-        major_version, minor_version = row["version"].split(".")
+
+        prompt_version = row["version"]
+
+        if prompt_version == UNDEPLOYED:
+            major_version = UNDEPLOYED
+            minor_version = UNDEPLOYED
+        else:
+            major_version, minor_version = prompt_version.split(".")
+
         if major_version not in generate_for[prompt_id]:
             continue
 
@@ -328,7 +342,18 @@ def generate_code_for_config(config: AutogeneratePromptsConfig) -> str:
     resp.raise_for_status()
     data = resp.json()
 
-    prompts = make_prompts_from_api_response(data, config)
+    # Get undeployed prompts as well
+    for prompt_id in set(d["id"] for d in data):
+        resp = httpx.get(
+            f"{API_ENDPOINT}/prompts/{prompt_id}/major/{UNDEPLOYED}/minor/{UNDEPLOYED}",
+            headers={"Authorization": f"Bearer {AutoblocksEnvVar.API_KEY.get()}"},
+        )
+        if resp.status_code == 404:
+            continue
+        resp.raise_for_status()
+        data.append(resp.json())
+
+    prompts = make_prompts_from_api_response_and_config(data, config)
 
     auto = [HEADER]
 
