@@ -37,15 +37,23 @@ class Template(FrozenModel):
 class Prompt(FrozenModel):
     id: str
     major_version: str
-    has_multiple_major_versions: bool
+    all_major_versions: Set[str]
     params: Dict[str, Any]
     templates: List[Template]
     minor_versions: List[str]
 
     @property
     def title_case_id(self) -> str:
-        if self.has_multiple_major_versions:
+        if self.major_version == UNDEPLOYED:
+            return to_title_case(self.id) + to_title_case(UNDEPLOYED)
+
+        # Add the major version to the class name if the user has configured
+        # multiple copies of the same prompt with different major versions.
+        num_numbered_versions = len([v for v in self.all_major_versions if v != UNDEPLOYED])
+        if num_numbered_versions > 1:
             return to_title_case(self.id) + str(self.major_version)
+
+        # Otherwise just use the title cased prompt ID
         return to_title_case(self.id)
 
     @property
@@ -327,7 +335,7 @@ def make_prompts_from_api_response_and_config(data: List[Dict], config: Autogene
             Prompt(
                 id=prompt_id,
                 major_version=major_version,
-                has_multiple_major_versions=len(generate_for[prompt_id]) > 1,
+                all_major_versions=set(major_version for pid, major_version in by_major_version if pid == prompt_id),
                 params=params,
                 templates=sorted(templates, key=lambda t: t.snake_case_id),
                 minor_versions=sorted(minor_versions),

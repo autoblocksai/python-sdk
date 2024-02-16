@@ -93,19 +93,16 @@ class UsedByCiDontDeletePromptManager(
 
 class UsedByCiDontDeleteNoParamsTemplateRenderer(TemplateRenderer):
     __name_mapper__ = {
-        "date": "date",
         "name": "name",
     }
 
     def my_template_id(
         self,
         *,
-        date: str,
         name: str,
     ) -> str:
         return self._render(
             "my-template-id",
-            date=date,
             name=name,
         )
 
@@ -125,7 +122,8 @@ class UsedByCiDontDeleteNoParamsExecutionContext(
 
 
 class UsedByCiDontDeleteNoParamsMinorVersion(Enum):
-    DANGEROUSLY_USE_UNDEPLOYED = "undeployed"
+    v0 = "0"
+    LATEST = "latest"
 
 
 class UsedByCiDontDeleteNoParamsPromptManager(
@@ -135,5 +133,53 @@ class UsedByCiDontDeleteNoParamsPromptManager(
     ],
 ):
     __prompt_id__ = "used-by-ci-dont-delete-no-params"
-    __prompt_major_version__ = "undeployed"
+    __prompt_major_version__ = "1"
     __execution_context_class__ = UsedByCiDontDeleteNoParamsExecutionContext
+
+
+class UsedByCiDontDeleteNoParamsUndeployedTemplateRenderer(TemplateRenderer):
+    __name_mapper__ = {
+        "date": "date",
+        "name": "name",
+    }
+
+    def my_template_id(
+        self,
+        *,
+        date: str,
+        name: str,
+    ) -> str:
+        return self._render(
+            "my-template-id",
+            date=date,
+            name=name,
+        )
+
+
+class UsedByCiDontDeleteNoParamsUndeployedExecutionContext(
+    PromptExecutionContext[
+        None,
+        UsedByCiDontDeleteNoParamsUndeployedTemplateRenderer,
+    ],
+):
+    __params_class__ = None
+    __template_renderer_class__ = UsedByCiDontDeleteNoParamsUndeployedTemplateRenderer
+
+    @property
+    def params(self) -> None:
+        return None
+
+
+class UsedByCiDontDeleteNoParamsUndeployedMinorVersion(Enum):
+    DANGEROUSLY_USE_UNDEPLOYED = "undeployed"
+
+
+class UsedByCiDontDeleteNoParamsUndeployedPromptManager(
+    AutoblocksPromptManager[
+        UsedByCiDontDeleteNoParamsUndeployedExecutionContext,
+        UsedByCiDontDeleteNoParamsUndeployedMinorVersion,
+    ],
+):
+    __prompt_id__ = "used-by-ci-dont-delete-no-params"
+    __prompt_major_version__ = "undeployed"
+    __execution_context_class__ = UsedByCiDontDeleteNoParamsUndeployedExecutionContext
