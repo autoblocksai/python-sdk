@@ -2,7 +2,6 @@ import asyncio
 import contextvars
 import dataclasses
 import inspect
-import logging
 import threading
 import traceback
 from typing import Any
@@ -17,8 +16,6 @@ from autoblocks._impl.testing.models import BaseEvaluator
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.util import AutoblocksEnvVar
-
-logger = logging.getLogger(__name__)
 
 # Globals
 client: httpx.AsyncClient = None
