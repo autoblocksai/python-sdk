@@ -197,18 +197,26 @@ async def run_test_case(
         ),
     )
 
-    await gather_with_max_concurrency(
-        max_evaluator_concurrency,
-        *[
-            evaluate_output(
-                test_id=test_id,
-                test_case=test_case,
-                output=output,
-                evaluator=evaluator,
-            )
-            for evaluator in evaluators
-        ],
-    )
+    try:
+        await gather_with_max_concurrency(
+            max_evaluator_concurrency,
+            *[
+                evaluate_output(
+                    test_id=test_id,
+                    test_case=test_case,
+                    output=output,
+                    evaluator=evaluator,
+                )
+                for evaluator in evaluators
+            ],
+        )
+    except Exception as err:
+        await send_error(
+            test_id=test_id,
+            test_case_hash=test_case._cached_hash,
+            evaluator_id=None,
+            error=err,
+        )
 
 
 async def async_run_test_suite(
@@ -242,19 +250,27 @@ async def async_run_test_suite(
 
     await client.post("/start", json=dict(testExternalId=test_id))
 
-    await gather_with_max_concurrency(
-        max_test_case_concurrency,
-        *[
-            run_test_case(
-                test_id=test_id,
-                test_case=test_case,
-                evaluators=evaluators,
-                fn=fn,
-                max_evaluator_concurrency=max_evaluator_concurrency,
-            )
-            for test_case in test_cases
-        ],
-    )
+    try:
+        await gather_with_max_concurrency(
+            max_test_case_concurrency,
+            *[
+                run_test_case(
+                    test_id=test_id,
+                    test_case=test_case,
+                    evaluators=evaluators,
+                    fn=fn,
+                    max_evaluator_concurrency=max_evaluator_concurrency,
+                )
+                for test_case in test_cases
+            ],
+        )
+    except Exception as err:
+        await send_error(
+            test_id=test_id,
+            test_case_hash=None,
+            evaluator_id=None,
+            error=err,
+        )
 
     await client.post("/end", json=dict(testExternalId=test_id))
 
