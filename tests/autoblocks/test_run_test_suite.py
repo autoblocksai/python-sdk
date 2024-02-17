@@ -1,5 +1,4 @@
 import dataclasses
-import json
 import os
 from unittest import mock
 
@@ -11,6 +10,7 @@ from autoblocks.testing.models import BaseEvaluator
 from autoblocks.testing.models import Evaluation
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.run import run_test_suite
+from tests.autoblocks.util import decode_request_body
 from tests.autoblocks.util import make_expected_body
 
 CLI_SERVER_ADDRESS = "http://localhost:8080"
@@ -35,11 +35,11 @@ class MyTestCase(BaseTestCase):
         return self.input
 
 
-def test_no_test_cases():
-    # This should not make any calls to the server
-    # because it will exit early due to not having any test cases
+def test_no_test_cases(httpx_mock):
+    httpx_mock.add_response()
+
     run_test_suite(
-        id="test_id",
+        id="my-test-id",
         test_cases=[],
         evaluators=[],
         fn=lambda _: None,
@@ -47,12 +47,24 @@ def test_no_test_cases():
         max_evaluator_concurrency=1,
     )
 
+    requests = httpx_mock.get_requests()
+    assert len(requests) == 1
+    req = requests[0]
+    assert req.url.path == "/errors"
+    req_body = decode_request_body(req)
+    assert req_body["testExternalId"] == "my-test-id"
+    assert req_body["testCaseHash"] is None
+    assert req_body["evaluatorExternalId"] is None
+    assert req_body["error"]["name"] == "AssertionError"
+    assert req_body["error"]["message"] == "[my-test-id] No test cases provided."
+    assert "AssertionError: [my-test-id] No test cases provided." in req_body["error"]["stacktrace"]
 
-def test_invalid_test_cases():
-    # This should not make any calls to the server
-    # because it will exit early due to the invalid test cases
+
+def test_invalid_test_cases(httpx_mock):
+    httpx_mock.add_response()
+
     run_test_suite(
-        id="test_id",
+        id="my-test-id",
         test_cases=[1, 2, 3],
         evaluators=[],
         fn=lambda _: None,
@@ -60,12 +72,26 @@ def test_invalid_test_cases():
         max_evaluator_concurrency=1,
     )
 
+    requests = httpx_mock.get_requests()
+    assert len(requests) == 1
+    req = requests[0]
+    assert req.url.path == "/errors"
+    req_body = decode_request_body(req)
+    assert req_body["testExternalId"] == "my-test-id"
+    assert req_body["testCaseHash"] is None
+    assert req_body["evaluatorExternalId"] is None
+    assert req_body["error"]["name"] == "AssertionError"
+    assert req_body["error"]["message"] == "[my-test-id] Test case 1 does not implement BaseTestCase."
+    assert (
+        "AssertionError: [my-test-id] Test case 1 does not implement BaseTestCase." in req_body["error"]["stacktrace"]
+    )
 
-def test_invalid_evaluators():
-    # This should not make any calls to the server
-    # because it will exit early due to the invalid evaluators
+
+def test_invalid_evaluators(httpx_mock):
+    httpx_mock.add_response()
+
     run_test_suite(
-        id="test_id",
+        id="my-test-id",
         test_cases=[
             MyTestCase(input="a"),
         ],
@@ -73,6 +99,20 @@ def test_invalid_evaluators():
         fn=lambda _: None,
         max_test_case_concurrency=1,
         max_evaluator_concurrency=1,
+    )
+
+    requests = httpx_mock.get_requests()
+    assert len(requests) == 1
+    req = requests[0]
+    assert req.url.path == "/errors"
+    req_body = decode_request_body(req)
+    assert req_body["testExternalId"] == "my-test-id"
+    assert req_body["testCaseHash"] is None
+    assert req_body["evaluatorExternalId"] is None
+    assert req_body["error"]["name"] == "AssertionError"
+    assert req_body["error"]["message"] == "[my-test-id] Evaluator 1 does not implement BaseEvaluator."
+    assert (
+        "AssertionError: [my-test-id] Evaluator 1 does not implement BaseEvaluator." in req_body["error"]["stacktrace"]
     )
 
 
@@ -137,7 +177,7 @@ def test_error_in_test_fn(httpx_mock):
 
     requests = httpx_mock.get_requests()
     error_req = [r for r in requests if r.url.path == "/errors"][0]
-    error_req_body = json.loads(error_req.content.decode())
+    error_req_body = decode_request_body(error_req)
 
     assert error_req_body["testExternalId"] == "my-test-id"
     assert error_req_body["testCaseHash"] == "b"
@@ -244,10 +284,8 @@ def test_error_in_evaluator(httpx_mock):
     )
 
     requests = httpx_mock.get_requests()
-    for r in requests:
-        print(r, json.loads(r.content.decode()))
     error_req = [r for r in requests if r.url.path == "/errors"][0]
-    error_req_body = json.loads(error_req.content.decode())
+    error_req_body = decode_request_body(error_req)
 
     assert error_req_body["testExternalId"] == "my-test-id"
     assert error_req_body["testCaseHash"] == "b"

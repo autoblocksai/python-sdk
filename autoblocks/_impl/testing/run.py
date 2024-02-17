@@ -65,7 +65,7 @@ def init_global_vars() -> None:
 
 async def send_error(
     test_id: str,
-    test_case_hash: str,
+    test_case_hash: Optional[str],
     evaluator_id: Optional[str],
     error: Exception,
 ) -> None:
@@ -222,17 +222,24 @@ async def async_run_test_suite(
     max_test_case_concurrency: int,
     max_evaluator_concurrency: int,
 ):
-    if not test_cases:
-        logger.error(f"[{test_id}] No test cases provided.")
+    try:
+        assert test_cases, f"[{test_id}] No test cases provided."
+        for test_case in test_cases:
+            assert isinstance(test_case, BaseTestCase), (
+                f"[{test_id}] Test case {test_case} does not implement " f"BaseTestCase."
+            )
+        for evaluator in evaluators:
+            assert isinstance(evaluator, BaseEvaluator), (
+                f"[{test_id}] Evaluator {evaluator} does not implement " "BaseEvaluator."
+            )
+    except Exception as err:
+        await send_error(
+            test_id=test_id,
+            test_case_hash=None,
+            evaluator_id=None,
+            error=err,
+        )
         return
-    for test_case in test_cases:
-        if not isinstance(test_case, BaseTestCase):
-            logger.error(f"[{test_id}] Test case {test_case} does not implement BaseTestCase.")
-            return
-    for evaluator in evaluators:
-        if not isinstance(evaluator, BaseEvaluator):
-            logger.error(f"[{test_id}] Evaluator {evaluator} does not implement BaseEvaluator.")
-            return
 
     await client.post("/start", json=dict(testExternalId=test_id))
 
