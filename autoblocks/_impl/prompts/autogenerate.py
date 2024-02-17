@@ -9,7 +9,9 @@ from typing import Tuple
 import httpx
 
 from autoblocks._impl.config.constants import API_ENDPOINT
+from autoblocks._impl.prompts.constants import DANGEROUSLY_USE_UNDEPLOYED_ENUM_VALUE_NAME
 from autoblocks._impl.prompts.constants import LATEST
+from autoblocks._impl.prompts.constants import UNDEPLOYED
 from autoblocks._impl.prompts.models import AutogeneratePromptsConfig
 from autoblocks._impl.prompts.models import FrozenModel
 from autoblocks._impl.util import AutoblocksEnvVar
@@ -35,15 +37,23 @@ class Template(FrozenModel):
 class Prompt(FrozenModel):
     id: str
     major_version: str
-    has_multiple_major_versions: bool
+    all_major_versions: Set[str]
     params: Dict[str, Any]
     templates: List[Template]
     minor_versions: List[str]
 
     @property
     def title_case_id(self) -> str:
-        if self.has_multiple_major_versions:
+        if self.major_version == UNDEPLOYED:
+            return to_title_case(self.id) + to_title_case(UNDEPLOYED)
+
+        # Add the major version to the class name if the user has configured
+        # multiple copies of the same prompt with different major versions.
+        num_numbered_versions = len([v for v in self.all_major_versions if v != UNDEPLOYED])
+        if num_numbered_versions > 1:
             return to_title_case(self.id) + str(self.major_version)
+
+        # Otherwise just use the title cased prompt ID
         return to_title_case(self.id)
 
     @property
@@ -190,12 +200,15 @@ def generate_template_renderer_class_code(prompt: Prompt) -> str:
         for param in template.params:
             name_mapper[param.name] = param.snake_case_name
 
-    auto += f"{indent()}__name_mapper__ = {{\n"
+    if name_mapper:
+        auto += f"{indent()}__name_mapper__ = {{\n"
 
-    for key in sorted(name_mapper.keys()):
-        auto += f'{indent(2)}"{key}": "{name_mapper[key]}",\n'
+        for key in sorted(name_mapper.keys()):
+            auto += f'{indent(2)}"{key}": "{name_mapper[key]}",\n'
 
-    auto += f"{indent()}}}\n\n"
+        auto += f"{indent()}}}\n\n"
+    else:
+        auto += f"{indent()}__name_mapper__ = {{}}\n\n"
 
     auto += "\n".join(generate_template_render_method_code(template) for template in prompt.templates)
 
@@ -228,10 +241,13 @@ def generate_execution_context_class_code(prompt: Prompt) -> str:
 def generate_minor_versions_enum_code(prompt: Prompt) -> str:
     auto = f"class {prompt.minor_version_enum_class_name}(Enum):\n"
 
-    for version in prompt.minor_versions:
-        auto += f'{indent()}v{version} = "{version}"\n'
+    if prompt.major_version == UNDEPLOYED:
+        auto += f'{indent()}{DANGEROUSLY_USE_UNDEPLOYED_ENUM_VALUE_NAME} = "{UNDEPLOYED}"\n'
+    else:
+        for version in prompt.minor_versions:
+            auto += f'{indent()}v{version} = "{version}"\n'
 
-    auto += f'{indent()}LATEST = "{LATEST}"\n'
+        auto += f'{indent()}LATEST = "{LATEST}"\n'
 
     return auto
 
@@ -265,19 +281,28 @@ def generate_code_for_prompt(prompt: Prompt) -> str:
     )
 
 
-def make_prompts_from_api_response(data: List[Dict], config: AutogeneratePromptsConfig) -> List[Prompt]:
+def make_prompts_from_api_response_and_config(data: List[Dict], config: AutogeneratePromptsConfig) -> List[Prompt]:
     # Map of prompt id to set of major versions to autogenerate code for
     generate_for: Dict[str, Set[str]] = {}
     for prompt in config.prompts:
-        generate_for[prompt.id] = set(prompt.major_versions_as_str())
+        generate_for[prompt.id] = set(prompt.major_versions)
 
     # Map of (prompt id, major version) to (any prompt w/ that major version, list of minor versions)
     by_major_version: Dict[Tuple[str, str], Tuple[Dict, List[str]]] = {}
     for row in data:
         prompt_id = row["id"]
+
         if prompt_id not in generate_for:
             continue
-        major_version, minor_version = row["version"].split(".")
+
+        prompt_version = row["version"]
+
+        if prompt_version == UNDEPLOYED:
+            major_version = UNDEPLOYED
+            minor_version = UNDEPLOYED
+        else:
+            major_version, minor_version = prompt_version.split(".")
+
         if major_version not in generate_for[prompt_id]:
             continue
 
@@ -310,7 +335,7 @@ def make_prompts_from_api_response(data: List[Dict], config: AutogeneratePrompts
             Prompt(
                 id=prompt_id,
                 major_version=major_version,
-                has_multiple_major_versions=len(generate_for[prompt_id]) > 1,
+                all_major_versions=set(major_version for pid, major_version in by_major_version if pid == prompt_id),
                 params=params,
                 templates=sorted(templates, key=lambda t: t.snake_case_id),
                 minor_versions=sorted(minor_versions),
@@ -328,7 +353,18 @@ def generate_code_for_config(config: AutogeneratePromptsConfig) -> str:
     resp.raise_for_status()
     data = resp.json()
 
-    prompts = make_prompts_from_api_response(data, config)
+    # Get undeployed prompts as well
+    for prompt_id in set(p.id for p in config.prompts):
+        resp = httpx.get(
+            f"{API_ENDPOINT}/prompts/{prompt_id}/major/{UNDEPLOYED}/minor/{UNDEPLOYED}",
+            headers={"Authorization": f"Bearer {AutoblocksEnvVar.API_KEY.get()}"},
+        )
+        if resp.status_code == 404:
+            continue
+        resp.raise_for_status()
+        data.append(resp.json())
+
+    prompts = make_prompts_from_api_response_and_config(data, config)
 
     auto = [HEADER]
 

@@ -16,6 +16,8 @@ from autoblocks.tracer import AutoblocksTracer
 from .prompts import UsedByCiDontDeleteMinorVersion
 from .prompts import UsedByCiDontDeleteNoParamsMinorVersion
 from .prompts import UsedByCiDontDeleteNoParamsPromptManager
+from .prompts import UsedByCiDontDeleteNoParamsUndeployedMinorVersion
+from .prompts import UsedByCiDontDeleteNoParamsUndeployedPromptManager
 from .prompts import UsedByCiDontDeletePromptManager
 
 AUTOBLOCKS_API_KEY = os.environ.get("AUTOBLOCKS_API_KEY")
@@ -107,6 +109,8 @@ def main():
     test_prompt_manager()
     test_prompt_manager_latest()
     test_prompt_manager_weighted()
+    test_prompt_manager_no_model_params()
+    test_prompt_manager_no_model_params_undeployed()
 
 
 def test_prompt_manager():
@@ -200,6 +204,15 @@ def test_prompt_manager_weighted():
 def test_prompt_manager_no_model_params():
     mgr = UsedByCiDontDeleteNoParamsPromptManager(
         UsedByCiDontDeleteNoParamsMinorVersion.v0,
+    )
+
+    with mgr.exec() as prompt:
+        assert prompt.params is None
+
+
+def test_prompt_manager_no_model_params_undeployed():
+    mgr = UsedByCiDontDeleteNoParamsUndeployedPromptManager(
+        UsedByCiDontDeleteNoParamsUndeployedMinorVersion.DANGEROUSLY_USE_UNDEPLOYED,
     )
 
     with mgr.exec() as prompt:
