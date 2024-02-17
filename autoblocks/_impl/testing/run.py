@@ -222,13 +222,15 @@ async def async_run_test_suite(
     try:
         assert test_cases, f"[{test_id}] No test cases provided."
         for test_case in test_cases:
-            assert isinstance(test_case, BaseTestCase), (
-                f"[{test_id}] Test case {test_case} does not implement " f"BaseTestCase."
-            )
+            assert isinstance(
+                test_case,
+                BaseTestCase,
+            ), f"[{test_id}] Test case {test_case} does not implement BaseTestCase."
         for evaluator in evaluators:
-            assert isinstance(evaluator, BaseEvaluator), (
-                f"[{test_id}] Evaluator {evaluator} does not implement " "BaseEvaluator."
-            )
+            assert isinstance(
+                evaluator,
+                BaseEvaluator,
+            ), f"[{test_id}] Evaluator {evaluator} does not implement BaseEvaluator."
     except Exception as err:
         await send_error(
             test_id=test_id,
