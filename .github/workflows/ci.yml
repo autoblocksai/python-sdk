@@ -74,7 +74,7 @@ jobs:
         run: poetry run pytest tests/autoblocks
 
       - name: Run e2e tests
-        run: poetry run e2e
+        run: poetry run pytest tests/e2e
         env:
           AUTOBLOCKS_API_KEY: ${{ secrets.CI_AUTOBLOCKS_API_KEY }}
           AUTOBLOCKS_INGESTION_KEY: ${{ secrets.CI_AUTOBLOCKS_INGESTION_KEY }}
