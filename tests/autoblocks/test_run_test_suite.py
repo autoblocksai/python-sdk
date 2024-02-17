@@ -494,6 +494,112 @@ def test_with_evaluators(httpx_mock):
     )
 
 
+def test_concurrency(httpx_mock):
+    httpx_mock.add_response()
+
+    def test_fn(test_case: MyTestCase):
+        return test_case.input + "!"
+
+    class EvaluatorA(BaseEvaluator):
+        id = "evaluator-a"
+
+        def evaluate(self, test_case: MyTestCase, output: str) -> Evaluation:
+            return Evaluation(score=0)
+
+    class EvaluatorB(BaseEvaluator):
+        id = "evaluator-b"
+
+        def evaluate(self, test_case: MyTestCase, output: str) -> Evaluation:
+            return Evaluation(score=1)
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+            MyTestCase(input="b"),
+        ],
+        evaluators=[
+            EvaluatorA(),
+            EvaluatorB(),
+        ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+        max_evaluator_concurrency=1,
+    )
+
+    # The requests should be in a deterministic order when the concurrency is set to 1
+    requests = [(req.url.path, decode_request_body(req)) for req in httpx_mock.get_requests()]
+
+    assert requests == [
+        (
+            "/start",
+            dict(testExternalId="my-test-id"),
+        ),
+        (
+            "/results",
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="a",
+                testCaseBody=dict(input="a"),
+                testCaseOutput="a!",
+            ),
+        ),
+        (
+            "/evals",
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="a",
+                evaluatorExternalId="evaluator-a",
+                score=0,
+                threshold=None,
+            ),
+        ),
+        (
+            "/evals",
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="a",
+                evaluatorExternalId="evaluator-b",
+                score=1,
+                threshold=None,
+            ),
+        ),
+        (
+            "/results",
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="b",
+                testCaseBody=dict(input="b"),
+                testCaseOutput="b!",
+            ),
+        ),
+        (
+            "/evals",
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="b",
+                evaluatorExternalId="evaluator-a",
+                score=0,
+                threshold=None,
+            ),
+        ),
+        (
+            "/evals",
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="b",
+                evaluatorExternalId="evaluator-b",
+                score=1,
+                threshold=None,
+            ),
+        ),
+        (
+            "/end",
+            dict(testExternalId="my-test-id"),
+        ),
+    ]
+
+
 def test_async_test_fn(httpx_mock):
     httpx_mock.add_response(
         url=f"{CLI_SERVER_ADDRESS}/start",
