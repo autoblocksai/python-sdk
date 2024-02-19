@@ -1,7 +1,10 @@
 import dataclasses
+import datetime
 import os
+import uuid
 from unittest import mock
 
+import pydantic
 import pytest
 
 from autoblocks._impl.testing.models import BaseTestCase
@@ -793,6 +796,80 @@ def test_async_evaluators(httpx_mock):
             EvaluatorA(),
             EvaluatorB(),
         ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+        max_evaluator_concurrency=1,
+    )
+
+
+def test_serializes(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/start",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+            )
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/results",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
+                testCaseBody=dict(
+                    d="2021-01-01T01:01:01",
+                    u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
+                ),
+                testCaseOutput=dict(
+                    d="2021-01-01T01:01:01",
+                    u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
+                ),
+            ),
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/end",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+            )
+        ),
+    )
+
+    @dataclasses.dataclass()
+    class ATestCase(BaseTestCase):
+        d: datetime.datetime
+        u: uuid.UUID
+
+        def hash(self) -> str:
+            return str(self.u)
+
+    class AOutput(pydantic.BaseModel):
+        d: datetime.datetime
+        u: uuid.UUID
+
+    def test_fn(test_case: ATestCase):
+        return AOutput(
+            d=test_case.d,
+            u=test_case.u,
+        )
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            ATestCase(
+                d=datetime.datetime(2021, 1, 1, 1, 1, 1),
+                u=uuid.UUID("ed022d1e-d0f2-41e4-ad55-9df0479cb62d"),
+            ),
+        ],
+        evaluators=[],
         fn=test_fn,
         max_test_case_concurrency=1,
         max_evaluator_concurrency=1,

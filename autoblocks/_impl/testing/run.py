@@ -11,6 +11,7 @@ from typing import List
 from typing import Optional
 
 import httpx
+import orjson
 
 from autoblocks._impl.testing.models import BaseEvaluator
 from autoblocks._impl.testing.models import BaseTestCase
@@ -58,6 +59,20 @@ def init_global_vars() -> None:
     background_thread.start()
 
     started = True
+
+
+def orjson_default(o: Any) -> str:
+    if hasattr(o, "model_dump_json") and callable(o.model_dump_json):
+        # pydantic v2
+        return orjson.loads(o.model_dump_json())
+    elif hasattr(o, "json") and callable(o.json):
+        # pydantic v1
+        return orjson.loads(o.json())
+    raise TypeError
+
+
+def serialize(x: Any) -> Any:
+    return orjson.loads(orjson.dumps(x, default=orjson_default))
 
 
 async def send_error(
@@ -192,8 +207,8 @@ async def run_test_case(
         json=dict(
             testExternalId=test_id,
             testCaseHash=test_case._cached_hash,
-            testCaseBody=dataclasses.asdict(test_case),
-            testCaseOutput=output,
+            testCaseBody=serialize(test_case),
+            testCaseOutput=serialize(output),
         ),
     )
 

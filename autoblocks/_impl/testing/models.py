@@ -19,7 +19,6 @@ class Evaluation:
     threshold: Optional[Threshold] = None
 
 
-@dataclasses.dataclass()
 class BaseTestCase(abc.ABC):
     @abc.abstractmethod
     def hash(self) -> str:
