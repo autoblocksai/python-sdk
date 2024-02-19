@@ -28,7 +28,6 @@ wrapt = "^1.15.0"
 pydantic = "^2.5.3"
 
 [tool.poetry.scripts]
-e2e = "e2e.run:main"
 autoblocks = "autoblocks._impl.cli.main:main"
 
 # This allows users to run their pytest suite with our plugin via `pytest --autoblocks`.
