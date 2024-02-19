@@ -1,4 +1,3 @@
-import os
 import time
 import uuid
 from datetime import timedelta
@@ -20,25 +19,17 @@ from .prompts import UsedByCiDontDeleteNoParamsUndeployedMinorVersion
 from .prompts import UsedByCiDontDeleteNoParamsUndeployedPromptManager
 from .prompts import UsedByCiDontDeletePromptManager
 
-AUTOBLOCKS_API_KEY = os.environ.get("AUTOBLOCKS_API_KEY")
-AUTOBLOCKS_INGESTION_KEY = os.environ.get("AUTOBLOCKS_INGESTION_KEY")
-
 # The below are entities in our Autoblocks CI org that we use for testing.
 E2E_TESTS_DATASET_ID = "clpup7f9400075us75nin99f0"
 E2E_TESTS_VIEW_ID = "cllmlk8py0003l608vd83dc03"
 E2E_TESTS_TRACE_ID = "4943bb26-3526-4e9c-bcd1-62f08baa621a"
 E2E_TESTS_EXPECTED_MESSAGE = "sdk.e2e"
 
+client = AutoblocksAPIClient(timeout=timedelta(seconds=30))
+tracer = AutoblocksTracer()
 
-def main():
-    if not AUTOBLOCKS_API_KEY:
-        raise Exception("AUTOBLOCKS_API_KEY is required")
-    if not AUTOBLOCKS_INGESTION_KEY:
-        raise Exception("AUTOBLOCKS_INGESTION_KEY is required")
 
-    client = AutoblocksAPIClient(AUTOBLOCKS_API_KEY, timeout=timedelta(seconds=30))
-    tracer = AutoblocksTracer(AUTOBLOCKS_INGESTION_KEY)
-
+def test_get_datasets():
     # Make sure dataset and items exists
     datasets = client.get_datasets()
     if E2E_TESTS_DATASET_ID not in (dataset.id for dataset in datasets):
@@ -48,6 +39,8 @@ def main():
     if len(dataset.items) == 0:
         raise Exception(f"Dataset {E2E_TESTS_DATASET_ID} is empty!")
 
+
+def test_get_trace():
     # Test that we can fetch a trace by ID
     trace = client.get_trace(E2E_TESTS_TRACE_ID)
     print(f"Found trace {trace.id}!")
@@ -58,11 +51,15 @@ def main():
     assert trace.events[0].timestamp == "2023-12-11T12:27:26.831Z"
     assert trace.events[0].properties["inputs"]["input"] == "What is today's date? What is that date divided by 2?"
 
+
+def test_get_views():
     # Make sure our view exists
     views = client.get_views()
     if E2E_TESTS_VIEW_ID not in (view.id for view in views):
         raise Exception(f"View {E2E_TESTS_VIEW_ID} not found!")
 
+
+def test_send_and_retrieve_event():
     # Send test event
     test_trace_id = str(uuid.uuid4())
     print(f"{test_trace_id=}")
@@ -105,12 +102,6 @@ def main():
         sleep_seconds = 5
         print(f"Couldn't find trace {test_trace_id} yet, waiting {sleep_seconds} seconds. {retries} tries left.")
         time.sleep(sleep_seconds)
-
-    test_prompt_manager()
-    test_prompt_manager_latest()
-    test_prompt_manager_weighted()
-    test_prompt_manager_no_model_params()
-    test_prompt_manager_no_model_params_undeployed()
 
 
 def test_prompt_manager():

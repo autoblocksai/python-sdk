@@ -1,6 +1,6 @@
 autogenerate:
   prompts:
-    outfile: e2e/prompts.py
+    outfile: tests/e2e/prompts.py
 
     prompts:
       - id: used-by-ci-dont-delete
