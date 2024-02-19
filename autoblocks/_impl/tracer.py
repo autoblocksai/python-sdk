@@ -17,14 +17,24 @@ from autoblocks._impl.util import make_replay_headers
 log = logging.getLogger(__name__)
 
 
+global_ingestion_client = None
+
+
+def get_or_create_ingestion_client(ingestion_key: str) -> httpx.Client:
+    global global_ingestion_client
+    if global_ingestion_client is None:
+        global_ingestion_client = httpx.Client(
+            headers={"Authorization": f"Bearer {ingestion_key}"},
+        )
+    return global_ingestion_client
+
+
 @dataclass
 class SendEventResponse:
     trace_id: Optional[str]
 
 
 class AutoblocksTracer:
-    _client: Optional[httpx.Client] = None
-
     def __init__(
         self,
         ingestion_key: Optional[str] = None,
@@ -52,21 +62,8 @@ class AutoblocksTracer:
                 f"You must provide an ingestion_key or set the {AutoblocksEnvVar.INGESTION_KEY} environment variable."
             )
 
-        if not AutoblocksTracer._client:
-            AutoblocksTracer._client = httpx.Client(
-                headers={"Authorization": f"Bearer {ingestion_key}"},
-                timeout=timeout.total_seconds(),
-            )
-            return
-
-        if AutoblocksTracer._client.headers.get("authorization") != f"Bearer {ingestion_key}":
-            raise ValueError(
-                "You must use the same configuration for all AutoblocksTracer instances in your application."
-            )
-        if AutoblocksTracer._client.timeout != httpx.Timeout(timeout.total_seconds()):
-            raise ValueError(
-                "You must use the same configuration for all AutoblocksTracer instances in your application."
-            )
+        self._client = get_or_create_ingestion_client(ingestion_key)
+        self._timeout_seconds = timeout.total_seconds()
 
     def set_trace_id(self, trace_id: str) -> None:
         """
@@ -152,6 +149,7 @@ class AutoblocksTracer:
                 "properties": merged_properties,
             },
             headers=replay_headers,
+            timeout=self._timeout_seconds,
         )
         req.raise_for_status()
         resp = req.json()
