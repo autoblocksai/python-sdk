@@ -22,7 +22,7 @@ class Evaluation:
 class BaseTestCase(abc.ABC):
     @abc.abstractmethod
     def hash(self) -> str:
-        ...
+        pass
 
     @functools.cached_property
     def _cached_hash(self) -> str:
@@ -33,8 +33,8 @@ class BaseEvaluator(abc.ABC):
     @property
     @abc.abstractmethod
     def id(self) -> str:
-        ...
+        pass
 
     @abc.abstractmethod
     def evaluate(self, test_case: BaseTestCase, output: Any) -> Evaluation:
-        ...
+        pass
