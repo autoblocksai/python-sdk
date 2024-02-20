@@ -98,7 +98,7 @@ async def send_error(
 
 async def gather_with_max_concurrency(
     max_concurrency: int,
-    *coroutines: Coroutine,
+    coroutines: List[Coroutine],
 ) -> None:
     """
     Borrowed from https://stackoverflow.com/a/61478547
@@ -215,7 +215,7 @@ async def run_test_case(
     try:
         await gather_with_max_concurrency(
             max_evaluator_concurrency,
-            *[
+            [
                 evaluate_output(
                     test_id=test_id,
                     test_case=test_case,
@@ -268,7 +268,7 @@ async def async_run_test_suite(
     try:
         await gather_with_max_concurrency(
             max_test_case_concurrency,
-            *[
+            [
                 run_test_case(
                     test_id=test_id,
                     test_case=test_case,
