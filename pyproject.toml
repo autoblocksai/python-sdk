@@ -15,7 +15,8 @@ packages = [{include = "autoblocks"}]
 python = "^3.8.1"
 httpx = ">=0.24.0"
 click = ">=8.0.0"
-pyyaml = ">=6.0"
+pyyaml = ">=6.0.0"
+orjson = ">=3.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.3"

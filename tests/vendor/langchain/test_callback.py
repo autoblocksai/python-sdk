@@ -1,4 +1,3 @@
-import json
 import os
 import uuid
 from unittest import mock
@@ -13,10 +12,11 @@ from langchain.tools import Tool
 
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks.vendor.langchain import AutoblocksCallbackHandler
+from tests.autoblocks.util import decode_request_body
 
 
 def decode_requests(requests):
-    return [json.loads(req.content.decode()) for req in requests]
+    return [decode_request_body(req) for req in requests]
 
 
 @pytest.fixture
