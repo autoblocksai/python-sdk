@@ -34,7 +34,7 @@ def run_event_loop(_loop: asyncio.AbstractEventLoop) -> None:
     _loop.run_forever()
 
 
-def init_global_vars() -> None:
+def init_global_vars_and_event_loop() -> None:
     global client, loop, started
 
     if started:
@@ -300,7 +300,7 @@ def run_test_suite(
     # How many evaluators to run concurrently on the result of a test case
     max_evaluator_concurrency: int = 5,
 ):
-    init_global_vars()
+    init_global_vars_and_event_loop()
 
     future = asyncio.run_coroutine_threadsafe(
         async_run_test_suite(
