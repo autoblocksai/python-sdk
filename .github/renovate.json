@@ -6,6 +6,9 @@
     "schedule:weekly"
   ],
   "reviewers": ["team:engineering"],
+  "pre-commit": {
+    "enabled": true
+  },
   "packageRules": [
     {
       "groupName": "all non-major dev dependencies",

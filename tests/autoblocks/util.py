@@ -9,3 +9,7 @@ def make_expected_body(data: Dict) -> bytes:
     https://github.com/Colin-b/pytest_httpx#matching-on-http-body-1
     """
     return json.dumps(data).encode()
+
+
+def decode_request_body(req) -> Dict:
+    return json.loads(req.content.decode())
