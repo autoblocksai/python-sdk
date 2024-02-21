@@ -31,14 +31,6 @@ pydantic = "^2.5.3"
 [tool.poetry.scripts]
 autoblocks = "autoblocks._impl.cli.main:main"
 
-# This allows users to run their pytest suite with our plugin via `pytest --autoblocks`.
-# See:
-# https://python-poetry.org/docs/pyproject/#plugins
-# https://docs.pytest.org/en/7.1.x/how-to/writing_plugins.html#making-your-plugin-installable-by-others
-# https://github.com/python-poetry/poetry/issues/1641#issuecomment-559502420
-[tool.poetry.plugins."pytest11"]
-autoblocks = "autoblocks._impl.pytest.plugin"
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -47,9 +39,9 @@ build-backend = "poetry.core.masonry.api"
 line-length = 120
 
 [tool.ruff]
-select = ["E", "F", "I001"]
+lint.select = ["E", "F", "I001"]
 line-length = 120
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 force-single-line = true
 known-first-party = ["autoblocks"]
