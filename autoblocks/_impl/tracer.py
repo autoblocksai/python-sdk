@@ -12,7 +12,6 @@ import httpx
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
-from autoblocks._impl.util import make_replay_headers
 
 log = logging.getLogger(__name__)
 
@@ -134,12 +133,6 @@ class AutoblocksTracer:
         trace_id = trace_id or self._trace_id
         timestamp = timestamp or datetime.now(timezone.utc).isoformat()
 
-        try:
-            replay_headers = make_replay_headers()
-        except Exception as err:
-            log.error(f"Failed to generate replay headers: {err}", exc_info=True)
-            replay_headers = None
-
         req = self._client.post(
             url=INGESTION_ENDPOINT,
             json={
@@ -148,7 +141,6 @@ class AutoblocksTracer:
                 "timestamp": timestamp,
                 "properties": merged_properties,
             },
-            headers=replay_headers,
             timeout=self._timeout_seconds,
         )
         req.raise_for_status()
