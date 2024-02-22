@@ -11,22 +11,32 @@ from typing import Optional
 import httpx
 import orjson
 
-import autoblocks._impl.global_state
+from autoblocks._impl import global_state
 from autoblocks._impl.testing.models import BaseEvaluator
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks._impl.util import gather_with_max_concurrency
+
+# httpx client
+client: httpx.AsyncClient = None
 
 # Context
 current_test_id_var = contextvars.ContextVar("current_test_id")
 current_test_case_var = contextvars.ContextVar("current_test_case")
 
-# Event loop helpers
-init_event_loop = autoblocks._impl.global_state.init
-event_loop = autoblocks._impl.global_state.event_loop
-event_loop_started = autoblocks._impl.global_state.started
-http_client = autoblocks._impl.global_state.http_client
-gather_with_max_concurrency = autoblocks._impl.global_state.gather_with_max_concurrency
+
+def init_client():
+    global client
+    if client is None:
+        cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
+        if not cli_server_address:
+            raise RuntimeError(
+                "Autoblocks tests must be run within the context of the testing CLI.\n"
+                "Make sure you are running your test command with:\n"
+                "$ npx autoblocks testing exec -- <your test command>"
+            )
+        client = httpx.AsyncClient(base_url=cli_server_address)
 
 
 def orjson_default(o: Any) -> str:
@@ -49,7 +59,7 @@ async def send_error(
     evaluator_id: Optional[str],
     error: Exception,
 ) -> None:
-    await http_client().post(
+    await client.post(
         "/errors",
         json=dict(
             testExternalId=test_id,
@@ -85,7 +95,7 @@ async def evaluate_output(
     else:
         try:
             ctx = contextvars.copy_context()
-            evaluation = await event_loop().run_in_executor(
+            evaluation = await global_state.event_loop().run_in_executor(
                 None,
                 ctx.run,
                 evaluator.evaluate,
@@ -103,7 +113,7 @@ async def evaluate_output(
     if evaluation is None:
         return
 
-    await http_client().post(
+    await client.post(
         "/evals",
         json=dict(
             testExternalId=test_id,
@@ -140,7 +150,7 @@ async def run_test_case(
     else:
         try:
             ctx = contextvars.copy_context()
-            output = await event_loop().run_in_executor(None, ctx.run, fn, test_case)
+            output = await global_state.event_loop().run_in_executor(None, ctx.run, fn, test_case)
         except Exception as err:
             await send_error(
                 test_id=test_id,
@@ -152,7 +162,7 @@ async def run_test_case(
     if output is None:
         return
 
-    await http_client().post(
+    await client.post(
         "/results",
         json=dict(
             testExternalId=test_id,
@@ -213,7 +223,7 @@ async def async_run_test_suite(
         )
         return
 
-    await http_client().post("/start", json=dict(testExternalId=test_id))
+    await client.post("/start", json=dict(testExternalId=test_id))
 
     try:
         await gather_with_max_concurrency(
@@ -237,7 +247,7 @@ async def async_run_test_suite(
             error=err,
         )
 
-    await http_client().post("/end", json=dict(testExternalId=test_id))
+    await client.post("/end", json=dict(testExternalId=test_id))
 
 
 def run_test_suite(
@@ -250,17 +260,9 @@ def run_test_suite(
     # How many evaluators to run concurrently on the result of a test case
     max_evaluator_concurrency: int = 5,
 ):
-    cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
-    if not cli_server_address:
-        raise RuntimeError(
-            "Autoblocks tests must be run within the context of the testing CLI.\n"
-            "Make sure you are running your test command with:\n"
-            "$ npx autoblocks testing exec -- <your test command>"
-        )
 
-    if not event_loop_started():
-        init_event_loop(client=httpx.AsyncClient(base_url=cli_server_address))
-
+    init_client()
+    global_state.init()
     future = asyncio.run_coroutine_threadsafe(
         async_run_test_suite(
             test_id=id,
@@ -270,6 +272,6 @@ def run_test_suite(
             max_test_case_concurrency=max_test_case_concurrency,
             max_evaluator_concurrency=max_evaluator_concurrency,
         ),
-        event_loop(),
+        global_state.event_loop(),
     )
     future.result()
