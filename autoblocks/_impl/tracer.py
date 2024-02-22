@@ -129,20 +129,15 @@ class AutoblocksTracer:
             "timestamp": timestamp,
             "properties": merged_properties,
         }
-        try:
-            req = await self._client.post(
-                url=INGESTION_ENDPOINT,
-                json=event_dict,
-                headers=self._client_headers,
-                timeout=self._timeout_seconds,
-            )
-            resp = req.json()
-            return SendEventResponse(trace_id=resp.get("traceId"))
-        except Exception as err:
-            log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
-            if AutoblocksEnvVar.TRACER_THROW_ON_ERROR.get() == "1":
-                raise err
-            return SendEventResponse(trace_id=None)
+
+        req = await self._client.post(
+            url=INGESTION_ENDPOINT,
+            json=event_dict,
+            headers=self._client_headers,
+            timeout=self._timeout_seconds,
+        )
+        resp = req.json()
+        return SendEventResponse(trace_id=resp.get("traceId"))
 
     def send_event(
         self,
@@ -161,15 +156,21 @@ class AutoblocksTracer:
         Always returns a SendEventResponse dataclass as the response. If sending
         the event failed, the trace_id will be None.
         """
-        future = asyncio.run_coroutine_threadsafe(
-            self._send_event_unsafe(
-                message=message,
-                trace_id=trace_id,
-                span_id=span_id,
-                parent_span_id=parent_span_id,
-                timestamp=timestamp,
-                properties=properties,
-            ),
-            global_state.event_loop(),
-        )
-        return future.result()
+        try:
+            future = asyncio.run_coroutine_threadsafe(
+                self._send_event_unsafe(
+                    message=message,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    parent_span_id=parent_span_id,
+                    timestamp=timestamp,
+                    properties=properties,
+                ),
+                global_state.event_loop(),
+            )
+            return future.result()
+        except Exception as err:
+            log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
+            if AutoblocksEnvVar.TRACER_THROW_ON_ERROR.get() == "1":
+                raise err
+            return SendEventResponse(trace_id=None)
