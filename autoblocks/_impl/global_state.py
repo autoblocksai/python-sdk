@@ -20,7 +20,7 @@ def init() -> None:
     _loop = asyncio.new_event_loop()
 
     background_thread = threading.Thread(
-        target=run_event_loop,
+        target=_run_event_loop,
         args=(_loop,),
         daemon=True,
     )
@@ -29,9 +29,9 @@ def init() -> None:
     _started = True
 
 
-def run_event_loop(event_loop: asyncio.AbstractEventLoop) -> None:
-    asyncio.set_event_loop(event_loop)
-    event_loop.run_forever()
+def _run_event_loop(_event_loop: asyncio.AbstractEventLoop) -> None:
+    asyncio.set_event_loop(_event_loop)
+    _event_loop.run_forever()
 
 
 def event_loop() -> asyncio.AbstractEventLoop:

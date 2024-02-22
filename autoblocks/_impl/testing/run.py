@@ -18,7 +18,7 @@ from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import gather_with_max_concurrency
 
-# httpx client
+# Global httpx client
 client: httpx.AsyncClient = None
 
 # Context
@@ -260,7 +260,6 @@ def run_test_suite(
     # How many evaluators to run concurrently on the result of a test case
     max_evaluator_concurrency: int = 5,
 ):
-
     init_client()
     global_state.init()
     future = asyncio.run_coroutine_threadsafe(
