@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import uuid
 from contextlib import contextmanager
@@ -8,24 +9,11 @@ from datetime import timezone
 from typing import Dict
 from typing import Optional
 
-import httpx
-
+from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
 
 log = logging.getLogger(__name__)
-
-
-global_ingestion_client = None
-
-
-def get_or_create_ingestion_client(ingestion_key: str) -> httpx.Client:
-    global global_ingestion_client
-    if global_ingestion_client is None:
-        global_ingestion_client = httpx.Client(
-            headers={"Authorization": f"Bearer {ingestion_key}"},
-        )
-    return global_ingestion_client
 
 
 @dataclass
@@ -52,6 +40,7 @@ class AutoblocksTracer:
         # Timeout for sending events to Autoblocks
         timeout: timedelta = timedelta(seconds=5),
     ):
+        global_state.init()  # Start up event loop if not already started
         self._trace_id: Optional[str] = trace_id
         self._properties: Dict = properties or {}
 
@@ -61,7 +50,7 @@ class AutoblocksTracer:
                 f"You must provide an ingestion_key or set the {AutoblocksEnvVar.INGESTION_KEY} environment variable."
             )
 
-        self._client = get_or_create_ingestion_client(ingestion_key)
+        self._client_headers = {"Authorization": f"Bearer {ingestion_key}"}
         self._timeout_seconds = timeout.total_seconds()
 
     def set_trace_id(self, trace_id: str) -> None:
@@ -112,7 +101,7 @@ class AutoblocksTracer:
                 props["span_id"] = prev_span_id
             self.set_properties(props)
 
-    def _send_event_unsafe(
+    async def _send_event_unsafe(
         self,
         # Require all arguments to be specified via key=value
         *,
@@ -133,7 +122,7 @@ class AutoblocksTracer:
         trace_id = trace_id or self._trace_id
         timestamp = timestamp or datetime.now(timezone.utc).isoformat()
 
-        req = self._client.post(
+        req = await global_state.http_client().post(
             url=INGESTION_ENDPOINT,
             json={
                 "message": message,
@@ -141,6 +130,7 @@ class AutoblocksTracer:
                 "timestamp": timestamp,
                 "properties": merged_properties,
             },
+            headers=self._client_headers,
             timeout=self._timeout_seconds,
         )
         req.raise_for_status()
@@ -165,17 +155,20 @@ class AutoblocksTracer:
         the event failed, the trace_id will be None.
         """
         try:
-            return self._send_event_unsafe(
-                message=message,
-                trace_id=trace_id,
-                span_id=span_id,
-                parent_span_id=parent_span_id,
-                timestamp=timestamp,
-                properties=properties,
+            future = asyncio.run_coroutine_threadsafe(
+                self._send_event_unsafe(
+                    message=message,
+                    trace_id=trace_id,
+                    span_id=span_id,
+                    parent_span_id=parent_span_id,
+                    timestamp=timestamp,
+                    properties=properties,
+                ),
+                global_state.event_loop(),
             )
+            return future.result()
         except Exception as err:
+            log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
             if AutoblocksEnvVar.TRACER_THROW_ON_ERROR.get() == "1":
                 raise err
-
-            log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
             return SendEventResponse(trace_id=None)
