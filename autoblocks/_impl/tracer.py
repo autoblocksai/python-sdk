@@ -50,12 +50,9 @@ class AutoblocksTracer:
                 f"You must provide an ingestion_key or set the {AutoblocksEnvVar.INGESTION_KEY} environment variable."
             )
 
-        self._ingestion_key = ingestion_key
+        self._client_headers = {"Authorization": f"Bearer {ingestion_key}"}
         self._client = global_state.http_client()
         self._timeout_seconds = timeout.total_seconds()
-
-    def _get_client_headers(self) -> Dict:
-        return {"Authorization": f"Bearer {self._ingestion_key}"}
 
     def set_trace_id(self, trace_id: str) -> None:
         """
@@ -136,7 +133,7 @@ class AutoblocksTracer:
             req = await self._client.post(
                 url=INGESTION_ENDPOINT,
                 json=event_dict,
-                headers=self._get_client_headers(),
+                headers=self._client_headers,
                 timeout=self._timeout_seconds,
             )
             resp = req.json()
