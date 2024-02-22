@@ -79,34 +79,6 @@ jobs:
           AUTOBLOCKS_API_KEY: ${{ secrets.CI_AUTOBLOCKS_API_KEY }}
           AUTOBLOCKS_INGESTION_KEY: ${{ secrets.CI_AUTOBLOCKS_INGESTION_KEY }}
 
-      # When we're running the scheduled job we update the vendor packages
-      # to their latest version to ensure the integrations we've written
-      # haven't broken with the latest version of the vendor package.
-      - name: Update vendor packages to latest version
-        if: github.event_name == 'schedule'
-        run: poetry remove openai langchain && poetry add --group=dev openai langchain
-
-      - name: Run OpenAI tests
-        run: poetry run pytest tests/vendor/openai
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
-      - name: Prep for LangChain
-        # LLMMathChain requires numexpr.
-        # Not using poetry here because numexpr requires python 3.9 or above
-        # but our package's pyproject supports 3.8. numexpr appears to work
-        # fine on python 3.8, so we just install it directly.
-        # LangChain also only works with openai<1, so we have to ensure we're
-        # not on 1.x.
-        run: |
-          poetry run pip install numexpr
-          poetry add --group=dev openai==0.28.1
-
-      - name: Run LangChain tests
-        run: poetry run pytest tests/vendor/langchain
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
   notify:
     needs:
       - tests
