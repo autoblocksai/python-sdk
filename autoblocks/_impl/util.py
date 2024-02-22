@@ -1,7 +1,10 @@
+import asyncio
 import logging
 import os
 import urllib.parse
 from enum import Enum
+from typing import Coroutine
+from typing import List
 from typing import Optional
 
 log = logging.getLogger(__name__)
@@ -30,3 +33,21 @@ def encode_uri_component(s: str) -> str:
     https://stackoverflow.com/a/6618858
     """
     return urllib.parse.quote(s, safe="()*!.'")
+
+
+async def gather_with_max_concurrency(
+    max_concurrency: int,
+    coroutines: List[Coroutine],
+) -> None:
+    """
+    Borrowed from https://stackoverflow.com/a/61478547
+    """
+    semaphore = asyncio.Semaphore(max_concurrency)
+
+    async def sem_coro(coro: Coroutine):
+        async with semaphore:
+            return await coro
+
+    # return_exceptions=True causes exceptions to be returned as values instead
+    # of propagating them to the caller. this is similar in behavior to Promise.allSettled
+    await asyncio.gather(*(sem_coro(c) for c in coroutines), return_exceptions=True)

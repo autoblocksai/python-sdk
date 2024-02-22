@@ -2,63 +2,41 @@ import asyncio
 import contextvars
 import dataclasses
 import inspect
-import threading
 import traceback
 from typing import Any
 from typing import Callable
-from typing import Coroutine
 from typing import List
 from typing import Optional
 
 import httpx
 import orjson
 
+from autoblocks._impl import global_state
 from autoblocks._impl.testing.models import BaseEvaluator
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks._impl.util import gather_with_max_concurrency
 
-# Globals
+# Global httpx client
 client: httpx.AsyncClient = None
-loop: asyncio.AbstractEventLoop = None
-started: bool = False
-
 
 # Context
 current_test_id_var = contextvars.ContextVar("current_test_id")
 current_test_case_var = contextvars.ContextVar("current_test_case")
 
 
-def run_event_loop(_loop: asyncio.AbstractEventLoop) -> None:
-    asyncio.set_event_loop(_loop)
-    _loop.run_forever()
-
-
-def init_global_vars_and_event_loop() -> None:
-    global client, loop, started
-
-    if started:
-        return
-
-    cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
-    if not cli_server_address:
-        raise RuntimeError(
-            "Autoblocks tests must be run within the context of the testing CLI.\n"
-            "Make sure you are running your test command with:\n"
-            "$ npx autoblocks testing exec -- <your test command>"
-        )
-    client = httpx.AsyncClient(base_url=cli_server_address)
-
-    loop = asyncio.new_event_loop()
-
-    background_thread = threading.Thread(
-        target=run_event_loop,
-        args=(loop,),
-        daemon=True,
-    )
-    background_thread.start()
-
-    started = True
+def init_client():
+    global client
+    if client is None:
+        cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
+        if not cli_server_address:
+            raise RuntimeError(
+                "Autoblocks tests must be run within the context of the testing CLI.\n"
+                "Make sure you are running your test command with:\n"
+                "$ npx autoblocks testing exec -- <your test command>"
+            )
+        client = httpx.AsyncClient(base_url=cli_server_address)
 
 
 def orjson_default(o: Any) -> str:
@@ -96,24 +74,6 @@ async def send_error(
     )
 
 
-async def gather_with_max_concurrency(
-    max_concurrency: int,
-    coroutines: List[Coroutine],
-) -> None:
-    """
-    Borrowed from https://stackoverflow.com/a/61478547
-    """
-    semaphore = asyncio.Semaphore(max_concurrency)
-
-    async def sem_coro(coro: Coroutine):
-        async with semaphore:
-            return await coro
-
-    # return_exceptions=True causes exceptions to be returned as values instead
-    # of propagating them to the caller. this is similar in behavior to Promise.allSettled
-    await asyncio.gather(*(sem_coro(c) for c in coroutines), return_exceptions=True)
-
-
 async def evaluate_output(
     test_id: str,
     test_case: BaseTestCase,
@@ -135,7 +95,7 @@ async def evaluate_output(
     else:
         try:
             ctx = contextvars.copy_context()
-            evaluation = await loop.run_in_executor(
+            evaluation = await global_state.event_loop().run_in_executor(
                 None,
                 ctx.run,
                 evaluator.evaluate,
@@ -190,7 +150,7 @@ async def run_test_case(
     else:
         try:
             ctx = contextvars.copy_context()
-            output = await loop.run_in_executor(None, ctx.run, fn, test_case)
+            output = await global_state.event_loop().run_in_executor(None, ctx.run, fn, test_case)
         except Exception as err:
             await send_error(
                 test_id=test_id,
@@ -300,8 +260,8 @@ def run_test_suite(
     # How many evaluators to run concurrently on the result of a test case
     max_evaluator_concurrency: int = 5,
 ):
-    init_global_vars_and_event_loop()
-
+    init_client()
+    global_state.init()
     future = asyncio.run_coroutine_threadsafe(
         async_run_test_suite(
             test_id=id,
@@ -311,6 +271,6 @@ def run_test_suite(
             max_test_case_concurrency=max_test_case_concurrency,
             max_evaluator_concurrency=max_evaluator_concurrency,
         ),
-        loop,
+        global_state.event_loop(),
     )
     future.result()
