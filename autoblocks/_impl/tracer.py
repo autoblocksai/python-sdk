@@ -51,7 +51,6 @@ class AutoblocksTracer:
             )
 
         self._client_headers = {"Authorization": f"Bearer {ingestion_key}"}
-        self._client = global_state.http_client()
         self._timeout_seconds = timeout.total_seconds()
 
     def set_trace_id(self, trace_id: str) -> None:
@@ -123,19 +122,18 @@ class AutoblocksTracer:
         trace_id = trace_id or self._trace_id
         timestamp = timestamp or datetime.now(timezone.utc).isoformat()
 
-        event_dict = {
-            "message": message,
-            "traceId": trace_id,
-            "timestamp": timestamp,
-            "properties": merged_properties,
-        }
-
-        req = await self._client.post(
+        req = await global_state.http_client().post(
             url=INGESTION_ENDPOINT,
-            json=event_dict,
+            json={
+                "message": message,
+                "traceId": trace_id,
+                "timestamp": timestamp,
+                "properties": merged_properties,
+            },
             headers=self._client_headers,
             timeout=self._timeout_seconds,
         )
+        req.raise_for_status()
         resp = req.json()
         return SendEventResponse(trace_id=resp.get("traceId"))
 

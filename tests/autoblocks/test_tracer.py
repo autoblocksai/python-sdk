@@ -5,7 +5,6 @@ from unittest import mock
 
 import freezegun
 import pytest
-from httpx import Timeout
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks.tracer import AutoblocksTracer
@@ -26,9 +25,8 @@ def reset_client():
 timestamp = "2021-01-01T01:01:01.000001+00:00"
 
 
-def test_client_init_with_key():
+def test_client_headers_init_with_key():
     tracer = AutoblocksTracer("mock-ingestion-key")
-    assert tracer._client.timeout == Timeout(5)
     assert tracer._client_headers["Authorization"] == "Bearer mock-ingestion-key"
 
 
@@ -38,9 +36,8 @@ def test_client_init_with_key():
         "AUTOBLOCKS_INGESTION_KEY": "mock-ingestion-key",
     },
 )
-def test_client_init_with_env_var():
+def test_client_init_headers_with_env_var():
     tracer = AutoblocksTracer()
-    assert tracer._client.timeout == Timeout(5)
     assert tracer._client_headers["Authorization"] == "Bearer mock-ingestion-key"
 
 
@@ -451,17 +448,3 @@ def test_tracer_start_span(*args, **kwargs):
 
     assert tracer._properties.get("span_id") is None
     assert tracer._properties.get("parent_span_id") is None
-
-
-@mock.patch.dict(
-    os.environ,
-    {
-        "AUTOBLOCKS_INGESTION_KEY": "key",
-    },
-)
-def test_tracer_single_client():
-    tracer1 = AutoblocksTracer()
-    assert tracer1._client is not None
-    tracer2 = AutoblocksTracer()
-    assert tracer2._client is tracer1._client
-    assert id(tracer2._client) == id(tracer1._client)
