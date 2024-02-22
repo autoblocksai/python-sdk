@@ -29,9 +29,9 @@ def init() -> None:
     _started = True
 
 
-def run_event_loop(_event_loop: asyncio.AbstractEventLoop) -> None:
-    asyncio.set_event_loop(_event_loop)
-    _event_loop.run_forever()
+def run_event_loop(event_loop: asyncio.AbstractEventLoop) -> None:
+    asyncio.set_event_loop(event_loop)
+    event_loop.run_forever()
 
 
 def event_loop() -> asyncio.AbstractEventLoop:
