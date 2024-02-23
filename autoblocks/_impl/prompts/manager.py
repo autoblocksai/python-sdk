@@ -1,9 +1,7 @@
 import abc
-import concurrent.futures
+import asyncio
 import contextlib
 import logging
-import threading
-import time
 from datetime import timedelta
 from enum import Enum
 from typing import ContextManager
@@ -15,8 +13,8 @@ from typing import Type
 from typing import TypeVar
 from typing import Union
 
-import httpx
-
+from autoblocks._impl import global_state
+from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.prompts.constants import LATEST
 from autoblocks._impl.prompts.context import PromptExecutionContext
 from autoblocks._impl.prompts.models import HeadlessPrompt
@@ -26,19 +24,6 @@ from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import encode_uri_component
 
 log = logging.getLogger(__name__)
-
-global_api_client = None
-
-
-def get_or_create_api_client(api_key: str) -> httpx.Client:
-    global global_api_client
-    if global_api_client is None:
-        global_api_client = httpx.Client(
-            base_url="https://api.autoblocks.ai",
-            headers={"Authorization": f"Bearer {api_key}"},
-        )
-    return global_api_client
-
 
 ExecutionContextType = TypeVar("ExecutionContextType", bound=PromptExecutionContext)
 MinorVersionEnumType = TypeVar("MinorVersionEnumType", bound=Enum)
@@ -76,6 +61,7 @@ class AutoblocksPromptManager(
         refresh_timeout: timedelta = timedelta(seconds=30),
         refresh_interval: timedelta = timedelta(seconds=10),
     ):
+        global_state.init()
         self._minor_version = PromptMinorVersion.model_validate({"version": minor_version})
         self._refresh_timeout = refresh_timeout
         self._refresh_interval = refresh_interval
@@ -88,87 +74,91 @@ class AutoblocksPromptManager(
                 f"set the {AutoblocksEnvVar.API_KEY} environment variable."
             )
 
+        self._api_key = api_key
+
         refresh_seconds = refresh_interval.total_seconds()
         if refresh_seconds < 1:
             raise ValueError(f"Refresh interval can't be shorter than 1 second (got {refresh_seconds}s)")
-
-        self._client = get_or_create_api_client(api_key)
 
         self._init(init_timeout)
 
         if LATEST in self._minor_version.all_minor_versions:
             log.info(f"Refreshing latest prompt every {refresh_seconds} seconds")
-            # Since this is a daemon thread, we don't need to expose a way to explicitly
-            # stop it. It will be stopped when the main thread exits.
-            self._refresh_thread = threading.Thread(target=self._refresh_loop, daemon=True)
-            self._refresh_thread.start()
+            asyncio.run_coroutine_threadsafe(
+                self._refresh_loop(),
+                global_state.event_loop(),
+            )
 
     def _make_request_url(self, minor_version: str) -> str:
         prompt_id = encode_uri_component(self.__prompt_id__)
         major_version = encode_uri_component(self.__prompt_major_version__)
         minor_version = encode_uri_component(minor_version)
-        return f"/prompts/{prompt_id}/major/{major_version}/minor/{minor_version}"
+        return f"{API_ENDPOINT}/prompts/{prompt_id}/major/{major_version}/minor/{minor_version}"
 
-    def _get_prompt(
+    async def _get_prompt(
         self,
         minor_version: str,
         timeout: timedelta,
     ) -> HeadlessPrompt:
-        resp = self._client.get(
+        resp = await global_state.http_client().get(
             self._make_request_url(minor_version),
             timeout=timeout.total_seconds(),
+            headers={"Authorization": f"Bearer {self._api_key}"},
         )
         resp.raise_for_status()
         return HeadlessPrompt.model_validate(resp.json())
 
-    def _init(self, timeout: timedelta) -> None:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_to_minor_version: Dict[concurrent.futures.Future, str] = {
-                executor.submit(
-                    self._get_prompt,
-                    minor_version,
-                    timeout,
-                ): minor_version
-                for minor_version in self._minor_version.all_minor_versions
-            }
+    async def _init_async(self, timeout: timedelta) -> None:
+        # Convert all_minor_versions (which is a set) to a list
+        # to guarantee we get the same order both when fetching
+        # via gather and zipping together the minor versions to
+        # their results.
+        minor_versions = sorted(self._minor_version.all_minor_versions)
+        try:
+            prompts = await asyncio.gather(
+                *[self._get_prompt(minor_version, timeout) for minor_version in minor_versions],
+            )
+        except Exception as err:
+            log.error(f"Failed to initialize prompt manager: {err}")
+            raise err
 
-            for future in concurrent.futures.as_completed(future_to_minor_version):
-                minor_version = future_to_minor_version[future]
-                try:
-                    prompt = future.result()
-                    # Note that the key here is the minor version from the futures
-                    # dictionary, not `prompt.minor_version`. This is because the
-                    # latter will contain the actual version number, which may be
-                    # different from the minor version we requested (in the case
-                    # where we requested LATEST).
-                    self._minor_version_to_prompt[minor_version] = prompt
-                    log.info(f"Successfully fetched version v{self.__prompt_major_version__}.{prompt.minor_version}")
-                except Exception as err:
-                    log.error(f"Failed to fetch version v{self.__prompt_major_version__}.{minor_version}: {err}")
-                    raise err
+        for minor_version, prompt in zip(minor_versions, prompts):
+            # Note that the key here is the minor version from the zipped
+            # tuple, not `prompt.minor_version`. This is because the
+            # latter will contain the actual version number, which may be
+            # different from the minor version we requested (in the case
+            # where we requested LATEST or UNDEPLOYED).
+            self._minor_version_to_prompt[minor_version] = prompt
+            log.info(f"Successfully fetched version v{self.__prompt_major_version__}.{prompt.minor_version}")
+
+    def _init(self, timeout: timedelta) -> None:
+        future = asyncio.run_coroutine_threadsafe(
+            self._init_async(timeout),
+            global_state.event_loop(),
+        )
+        future.result()
 
         log.info("Successfully initialized prompt manager!")
 
-    def _refresh_loop(self) -> None:
+    async def _refresh_loop(self) -> None:
         """
-        Runs in a background thread and refreshes the latest version of the prompt
-        every `refresh_interval` seconds.
+        Refreshes the latest version of the prompt every `refresh_interval` seconds.
 
         This isn't exactly "every n seconds" but more "run and then wait n seconds",
         which will cause it to drift each run by the time it takes to run the refresh,
         but I think that is ok in this scenario.
         """
         while True:
-            time.sleep(self._refresh_interval.total_seconds())
+            await asyncio.sleep(self._refresh_interval.total_seconds())
 
             try:
-                self._refresh_latest()
+                await self._refresh_latest()
             except Exception as err:
                 log.warning(f"Failed to refresh latest prompt: {err}")
 
-    def _refresh_latest(self):
+    async def _refresh_latest(self):
         # Get the latest minor version within this prompt's major version
-        new_latest = self._get_prompt(
+        new_latest = await self._get_prompt(
             minor_version=LATEST,
             timeout=self._refresh_timeout,
         )
