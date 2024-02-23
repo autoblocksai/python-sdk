@@ -9,7 +9,7 @@ import pytest
 
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.util import AutoblocksEnvVar
-from autoblocks.testing.models import BaseEvaluator
+from autoblocks.testing.models import BaseTestEvaluator
 from autoblocks.testing.models import Evaluation
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.run import run_test_suite
@@ -113,9 +113,10 @@ def test_invalid_evaluators(httpx_mock):
     assert req_body["testCaseHash"] is None
     assert req_body["evaluatorExternalId"] is None
     assert req_body["error"]["name"] == "AssertionError"
-    assert req_body["error"]["message"] == "[my-test-id] Evaluator 1 does not implement BaseEvaluator."
+    assert req_body["error"]["message"] == "[my-test-id] Evaluator 1 does not implement BaseTestEvaluator."
     assert (
-        "AssertionError: [my-test-id] Evaluator 1 does not implement BaseEvaluator." in req_body["error"]["stacktrace"]
+        "AssertionError: [my-test-id] Evaluator 1 does not implement BaseTestEvaluator."
+        in req_body["error"]["stacktrace"]
     )
 
 
@@ -263,10 +264,10 @@ def test_error_in_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase):
         return test_case.input + "!"
 
-    class MyEvaluator(BaseEvaluator):
+    class MyEvaluator(BaseTestEvaluator):
         id = "my-evaluator"
 
-        def evaluate(self, test_case: MyTestCase, output: str) -> Evaluation:
+        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             if test_case.input == "a":
                 return Evaluation(
                     score=0.5,
@@ -469,16 +470,16 @@ def test_with_evaluators(httpx_mock):
     def test_fn(test_case: MyTestCase):
         return test_case.input + "!"
 
-    class EvaluatorA(BaseEvaluator):
+    class EvaluatorA(BaseTestEvaluator):
         id = "evaluator-a"
 
-        def evaluate(self, test_case: MyTestCase, output: str) -> Evaluation:
+        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0)
 
-    class EvaluatorB(BaseEvaluator):
+    class EvaluatorB(BaseTestEvaluator):
         id = "evaluator-b"
 
-        def evaluate(self, test_case: MyTestCase, output: str) -> Evaluation:
+        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=1)
 
     run_test_suite(
@@ -503,16 +504,16 @@ def test_concurrency(httpx_mock):
     def test_fn(test_case: MyTestCase):
         return test_case.input + "!"
 
-    class EvaluatorA(BaseEvaluator):
+    class EvaluatorA(BaseTestEvaluator):
         id = "evaluator-a"
 
-        def evaluate(self, test_case: MyTestCase, output: str) -> Evaluation:
+        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0)
 
-    class EvaluatorB(BaseEvaluator):
+    class EvaluatorB(BaseTestEvaluator):
         id = "evaluator-b"
 
-        def evaluate(self, test_case: MyTestCase, output: str) -> Evaluation:
+        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=1)
 
     run_test_suite(
@@ -774,16 +775,16 @@ def test_async_evaluators(httpx_mock):
     def test_fn(test_case: MyTestCase):
         return test_case.input + "!"
 
-    class EvaluatorA(BaseEvaluator):
+    class EvaluatorA(BaseTestEvaluator):
         id = "evaluator-a"
 
-        async def evaluate(self, test_case: MyTestCase, output: str) -> Evaluation:
+        async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0)
 
-    class EvaluatorB(BaseEvaluator):
+    class EvaluatorB(BaseTestEvaluator):
         id = "evaluator-b"
 
-        async def evaluate(self, test_case: MyTestCase, output: str) -> Evaluation:
+        async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=1)
 
     run_test_suite(

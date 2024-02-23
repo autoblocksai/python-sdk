@@ -12,8 +12,8 @@ import httpx
 import orjson
 
 from autoblocks._impl import global_state
-from autoblocks._impl.testing.models import BaseEvaluator
 from autoblocks._impl.testing.models import BaseTestCase
+from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import gather_with_max_concurrency
@@ -78,13 +78,13 @@ async def evaluate_output(
     test_id: str,
     test_case: BaseTestCase,
     output: Any,
-    evaluator: BaseEvaluator,
+    evaluator: BaseTestEvaluator,
 ):
     evaluation: Optional[Evaluation] = None
 
-    if inspect.iscoroutinefunction(evaluator.evaluate):
+    if inspect.iscoroutinefunction(evaluator.evaluate_test_case):
         try:
-            evaluation = await evaluator.evaluate(test_case, output)
+            evaluation = await evaluator.evaluate_test_case(test_case, output)
         except Exception as err:
             await send_error(
                 test_id=test_id,
@@ -98,7 +98,7 @@ async def evaluate_output(
             evaluation = await global_state.event_loop().run_in_executor(
                 None,
                 ctx.run,
-                evaluator.evaluate,
+                evaluator.evaluate_test_case,
                 test_case,
                 output,
             )
@@ -128,7 +128,7 @@ async def evaluate_output(
 async def run_test_case(
     test_id: str,
     test_case: BaseTestCase,
-    evaluators: List[BaseEvaluator],
+    evaluators: List[BaseTestEvaluator],
     fn: Callable,
     max_evaluator_concurrency: int,
 ):
@@ -197,7 +197,7 @@ async def run_test_case(
 async def async_run_test_suite(
     test_id: str,
     test_cases: List[BaseTestCase],
-    evaluators: List[BaseEvaluator],
+    evaluators: List[BaseTestEvaluator],
     fn: Callable,
     max_test_case_concurrency: int,
     max_evaluator_concurrency: int,
@@ -208,12 +208,12 @@ async def async_run_test_suite(
             assert isinstance(
                 test_case,
                 BaseTestCase,
-            ), f"[{test_id}] Test case {test_case} does not implement BaseTestCase."
+            ), f"[{test_id}] Test case {test_case} does not implement {BaseTestCase.__name__}."
         for evaluator in evaluators:
             assert isinstance(
                 evaluator,
-                BaseEvaluator,
-            ), f"[{test_id}] Evaluator {evaluator} does not implement BaseEvaluator."
+                BaseTestEvaluator,
+            ), f"[{test_id}] Evaluator {evaluator} does not implement {BaseTestEvaluator.__name__}."
     except Exception as err:
         await send_error(
             test_id=test_id,
@@ -253,7 +253,7 @@ async def async_run_test_suite(
 def run_test_suite(
     id: str,
     test_cases: List[BaseTestCase],
-    evaluators: List[BaseEvaluator],
+    evaluators: List[BaseTestEvaluator],
     fn: Callable,
     # How many test cases to run concurrently
     max_test_case_concurrency: int = 10,

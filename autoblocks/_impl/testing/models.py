@@ -29,12 +29,17 @@ class BaseTestCase(abc.ABC):
         return self.hash()
 
 
-class BaseEvaluator(abc.ABC):
+class BaseTestEvaluator(abc.ABC):
+    """
+    An abstract base class for implementing an evaluator that runs on test cases
+    in an offline testing scenario.
+    """
+
     @property
     @abc.abstractmethod
     def id(self) -> str:
         pass
 
     @abc.abstractmethod
-    def evaluate(self, test_case: BaseTestCase, output: Any) -> Evaluation:
+    def evaluate_test_case(self, test_case: BaseTestCase, output: Any) -> Evaluation:
         pass
