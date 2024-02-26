@@ -214,6 +214,7 @@ class AutoblocksTracer:
         properties: Optional[Dict] = None,
         evaluators: List[BaseEventEvaluator] = [],
         max_evaluator_concurrency: int = 5,
+        prompt_tracking: Optional[Dict] = None,
     ) -> SendEventResponse:
         """
         Sends an event to the Autoblocks ingestion API.
@@ -232,6 +233,7 @@ class AutoblocksTracer:
                     properties=properties,
                     evaluators=evaluators,
                     max_evaluator_concurrency=max_evaluator_concurrency,
+                    prompt_tracking=prompt_tracking,
                 ),
                 global_state.event_loop(),
             )
