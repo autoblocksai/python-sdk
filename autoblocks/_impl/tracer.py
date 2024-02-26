@@ -150,6 +150,7 @@ class AutoblocksTracer:
         parent_span_id: Optional[str] = None,
         timestamp: Optional[str] = None,
         properties: Optional[Dict] = None,
+        prompt_tracking: Optional[Dict] = None,
     ) -> SendEventResponse:
         """
         Sends an event to the Autoblocks ingestion API.
@@ -166,6 +167,7 @@ class AutoblocksTracer:
                     parent_span_id=parent_span_id,
                     timestamp=timestamp,
                     properties=properties,
+                    prompt_tracking=prompt_tracking,
                 ),
                 global_state.event_loop(),
             )
