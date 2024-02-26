@@ -1,32 +1,33 @@
 import asyncio
 import contextvars
+import dataclasses
 import inspect
 import logging
 import uuid
 from contextlib import contextmanager
-from dataclasses import dataclass
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks._impl.testing.models import BaseEventEvaluator
-from autoblocks._impl.testing.models import EventEvaluation
+from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import TracerEvent
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import gather_with_max_concurrency
 
+log = logging.getLogger(__name__)
 
-@dataclass
+
+@dataclasses.dataclass()
 class SendEventResponse:
     trace_id: Optional[str]
-
-
-log = logging.getLogger(__name__)
 
 
 class AutoblocksTracer:
@@ -109,7 +110,18 @@ class AutoblocksTracer:
                 props["span_id"] = prev_span_id
             self.set_properties(props)
 
-    async def _evaluate_event(self, event: TracerEvent, evaluator: BaseEventEvaluator) -> Optional[EventEvaluation]:
+    def _evaluation_to_json(evaluation: Evaluation, evaluator_external_id: str) -> Dict[str, Any]:
+        return dict(
+            id=str(uuid.uuid4()),
+            score=evaluation.score,
+            threshold=dataclasses.asdict(evaluation.threshold) if evaluation.threshold else None,
+            metadata=evaluation.metadata,
+            evaluatorExternalId=evaluator_external_id,
+        )
+
+    async def _evaluate_event(
+        self, event: TracerEvent, evaluator: BaseEventEvaluator
+    ) -> Optional[Union[Evaluation, None]]:
         """
         Evaluates an event using a provided evaluator.
         """
@@ -118,7 +130,7 @@ class AutoblocksTracer:
             try:
                 evaluation = await evaluator.evaluate_event(event=event)
             except Exception as err:
-                log.error("Event evaluation threw an exception", err)
+                log.error("Unable to execute evaluation. Error: %s", repr(err), exc_info=True)
         else:
             try:
                 ctx = contextvars.copy_context()
@@ -129,18 +141,17 @@ class AutoblocksTracer:
                     event,
                 )
             except Exception as err:
-                log.error("Event evaluation threw an exception", err)
+                log.error("Unable to execute evaluation. Error: %s", repr(err), exc_info=True)
 
         return evaluation
 
-    async def _run_and_build_evals_properties(
-        self, evaluators: BaseEventEvaluator, event: TracerEvent, max_evaluator_concurrency: int
-    ) -> List[EventEvaluation]:
-        event_dict = TracerEvent.to_json(event)
+    async def _run_evaluators(
+        self, evaluators: List[BaseEventEvaluator], event: TracerEvent, max_evaluator_concurrency: int
+    ) -> List[Dict[str, Any]]:
         if len(evaluators) == 0:
-            return event_dict
+            return []
         try:
-            evaluations: List[EventEvaluation] = await gather_with_max_concurrency(
+            evaluations: List[Union[Evaluation, None]] = await gather_with_max_concurrency(
                 max_evaluator_concurrency,
                 [
                     self._evaluate_event(
@@ -150,58 +161,68 @@ class AutoblocksTracer:
                     for evaluator in evaluators
                 ],
             )
-            if evaluations and len(evaluations) > 0:
-                evaluations_json = [
-                    EventEvaluation.to_json(evaluation)
-                    for evaluation in evaluations
-                    if isinstance(evaluation, EventEvaluation)
-                ]
-                if len(evaluations_json) > 0:
-                    event_dict["properties"]["evaluations"] = evaluations_json
-                return event_dict
+            return [
+                self._evaluation_to_json(event_evaluation=item, evaluator_external_id=evaluator.id)
+                for evaluator, item in zip(evaluators, evaluations)
+                if item is not None
+            ]
+
         except Exception as err:
-            log.error("Unable to complete evaluating event", err)
-            return event_dict
+            log.error("Unable to complete evaluating events. Error: %s", str(err), exc_info=True)
+            return []
 
     async def _send_event_unsafe(
         self,
         # Require all arguments to be specified via key=value
         *,
         message: str,
-        trace_id: Optional[str] = None,
-        span_id: Optional[str] = None,
-        parent_span_id: Optional[str] = None,
-        timestamp: Optional[str] = None,
-        properties: Optional[Dict] = None,
-        prompt_tracking: Optional[Dict] = None,
-        evaluators: List[BaseEventEvaluator] = [],
+        trace_id: Optional[str],
+        span_id: Optional[str],
+        parent_span_id: Optional[str],
+        timestamp: Optional[str],
+        properties: Optional[Dict],
+        prompt_tracking: Optional[Dict],
+        evaluators: Optional[List[BaseEventEvaluator]],
         max_evaluator_concurrency: int,
     ) -> SendEventResponse:
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
+
+        # Overwrite properties with any provided as top level arguments
         if span_id:
             merged_properties["span_id"] = span_id
         if parent_span_id:
             merged_properties["parent_span_id"] = parent_span_id
         if prompt_tracking:
             merged_properties["promptTracking"] = prompt_tracking
-
         trace_id = trace_id or self._trace_id
         timestamp = timestamp or datetime.now(timezone.utc).isoformat()
 
-        event = TracerEvent(
+        # If there are evaluators, run them and compute the evaluations property
+        if evaluators:
+            evaluations = await self._run_evaluators(
+                event=TracerEvent(
+                    message=message,
+                    trace_id=trace_id,
+                    timestamp=timestamp,
+                    properties=merged_properties,
+                ),
+                evaluators=evaluators,
+                max_evaluator_concurrency=max_evaluator_concurrency,
+            )
+            if evaluations:
+                # Update merged properties with computed evaluations property
+                merged_properties["evaluations"] = evaluations
+
+        traced_event = TracerEvent(
             message=message,
             trace_id=trace_id,
             timestamp=timestamp,
             properties=merged_properties,
         )
-
-        transformed_event_json = await self._run_and_build_evals_properties(
-            evaluators=evaluators, event=event, max_evaluator_concurrency=max_evaluator_concurrency
-        )
         req = await global_state.http_client().post(
             url=INGESTION_ENDPOINT,
-            json=transformed_event_json,
+            json=traced_event.to_json(),
             headers=self._client_headers,
             timeout=self._timeout_seconds,
         )
@@ -219,7 +240,7 @@ class AutoblocksTracer:
         parent_span_id: Optional[str] = None,
         timestamp: Optional[str] = None,
         properties: Optional[Dict] = None,
-        evaluators: List[BaseEventEvaluator] = [],
+        evaluators: Optional[List[BaseEventEvaluator]] = None,
         max_evaluator_concurrency: int = 5,
         prompt_tracking: Optional[Dict] = None,
     ) -> SendEventResponse:
@@ -244,7 +265,8 @@ class AutoblocksTracer:
                 ),
                 global_state.event_loop(),
             )
-            return future.result()
+            if AutoblocksEnvVar.TRACER_BLOCK_ON_SEND_EVENT.get() == "1":
+                future.result()
         except Exception as err:
             log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
             if AutoblocksEnvVar.TRACER_THROW_ON_ERROR.get() == "1":

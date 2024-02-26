@@ -1,7 +1,6 @@
 import abc
 import dataclasses
 import functools
-import uuid
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -14,13 +13,12 @@ class TracerEvent:
     timestamp: str
     properties: dict
 
-    @classmethod
-    def to_json(cls, event: Dict[str, any]):
+    def to_json(self) -> Dict[str, Any]:
         return {
-            "message": event.message,
-            "traceId": event.trace_id,
-            "timestamp": event.timestamp,
-            "properties": event.properties,
+            "message": self.message,
+            "traceId": self.trace_id,
+            "timestamp": self.timestamp,
+            "properties": self.properties,
         }
 
 
@@ -33,29 +31,10 @@ class Threshold:
 
 
 @dataclasses.dataclass()
-class EventEvaluation:
-    evaluator_external_id: str
-    score: float
-    id: Optional[str] = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
-    metadata: Optional[dict] = None
-    threshold: Optional[Threshold] = None
-
-    @classmethod
-    def to_json(cls, event_evaluation: Dict[str, any]):
-        return dict(
-            evaluatorExternalId=event_evaluation.evaluator_external_id,
-            id=str(event_evaluation.id),
-            score=event_evaluation.score,
-            metadata=event_evaluation.metadata,
-            threshold=dataclasses.asdict(event_evaluation.threshold) if event_evaluation.threshold else None,
-        )
-
-
-# TODO: Rename TestEvaluation?
-@dataclasses.dataclass()
 class Evaluation:
     score: float
     threshold: Optional[Threshold] = None
+    metadata: Optional[dict] = None
 
 
 class BaseTestCase(abc.ABC):
@@ -96,5 +75,5 @@ class BaseEventEvaluator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def evaluate_event(self, event: TracerEvent) -> EventEvaluation:
+    def evaluate_event(self, event: TracerEvent) -> Evaluation:
         pass

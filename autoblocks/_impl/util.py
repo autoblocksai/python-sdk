@@ -21,6 +21,7 @@ class AutoblocksEnvVar(StrEnum):
     CLI_SERVER_ADDRESS = "AUTOBLOCKS_CLI_SERVER_ADDRESS"
     INGESTION_KEY = "AUTOBLOCKS_INGESTION_KEY"
     TRACER_THROW_ON_ERROR = "AUTOBLOCKS_TRACER_THROW_ON_ERROR"
+    TRACER_BLOCK_ON_SEND_EVENT = "TRACER_BLOCK_ON_SEND_EVENT"
 
     def get(self) -> Optional[str]:
         return os.environ.get(self.value)
@@ -38,7 +39,7 @@ def encode_uri_component(s: str) -> str:
 async def gather_with_max_concurrency(
     max_concurrency: int,
     coroutines: List[Coroutine],
-) -> asyncio.Future[list]:
+):
     """
     Borrowed from https://stackoverflow.com/a/61478547
     """
