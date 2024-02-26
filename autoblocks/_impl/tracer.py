@@ -111,6 +111,7 @@ class AutoblocksTracer:
         parent_span_id: Optional[str] = None,
         timestamp: Optional[str] = None,
         properties: Optional[Dict] = None,
+        prompt_tracking: Optional[Dict] = None,
     ) -> SendEventResponse:
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
@@ -118,6 +119,8 @@ class AutoblocksTracer:
             merged_properties["span_id"] = span_id
         if parent_span_id:
             merged_properties["parent_span_id"] = parent_span_id
+        if prompt_tracking:
+            merged_properties["promptTracking"] = prompt_tracking
 
         trace_id = trace_id or self._trace_id
         timestamp = timestamp or datetime.now(timezone.utc).isoformat()
