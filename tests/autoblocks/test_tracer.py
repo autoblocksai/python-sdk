@@ -1,12 +1,15 @@
 import os
 import uuid
 from datetime import datetime
+from typing import Any
 from unittest import mock
 
 import freezegun
 import pytest
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
+from autoblocks._impl.testing.models import BaseEventEvaluator
+from autoblocks._impl.testing.models import EventEvaluation
 from autoblocks.tracer import AutoblocksTracer
 from tests.autoblocks.util import make_expected_body
 
@@ -448,3 +451,55 @@ def test_tracer_start_span(*args, **kwargs):
 
     assert tracer._properties.get("span_id") is None
     assert tracer._properties.get("parent_span_id") is None
+
+
+def test_tracer_prod_evaluations(httpx_mock):
+    test_event_id = uuid.uuid4()
+
+    class MyEvaluator(BaseEventEvaluator):
+        id = "my-evaluator"
+
+        def evaluate_event(self, event: Any) -> EventEvaluation:
+            return EventEvaluation(
+                evaluator_external_id=self.id,
+                id=test_event_id,
+                score=0.9,
+                threshold={"gt": 0.5},
+            )
+
+    mock_input = {
+        "trace_id": "my-trace-id",
+        "timestamp": timestamp,
+        "properties": {},
+        "evaluators": [
+            MyEvaluator(),
+        ],
+    }
+    httpx_mock.add_response(
+        url=INGESTION_ENDPOINT,
+        method="POST",
+        status_code=200,
+        json={"traceId": "my-trace-id"},
+        match_headers={"Authorization": "Bearer mock-ingestion-key"},
+        match_content=make_expected_body(
+            dict(
+                message="my-message",
+                traceId="my-trace-id",
+                timestamp=timestamp,
+                properties={
+                    "evaluations": [
+                        {
+                            "externalEvaluationId": "my-evaluator",
+                            "id": str(test_event_id),
+                            "score": 0.9,
+                            "metadata": None,
+                            "threshold": {"gt": 0.5},
+                        }
+                    ]
+                },
+            )
+        ),
+    )
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    resp = tracer.send_event("my-message", **mock_input)
+    assert resp.trace_id == "my-trace-id"

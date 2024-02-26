@@ -50,4 +50,4 @@ async def gather_with_max_concurrency(
 
     # return_exceptions=True causes exceptions to be returned as values instead
     # of propagating them to the caller. this is similar in behavior to Promise.allSettled
-    await asyncio.gather(*(sem_coro(c) for c in coroutines), return_exceptions=True)
+    return await asyncio.gather(*(sem_coro(c) for c in coroutines), return_exceptions=True)
