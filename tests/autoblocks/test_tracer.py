@@ -1,7 +1,6 @@
 import os
 import uuid
 from datetime import datetime
-from typing import Any
 from unittest import mock
 
 import freezegun
@@ -10,6 +9,7 @@ import pytest
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import EventEvaluation
+from autoblocks._impl.testing.models import TracerEvent
 from autoblocks.tracer import AutoblocksTracer
 from tests.autoblocks.util import make_expected_body
 
@@ -459,12 +459,11 @@ def test_tracer_prod_evaluations(httpx_mock):
     class MyEvaluator(BaseEventEvaluator):
         id = "my-evaluator"
 
-        def evaluate_event(self, event: Any) -> EventEvaluation:
+        def evaluate_event(self, event: TracerEvent) -> EventEvaluation:
             return EventEvaluation(
                 evaluator_external_id=self.id,
                 id=test_event_id,
                 score=0.9,
-                threshold={"gt": 0.5},
             )
 
     mock_input = {
@@ -489,11 +488,11 @@ def test_tracer_prod_evaluations(httpx_mock):
                 properties={
                     "evaluations": [
                         {
-                            "externalEvaluationId": "my-evaluator",
+                            "evaluatorExternalId": "my-evaluator",
                             "id": str(test_event_id),
                             "score": 0.9,
                             "metadata": None,
-                            "threshold": {"gt": 0.5},
+                            "threshold": None,
                         }
                     ]
                 },

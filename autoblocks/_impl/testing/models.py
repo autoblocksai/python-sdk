@@ -7,6 +7,23 @@ from typing import Optional
 
 
 @dataclasses.dataclass()
+class TracerEvent:
+    message: str
+    trace_id: str
+    timestamp: str
+    properties: dict
+
+    @classmethod
+    def to_json(cls, event):
+        return {
+            "message": event.message,
+            "traceId": event.trace_id,
+            "timestamp": event.timestamp,
+            "properties": event.properties,
+        }
+
+
+@dataclasses.dataclass()
 class Threshold:
     lt: Optional[float] = None
     lte: Optional[float] = None
@@ -21,6 +38,17 @@ class EventEvaluation:
     id: Optional[str] = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
     metadata: Optional[dict] = None
     threshold: Optional[Threshold] = None
+
+    @classmethod
+    def to_json(cls, event_evaluation):
+        print(event_evaluation)
+        return dict(
+            evaluatorExternalId=event_evaluation.evaluator_external_id,
+            id=str(event_evaluation.id),
+            score=event_evaluation.score,
+            metadata=dict(event_evaluation.metadata) if event_evaluation.metadata else None,
+            threshold=dict(event_evaluation.threshold) if event_evaluation.threshold else None,
+        )
 
 
 # TODO: Rename TestEvaluation?
@@ -68,5 +96,5 @@ class BaseEventEvaluator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def evaluate_event(self, event: Any) -> EventEvaluation:
+    def evaluate_event(self, event: TracerEvent) -> EventEvaluation:
         pass
