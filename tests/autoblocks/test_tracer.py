@@ -454,7 +454,7 @@ def test_tracer_start_span(*args, **kwargs):
 
 
 def test_tracer_prod_evaluations(httpx_mock):
-    test_event_id = uuid.uuid4()
+    test_evaluation_id = uuid.uuid4()
 
     class MyEvaluator(BaseEventEvaluator):
         id = "my-evaluator"
@@ -462,8 +462,9 @@ def test_tracer_prod_evaluations(httpx_mock):
         def evaluate_event(self, event: TracerEvent) -> EventEvaluation:
             return EventEvaluation(
                 evaluator_external_id=self.id,
-                id=test_event_id,
+                id=test_evaluation_id,
                 score=0.9,
+                threshold={"gte": 0.5},
             )
 
     mock_input = {
@@ -489,13 +490,48 @@ def test_tracer_prod_evaluations(httpx_mock):
                     "evaluations": [
                         {
                             "evaluatorExternalId": "my-evaluator",
-                            "id": str(test_event_id),
+                            "id": str(test_evaluation_id),
                             "score": 0.9,
                             "metadata": None,
-                            "threshold": None,
+                            "threshold": {"gte": 0.5},
                         }
                     ]
                 },
+            )
+        ),
+    )
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    resp = tracer.send_event("my-message", **mock_input)
+    assert resp.trace_id == "my-trace-id"
+
+
+def test_tracer_failing_evaluation(httpx_mock):
+    class MyEvaluator(BaseEventEvaluator):
+        id = "my-evaluator"
+
+        def evaluate_event(self, event: TracerEvent) -> EventEvaluation:
+            raise Exception("Something terrible went wrong")
+
+    mock_input = {
+        "trace_id": "my-trace-id",
+        "timestamp": timestamp,
+        "properties": {},
+        "evaluators": [
+            MyEvaluator(),
+        ],
+    }
+    httpx_mock.add_response(
+        url=INGESTION_ENDPOINT,
+        method="POST",
+        status_code=200,
+        json={"traceId": "my-trace-id"},
+        match_headers={"Authorization": "Bearer mock-ingestion-key"},
+        match_content=make_expected_body(
+            dict(
+                message="my-message",
+                traceId="my-trace-id",
+                timestamp=timestamp,
+                properties={},
             )
         ),
     )

@@ -41,7 +41,6 @@ class EventEvaluation:
 
     @classmethod
     def to_json(cls, event_evaluation):
-        print(event_evaluation)
         return dict(
             evaluatorExternalId=event_evaluation.evaluator_external_id,
             id=str(event_evaluation.id),

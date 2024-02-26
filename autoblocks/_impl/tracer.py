@@ -116,8 +116,8 @@ class AutoblocksTracer:
         if inspect.iscoroutinefunction(evaluator.evaluate_event):
             try:
                 evaluation = await evaluator.evaluate_event(event=event)
-            except Exception:
-                print("NEED TO LOG ERROR HERE")
+            except Exception as err:
+                log.error("Event evaluation through an exception", err)
         else:
             try:
                 ctx = contextvars.copy_context()
@@ -127,8 +127,8 @@ class AutoblocksTracer:
                     evaluator.evaluate_event,
                     event,
                 )
-            except Exception:
-                print("NEED TO LOG ERROR HERE")
+            except Exception as err:
+                log.error("Event evaluation through an exception", err)
 
         if evaluation is None:
             return
@@ -152,12 +152,15 @@ class AutoblocksTracer:
                 ],
             )
             if evaluations and len(evaluations) > 0:
-                # loop through each evaluations and build a dict containing externalEvaluationId as the key
-                formatted_eval_json = [EventEvaluation.to_json(evaluation) for evaluation in evaluations]
-                event_dict["properties"]["evaluations"] = formatted_eval_json
+                evaluations_json = [
+                    EventEvaluation.to_json(evaluation)
+                    for evaluation in filter(lambda x: isinstance(x, EventEvaluation), evaluations)
+                ]
+                if len(evaluations_json) > 0:
+                    event_dict["properties"]["evaluations"] = evaluations_json
                 return event_dict
-        except Exception:
-            print("NEED TO LOG ERROR HERE")
+        except Exception as err:
+            log.error("Unable to complete evaluating event", err)
             return event_dict
 
     async def _send_event_unsafe(
