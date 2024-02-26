@@ -109,10 +109,11 @@ class AutoblocksTracer:
                 props["span_id"] = prev_span_id
             self.set_properties(props)
 
-    async def evaluate_event(self, event: TracerEvent, evaluator: BaseEventEvaluator) -> None:
+    async def _evaluate_event(self, event: TracerEvent, evaluator: BaseEventEvaluator) -> Optional[EventEvaluation]:
         """
         Evaluates an event using a provided evaluator.
         """
+        evaluation = None
         if inspect.iscoroutinefunction(evaluator.evaluate_event):
             try:
                 evaluation = await evaluator.evaluate_event(event=event)
@@ -142,7 +143,7 @@ class AutoblocksTracer:
             evaluations: List[EventEvaluation] = await gather_with_max_concurrency(
                 max_evaluator_concurrency,
                 [
-                    self.evaluate_event(
+                    self._evaluate_event(
                         event=event,
                         evaluator=evaluator,
                     )
@@ -152,7 +153,8 @@ class AutoblocksTracer:
             if evaluations and len(evaluations) > 0:
                 evaluations_json = [
                     EventEvaluation.to_json(evaluation)
-                    for evaluation in filter(lambda x: isinstance(x, EventEvaluation), evaluations)
+                    for evaluation in evaluations
+                    if isinstance(evaluation, EventEvaluation)
                 ]
                 if len(evaluations_json) > 0:
                     event_dict["properties"]["evaluations"] = evaluations_json
@@ -195,7 +197,7 @@ class AutoblocksTracer:
         )
 
         transformed_event_json = await self._run_and_build_evals_properties(
-            evaluators, event, max_evaluator_concurrency
+            evaluators=evaluators, event=event, max_evaluator_concurrency=max_evaluator_concurrency
         )
         req = await global_state.http_client().post(
             url=INGESTION_ENDPOINT,

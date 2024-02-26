@@ -3,6 +3,7 @@ import dataclasses
 import functools
 import uuid
 from typing import Any
+from typing import Dict
 from typing import Optional
 
 
@@ -14,7 +15,7 @@ class TracerEvent:
     properties: dict
 
     @classmethod
-    def to_json(cls, event):
+    def to_json(cls, event: Dict[str, any]):
         return {
             "message": event.message,
             "traceId": event.trace_id,
@@ -40,13 +41,13 @@ class EventEvaluation:
     threshold: Optional[Threshold] = None
 
     @classmethod
-    def to_json(cls, event_evaluation):
+    def to_json(cls, event_evaluation: Dict[str, any]):
         return dict(
             evaluatorExternalId=event_evaluation.evaluator_external_id,
             id=str(event_evaluation.id),
             score=event_evaluation.score,
-            metadata=dict(event_evaluation.metadata) if event_evaluation.metadata else None,
-            threshold=dict(event_evaluation.threshold) if event_evaluation.threshold else None,
+            metadata=event_evaluation.metadata,
+            threshold=dataclasses.asdict(event_evaluation.threshold) if event_evaluation.threshold else None,
         )
 
 

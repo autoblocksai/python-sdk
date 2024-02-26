@@ -9,6 +9,7 @@ import pytest
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import EventEvaluation
+from autoblocks._impl.testing.models import Threshold
 from autoblocks._impl.testing.models import TracerEvent
 from autoblocks.tracer import AutoblocksTracer
 from tests.autoblocks.util import make_expected_body
@@ -464,17 +465,9 @@ def test_tracer_prod_evaluations(httpx_mock):
                 evaluator_external_id=self.id,
                 id=test_evaluation_id,
                 score=0.9,
-                threshold={"gte": 0.5},
+                threshold=Threshold(gte=0.5),
             )
 
-    mock_input = {
-        "trace_id": "my-trace-id",
-        "timestamp": timestamp,
-        "properties": {},
-        "evaluators": [
-            MyEvaluator(),
-        ],
-    }
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
         method="POST",
@@ -493,7 +486,7 @@ def test_tracer_prod_evaluations(httpx_mock):
                             "id": str(test_evaluation_id),
                             "score": 0.9,
                             "metadata": None,
-                            "threshold": {"gte": 0.5},
+                            "threshold": {"lt": None, "lte": None, "gt": None, "gte": 0.5},
                         }
                     ]
                 },
@@ -501,7 +494,13 @@ def test_tracer_prod_evaluations(httpx_mock):
         ),
     )
     tracer = AutoblocksTracer("mock-ingestion-key")
-    resp = tracer.send_event("my-message", **mock_input)
+    resp = tracer.send_event(
+        "my-message",
+        trace_id="my-trace-id",
+        timestamp=timestamp,
+        properties={},
+        evaluators=[MyEvaluator()],
+    )
     assert resp.trace_id == "my-trace-id"
 
 
@@ -512,14 +511,6 @@ def test_tracer_failing_evaluation(httpx_mock):
         def evaluate_event(self, event: TracerEvent) -> EventEvaluation:
             raise Exception("Something terrible went wrong")
 
-    mock_input = {
-        "trace_id": "my-trace-id",
-        "timestamp": timestamp,
-        "properties": {},
-        "evaluators": [
-            MyEvaluator(),
-        ],
-    }
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
         method="POST",
@@ -536,5 +527,7 @@ def test_tracer_failing_evaluation(httpx_mock):
         ),
     )
     tracer = AutoblocksTracer("mock-ingestion-key")
-    resp = tracer.send_event("my-message", **mock_input)
+    resp = tracer.send_event(
+        "my-message", trace_id="my-trace-id", timestamp=timestamp, properties={}, evaluators=[MyEvaluator()]
+    )
     assert resp.trace_id == "my-trace-id"

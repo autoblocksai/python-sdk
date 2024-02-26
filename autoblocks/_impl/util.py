@@ -38,7 +38,7 @@ def encode_uri_component(s: str) -> str:
 async def gather_with_max_concurrency(
     max_concurrency: int,
     coroutines: List[Coroutine],
-) -> None:
+) -> asyncio.Future[list]:
     """
     Borrowed from https://stackoverflow.com/a/61478547
     """
