@@ -128,7 +128,7 @@ class AutoblocksTracer:
                     event,
                 )
             except Exception as err:
-                log.error("Event evaluation through an exception", err)
+                log.error("Event evaluation threw an exception", err)
 
         if evaluation is None:
             return
