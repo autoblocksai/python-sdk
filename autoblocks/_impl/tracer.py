@@ -130,8 +130,6 @@ class AutoblocksTracer:
             except Exception as err:
                 log.error("Event evaluation threw an exception", err)
 
-        if evaluation is None:
-            return
         return evaluation
 
     async def _run_and_build_evals_properties(
