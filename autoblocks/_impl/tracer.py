@@ -117,7 +117,7 @@ class AutoblocksTracer:
             try:
                 evaluation = await evaluator.evaluate_event(event=event)
             except Exception as err:
-                log.error("Event evaluation through an exception", err)
+                log.error("Event evaluation threw an exception", err)
         else:
             try:
                 ctx = contextvars.copy_context()
