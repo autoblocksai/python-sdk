@@ -120,7 +120,7 @@ class AutoblocksTracer:
         if parent_span_id:
             merged_properties["parent_span_id"] = parent_span_id
         if prompt_tracking:
-            merged_properties["prompt_tracking"] = prompt_tracking
+            merged_properties["promptTracking"] = prompt_tracking
 
         trace_id = trace_id or self._trace_id
         timestamp = timestamp or datetime.now(timezone.utc).isoformat()
