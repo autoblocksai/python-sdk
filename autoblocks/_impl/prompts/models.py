@@ -80,6 +80,8 @@ class WeightedMinorVersion(
 
 
 class PromptMinorVersion(FrozenModel):
+    # need to do more research here, WeightedMinorVersion requires generics but we don't care what it is in this case,
+    # just that it's an instance of WeightedMinorVersion.
     version: Union[Enum, List[WeightedMinorVersion]]  # type: ignore
 
     @property
