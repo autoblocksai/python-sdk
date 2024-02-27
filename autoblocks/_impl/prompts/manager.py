@@ -4,6 +4,7 @@ import contextlib
 import logging
 from datetime import timedelta
 from enum import Enum
+from typing import Any
 from typing import ContextManager
 from typing import Dict
 from typing import Generic
@@ -25,7 +26,7 @@ from autoblocks._impl.util import encode_uri_component
 
 log = logging.getLogger(__name__)
 
-ExecutionContextType = TypeVar("ExecutionContextType", bound=PromptExecutionContext)
+ExecutionContextType = TypeVar("ExecutionContextType", bound=PromptExecutionContext[Any, Any])
 MinorVersionEnumType = TypeVar("MinorVersionEnumType", bound=Enum)
 
 
@@ -40,7 +41,7 @@ class AutoblocksPromptManager(
     __prompt_major_version__: str
     __execution_context_class__: Type[ExecutionContextType]
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         for attr in (
             "__prompt_id__",
@@ -156,7 +157,7 @@ class AutoblocksPromptManager(
             except Exception as err:
                 log.warning(f"Failed to refresh latest prompt: {err}")
 
-    async def _refresh_latest(self):
+    async def _refresh_latest(self) -> None:
         # Get the latest minor version within this prompt's major version
         new_latest = await self._get_prompt(
             minor_version=LATEST,
@@ -197,7 +198,7 @@ class AutoblocksPromptManager(
         """
 
         @contextlib.contextmanager
-        def gen():
+        def gen():  # type: ignore
             prompt = self._choose_execution_prompt()
             yield self.__execution_context_class__(prompt=prompt)
 

@@ -281,14 +281,17 @@ def generate_code_for_prompt(prompt: Prompt) -> str:
     )
 
 
-def make_prompts_from_api_response_and_config(data: List[Dict], config: AutogeneratePromptsConfig) -> List[Prompt]:
+def make_prompts_from_api_response_and_config(
+    data: List[Dict[Any, Any]],
+    config: AutogeneratePromptsConfig,
+) -> List[Prompt]:
     # Map of prompt id to set of major versions to autogenerate code for
     generate_for: Dict[str, Set[str]] = {}
     for prompt in config.prompts:
         generate_for[prompt.id] = set(prompt.major_versions)
 
     # Map of (prompt id, major version) to (any prompt w/ that major version, list of minor versions)
-    by_major_version: Dict[Tuple[str, str], Tuple[Dict, List[str]]] = {}
+    by_major_version: Dict[Tuple[str, str], Tuple[Dict[Any, Any], List[str]]] = {}
     for row in data:
         prompt_id = row["id"]
 

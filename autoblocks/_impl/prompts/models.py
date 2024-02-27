@@ -32,7 +32,7 @@ class HeadlessPromptParams(FrozenModel):
     """LLM model parameters for a prompt."""
 
     version: str
-    params: Dict[str, Any]
+    params: Optional[Dict[str, Any]]
 
 
 class HeadlessPromptTemplate(FrozenModel):
@@ -80,7 +80,7 @@ class WeightedMinorVersion(
 
 
 class PromptMinorVersion(FrozenModel):
-    version: Union[Enum, List[WeightedMinorVersion]]
+    version: Union[Enum, List[WeightedMinorVersion]]  # type: ignore
 
     @property
     def str_version(self) -> Optional[str]:
@@ -89,7 +89,7 @@ class PromptMinorVersion(FrozenModel):
         return str(self.version.value)
 
     @property
-    def weighted_versions(self) -> Optional[List[WeightedMinorVersion]]:
+    def weighted_versions(self) -> Optional[List[WeightedMinorVersion]]:  # type: ignore
         if isinstance(self.version, list):
             return self.version
         return None
@@ -114,6 +114,8 @@ class PromptMinorVersion(FrozenModel):
             return rand_str_version
         elif str_version := self.str_version:
             return str_version
+
+        raise RuntimeError("Minor version should either be a string or a list of weighted versions.")
 
 
 class AutogeneratePromptConfig(FrozenModel):
