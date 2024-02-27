@@ -82,7 +82,6 @@ HEADER = """####################################################################
 ############################################################################
 
 from enum import Enum
-from typing import List  # noqa: F401
 from typing import Union  # noqa: F401
 
 import pydantic
@@ -145,9 +144,7 @@ def infer_type(value: Any) -> Optional[str]:
         return "Union[float, int]"
     elif isinstance(value, list):
         if len(value) > 0:
-            # TODO: switch this to list[type] once we drop support for 3.8
-            # and drop the line "from typing import List" in the header
-            return f"List[{infer_type(value[0])}]"
+            return f"list[{infer_type(value[0])}]"
     return None
 
 
