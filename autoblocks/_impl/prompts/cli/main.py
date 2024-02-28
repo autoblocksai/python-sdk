@@ -4,8 +4,8 @@ from typing import Optional
 import click
 import yaml
 
-from autoblocks._impl.cli.models import YamlConfig
 from autoblocks._impl.prompts.autogenerate import write_generated_code_for_config
+from autoblocks._impl.prompts.cli.models import YamlConfig
 from autoblocks._impl.util import AutoblocksEnvVar
 
 
@@ -17,12 +17,6 @@ def read_config(config_path: str) -> YamlConfig:
 
 
 @click.group()
-def autoblocks():
-    """Autoblocks CLI entrypoint."""
-    pass
-
-
-@autoblocks.group()
 def prompts():
     """Handle prompts-related commands."""
     pass
@@ -68,4 +62,4 @@ def generate(config_path: Optional[str]):
 
 
 def main():
-    autoblocks()
+    prompts()
