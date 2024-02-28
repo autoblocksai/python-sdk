@@ -29,17 +29,17 @@ def init() -> None:
         daemon=True,
     )
     background_thread.start()
-    signal.signal(signal.SIGTERM, _on_unexpected_exit)
-    signal.signal(signal.SIGINT, _on_unexpected_exit)
+    for sig in [signal.SIGINT, signal.SIGTERM]:
+        _loop.add_signal_handler(sig, lambda: asyncio.ensure_future(_on_exist_signal()))
     _started = True
 
 
-def _on_unexpected_exit(signum, frame):
-    if _loop and _loop.is_running():
-        log.info(f"Attempting to gracefully stop event loop. Received signal {signum}")
-        _loop.stop()
-        _loop.close()
-    exit(0)
+async def _on_exist_signal() -> None:
+    tasks = [x for x in asyncio.all_tasks(loop=_loop) if x.get_coro().__name__ == "_send_event_unsafe" and not x.done()]
+    logging.info(f"Attempting to flush f{len(tasks)} outstanding send event tasks")
+    await asyncio.gather(*tasks)
+    log.info("Stopping event loop")
+    _loop.stop()
 
 
 def _run_event_loop(_event_loop: asyncio.AbstractEventLoop) -> None:
