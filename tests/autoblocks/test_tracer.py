@@ -610,3 +610,41 @@ def test_tracer_failing_evaluation(httpx_mock):
         properties={},
         evaluators=[MyFailingEvaluator(), MyValidEvaluator()],
     )
+
+
+@mock.patch.object(
+    AutoblocksTracer,
+    "_run_evaluators",
+    side_effect=Exception("Something went wrong with our code when evaluating the event"),
+)
+def test_tracer_evaluation_unexpected_error(httpx_mock):
+    class MyEvaluator:
+        id = "my-evaluator"
+
+        def evaluate_event(self, event: TracerEvent) -> Evaluation:
+            return Evaluation(score=1)
+
+        httpx_mock.add_response(
+            url=INGESTION_ENDPOINT,
+            method="POST",
+            status_code=200,
+            json={"traceId": "my-trace-id"},
+            match_headers={"Authorization": "Bearer mock-ingestion-key"},
+            match_content=make_expected_body(
+                dict(
+                    message="my-message",
+                    traceId="my-trace-id",
+                    timestamp=timestamp,
+                    properties={},
+                )
+            ),
+        )
+
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    tracer.send_event(
+        "my-message",
+        trace_id="my-trace-id",
+        timestamp=timestamp,
+        properties={},
+        evaluators=[MyEvaluator()],
+    )

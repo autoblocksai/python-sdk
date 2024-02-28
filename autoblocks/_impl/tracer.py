@@ -197,19 +197,22 @@ class AutoblocksTracer:
 
         # If there are evaluators, run them and compute the evaluations property
         if evaluators:
-            evaluations = await self._run_evaluators(
-                event=TracerEvent(
-                    message=message,
-                    trace_id=trace_id,
-                    timestamp=timestamp,
-                    properties=merged_properties,
-                ),
-                evaluators=evaluators,
-                max_evaluator_concurrency=max_evaluator_concurrency,
-            )
-            if evaluations:
-                # Update merged properties with computed evaluations property
-                merged_properties["evaluations"] = evaluations
+            try:
+                evaluations = await self._run_evaluators(
+                    event=TracerEvent(
+                        message=message,
+                        trace_id=trace_id,
+                        timestamp=timestamp,
+                        properties=merged_properties,
+                    ),
+                    evaluators=evaluators,
+                    max_evaluator_concurrency=max_evaluator_concurrency,
+                )
+                if evaluations:
+                    # Update merged properties with computed evaluations property
+                    merged_properties["evaluations"] = evaluations
+            except Exception as err:
+                log.error("Unable to evaluate events. Error: %s", err, exc_info=True)
 
         traced_event = TracerEvent(
             message=message,
