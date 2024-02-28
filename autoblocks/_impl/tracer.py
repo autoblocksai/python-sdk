@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+from typing import Any
 from typing import Dict
+from typing import Generator
 from typing import Optional
 
 from autoblocks._impl import global_state
@@ -36,13 +38,13 @@ class AutoblocksTracer:
         # Additionally, these properties can be updated by:
         # - calling update_properties
         # - specifying properties when calling send_event
-        properties: Optional[Dict] = None,
+        properties: Optional[Dict[Any, Any]] = None,
         # Timeout for sending events to Autoblocks
         timeout: timedelta = timedelta(seconds=5),
     ):
         global_state.init()  # Start up event loop if not already started
         self._trace_id: Optional[str] = trace_id
-        self._properties: Dict = properties or {}
+        self._properties: Dict[Any, Any] = properties or {}
 
         ingestion_key = ingestion_key or AutoblocksEnvVar.INGESTION_KEY.get()
         if not ingestion_key:
@@ -66,7 +68,7 @@ class AutoblocksTracer:
         """
         return self._trace_id
 
-    def set_properties(self, properties: Dict) -> None:
+    def set_properties(self, properties: Dict[Any, Any]) -> None:
         """
         Set the properties for all events sent by this tracer.
 
@@ -74,14 +76,14 @@ class AutoblocksTracer:
         """
         self._properties = properties
 
-    def update_properties(self, properties: Dict) -> None:
+    def update_properties(self, properties: Dict[Any, Any]) -> None:
         """
         Update the properties for all events sent by this tracer.
         """
         self._properties.update(properties)
 
     @contextmanager
-    def start_span(self):
+    def start_span(self) -> Generator[None, None, None]:
         props = dict(span_id=str(uuid.uuid4()))
         prev_span_id = self._properties.get("span_id")
         prev_parent_span_id = self._properties.get("parent_span_id")
@@ -110,8 +112,8 @@ class AutoblocksTracer:
         span_id: Optional[str] = None,
         parent_span_id: Optional[str] = None,
         timestamp: Optional[str] = None,
-        properties: Optional[Dict] = None,
-        prompt_tracking: Optional[Dict] = None,
+        properties: Optional[Dict[Any, Any]] = None,
+        prompt_tracking: Optional[Dict[str, Any]] = None,
     ) -> SendEventResponse:
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
@@ -149,8 +151,8 @@ class AutoblocksTracer:
         span_id: Optional[str] = None,
         parent_span_id: Optional[str] = None,
         timestamp: Optional[str] = None,
-        properties: Optional[Dict] = None,
-        prompt_tracking: Optional[Dict] = None,
+        properties: Optional[Dict[Any, Any]] = None,
+        prompt_tracking: Optional[Dict[str, Any]] = None,
     ) -> SendEventResponse:
         """
         Sends an event to the Autoblocks ingestion API.

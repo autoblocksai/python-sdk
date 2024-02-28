@@ -24,6 +24,10 @@ pytest = "^7.4.0"
 pytest-httpx = "0.22.0"
 freezegun = "^1.2.2"
 pydantic = "^2.5.3"
+mypy = "^1.8.0"
+types-pyyaml = "^6.0.12.12"
+types-orjson = "^3.6.2"
+types-click = "^7.1.8"
 
 [tool.poetry.scripts]
 prompts = "autoblocks._impl.prompts.cli.main:main"

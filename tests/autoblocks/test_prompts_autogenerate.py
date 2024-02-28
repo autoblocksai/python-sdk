@@ -61,7 +61,7 @@ def test_infer_type():
     assert infer_type(0.0) == "Union[float, int]"
     assert infer_type(True) == "bool"
     assert infer_type(False) == "bool"
-    assert infer_type([""]) == "List[str]"
+    assert infer_type([""]) == "list[str]"
     assert infer_type([]) is None
     assert infer_type({}) is None
     assert infer_type(None) is None
@@ -262,7 +262,6 @@ def test_write(httpx_mock):
 ############################################################################
 
 from enum import Enum
-from typing import List  # noqa: F401
 from typing import Union  # noqa: F401
 
 import pydantic

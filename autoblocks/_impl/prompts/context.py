@@ -1,5 +1,6 @@
 import abc
 import functools
+from typing import Any
 from typing import Dict
 from typing import Generic
 from typing import Type
@@ -18,7 +19,7 @@ class PromptExecutionContext(abc.ABC, Generic[ParamsType, TemplateRendererType])
     __params_class__: Type[ParamsType]
     __template_renderer_class__: Type[TemplateRendererType]
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         for attr in (
             "__params_class__",
@@ -27,14 +28,14 @@ class PromptExecutionContext(abc.ABC, Generic[ParamsType, TemplateRendererType])
             if not hasattr(cls, attr):
                 raise ValueError(f"PromptExecutionContext subclass {cls} must define {attr}")
 
-    def __init__(self, prompt: HeadlessPrompt):
+    def __init__(self, prompt: HeadlessPrompt) -> None:
         self._prompt = prompt
 
     @functools.cached_property
     def params(self) -> ParamsType:
-        try:
+        if self._prompt.params:
             params = self._prompt.params.params or {}
-        except AttributeError:
+        else:
             params = {}
         return self.__params_class__(
             **params,
@@ -47,7 +48,7 @@ class PromptExecutionContext(abc.ABC, Generic[ParamsType, TemplateRendererType])
         )
 
     @functools.lru_cache(1)
-    def track(self) -> Dict:
+    def track(self) -> Dict[str, Any]:
         prompt = self._prompt.model_dump()
         prompt.pop("params", None)
         return prompt

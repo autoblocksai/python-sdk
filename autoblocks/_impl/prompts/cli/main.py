@@ -17,7 +17,7 @@ def read_config(config_path: str) -> YamlConfig:
 
 
 @click.group()
-def prompts():
+def prompts() -> None:
     """Handle prompts-related commands."""
     pass
 
@@ -29,7 +29,7 @@ def prompts():
     type=click.Path(exists=True),
     help="Path to your Autoblocks config file",
 )
-def generate(config_path: Optional[str]):
+def generate(config_path: Optional[str]) -> None:
     if not AutoblocksEnvVar.API_KEY.get():
         msg = (
             f"You must set the {AutoblocksEnvVar.API_KEY} environment variable to your API key in order to "
@@ -61,5 +61,5 @@ def generate(config_path: Optional[str]):
     click.echo(f"Successfully generated prompts at {config.autogenerate.prompts.outfile}")
 
 
-def main():
+def main() -> None:
     prompts()
