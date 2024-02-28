@@ -26,7 +26,7 @@ freezegun = "^1.2.2"
 pydantic = "^2.5.3"
 
 [tool.poetry.scripts]
-autoblocks = "autoblocks._impl.cli.main:main"
+prompts = "autoblocks._impl.prompts.cli.main:main"
 
 [build-system]
 requires = ["poetry-core"]
