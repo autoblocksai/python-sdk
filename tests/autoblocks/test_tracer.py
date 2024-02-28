@@ -34,21 +34,23 @@ def test_client_headers_init_with_key():
     assert tracer._client_headers["Authorization"] == "Bearer mock-ingestion-key"
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        "AUTOBLOCKS_INGESTION_KEY": "mock-ingestion-key",
-    },
-)
+@pytest.fixture(autouse=True)
+def mock_evn_vars():
+    with mock.patch.dict(
+        os.environ,
+        {
+            "AUTOBLOCKS_INGESTION_KEY": "mock-ingestion-key",
+            "TRACER_BLOCK_ON_SEND_EVENT": "1",
+        },
+    ):
+        yield
+
+
 def test_client_init_headers_with_env_var():
     tracer = AutoblocksTracer()
     assert tracer._client_headers["Authorization"] == "Bearer mock-ingestion-key"
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -69,10 +71,6 @@ def test_tracer_prod(httpx_mock):
     tracer.send_event("my-message")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_no_trace_id_in_response(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -93,10 +91,6 @@ def test_tracer_prod_no_trace_id_in_response(httpx_mock):
     tracer.send_event("my-message")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_with_trace_id_in_send_event(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -118,10 +112,6 @@ def test_tracer_prod_with_trace_id_in_send_event(httpx_mock):
     tracer.send_event("my-message", trace_id="my-trace-id")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_with_trace_id_in_init(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -142,10 +132,6 @@ def test_tracer_prod_with_trace_id_in_init(httpx_mock):
     tracer.send_event("my-message")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_with_trace_id_override(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -167,10 +153,6 @@ def test_tracer_prod_with_trace_id_override(httpx_mock):
     tracer.send_event("my-message", trace_id="override-trace-id")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_with_set_trace_id(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -193,10 +175,6 @@ def test_tracer_prod_with_set_trace_id(httpx_mock):
     tracer.send_event("my-message")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_with_properties(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -218,10 +196,6 @@ def test_tracer_prod_with_properties(httpx_mock):
     tracer.send_event("my-message")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_with_set_properties(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -244,10 +218,6 @@ def test_tracer_prod_with_set_properties(httpx_mock):
     tracer.send_event("my-message")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_with_update_properties(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -270,10 +240,6 @@ def test_tracer_prod_with_update_properties(httpx_mock):
     tracer.send_event("my-message")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_with_update_properties_and_send_event_properties(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -296,10 +262,6 @@ def test_tracer_prod_with_update_properties_and_send_event_properties(httpx_mock
     tracer.send_event("my-message", properties=dict(z=3))
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_with_properties_with_conflicting_keys(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -322,10 +284,6 @@ def test_tracer_prod_with_properties_with_conflicting_keys(httpx_mock):
     tracer.send_event("my-message", properties=dict(x=3, z=3))
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_with_timestamp(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -347,10 +305,6 @@ def test_tracer_prod_with_timestamp(httpx_mock):
     tracer.send_event("my-message", timestamp="2023-07-24T21:52:52.742Z")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_swallows_errors(httpx_mock):
     httpx_mock.add_exception(Exception())
 
@@ -358,10 +312,6 @@ def test_tracer_prod_swallows_errors(httpx_mock):
     tracer.send_event("my-message")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 @mock.patch.dict(
     os.environ,
     dict(AUTOBLOCKS_TRACER_THROW_ON_ERROR="1"),
@@ -377,10 +327,6 @@ def test_tracer_prod_throws_errors_when_configured(httpx_mock):
         tracer.send_event("my-message")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_handles_non_200(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -402,10 +348,6 @@ def test_tracer_prod_handles_non_200(httpx_mock):
     tracer.send_event("my-message")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_sends_span_id_as_property(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -426,10 +368,6 @@ def test_tracer_sends_span_id_as_property(httpx_mock):
     tracer.send_event("my-message", span_id="my-span-id")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_sends_parent_span_id_as_property(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -450,10 +388,6 @@ def test_tracer_sends_parent_span_id_as_property(httpx_mock):
     tracer.send_event("my-message", parent_span_id="my-parent-span-id")
 
 
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_sends_span_id_and_parent_span_id_as_property(httpx_mock):
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
@@ -517,10 +451,6 @@ def test_tracer_start_span(*args, **kwargs):
     "uuid4",
     side_effect=["mock-uuid-1"],
 )
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_evaluations(httpx_mock):
     class MyEvaluator(BaseEventEvaluator):
         id = "my-evaluator"
@@ -571,20 +501,12 @@ def test_tracer_prod_evaluations(httpx_mock):
     "uuid4",
     side_effect=["mock-uuid" for _ in range(2)],
 )
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
-)
 def test_tracer_prod_async_evaluations(httpx_mock):
-    test_evaluation_id = uuid.uuid4()
-
     class MyEvaluator1(BaseEventEvaluator):
         id = "my-evaluator-1"
 
         async def evaluate_event(self, event: TracerEvent) -> Evaluation:
             return Evaluation(
-                evaluator_external_id=self.id,
-                id=test_evaluation_id,
                 score=0.9,
                 threshold=Threshold(gte=0.5),
             )
@@ -643,10 +565,6 @@ def test_tracer_prod_async_evaluations(httpx_mock):
     uuid,
     "uuid4",
     side_effect=["mock-uuid" for i in range(2)],
-)
-@mock.patch.dict(
-    os.environ,
-    dict(TRACER_BLOCK_ON_SEND_EVENT="1"),
 )
 def test_tracer_failing_evaluation(httpx_mock):
     class MyValidEvaluator(BaseEventEvaluator):

@@ -12,7 +12,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
@@ -119,9 +118,7 @@ class AutoblocksTracer:
             evaluatorExternalId=evaluator_external_id,
         )
 
-    async def _evaluate_event(
-        self, event: TracerEvent, evaluator: BaseEventEvaluator
-    ) -> Optional[Union[Evaluation, None]]:
+    async def _evaluate_event(self, event: TracerEvent, evaluator: BaseEventEvaluator) -> Optional[Evaluation]:
         """
         Evaluates an event using a provided evaluator.
         """
@@ -130,7 +127,7 @@ class AutoblocksTracer:
             try:
                 evaluation = await evaluator.evaluate_event(event=event)
             except Exception as err:
-                log.error("Unable to execute evaluation. Error: %s", repr(err), exc_info=True)
+                log.error(f"Unable to execute evaluator with id: {evaluator.id}. Error: %s", str(err), exc_info=True)
         else:
             try:
                 ctx = contextvars.copy_context()
@@ -141,7 +138,7 @@ class AutoblocksTracer:
                     event,
                 )
             except Exception as err:
-                log.error("Unable to execute evaluation. Error: %s", repr(err), exc_info=True)
+                log.error(f"Unable to execute evaluator with id: {evaluator.id}. Error: %s", str(err), exc_info=True)
 
         return evaluation
 
@@ -151,7 +148,7 @@ class AutoblocksTracer:
         if len(evaluators) == 0:
             return []
         try:
-            evaluations: List[Union[Evaluation, None]] = await gather_with_max_concurrency(
+            evaluations: List[Optional[Evaluation]] = await gather_with_max_concurrency(
                 max_evaluator_concurrency,
                 [
                     self._evaluate_event(
@@ -162,9 +159,9 @@ class AutoblocksTracer:
                 ],
             )
             return [
-                self._evaluation_to_json(event_evaluation=item, evaluator_external_id=evaluator.id)
-                for evaluator, item in zip(evaluators, evaluations)
-                if item is not None
+                self._evaluation_to_json(event_evaluation=evaluation, evaluator_external_id=evaluator.id)
+                for evaluator, evaluation in zip(evaluators, evaluations)
+                if evaluation is not None
             ]
 
         except Exception as err:
@@ -243,7 +240,7 @@ class AutoblocksTracer:
         evaluators: Optional[List[BaseEventEvaluator]] = None,
         max_evaluator_concurrency: int = 5,
         prompt_tracking: Optional[Dict] = None,
-    ) -> SendEventResponse:
+    ) -> None:
         """
         Sends an event to the Autoblocks ingestion API.
 
