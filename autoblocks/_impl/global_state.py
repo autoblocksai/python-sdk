@@ -35,11 +35,15 @@ def init() -> None:
 
 
 async def _on_exist_signal() -> None:
-    tasks = [x for x in asyncio.all_tasks(loop=_loop) if x.get_coro().__name__ == "_send_event_unsafe" and not x.done()]
-    logging.info(f"Attempting to flush f{len(tasks)} outstanding send event tasks")
-    await asyncio.gather(*tasks)
-    log.info("Stopping event loop")
-    _loop.stop()
+    if _loop:
+        # Ignore type below - accessing __name__ on coro which mypy doesn't like
+        tasks = [
+            x for x in asyncio.all_tasks(loop=_loop) if x.get_coro().__name__ == "_send_event_unsafe" and not x.done()  # type: ignore
+        ]
+        logging.info(f"Attempting to flush f{len(tasks)} outstanding send event tasks")
+        await asyncio.gather(*tasks)
+        log.info("Stopping event loop")
+        _loop.stop()
 
 
 def _run_event_loop(_event_loop: asyncio.AbstractEventLoop) -> None:

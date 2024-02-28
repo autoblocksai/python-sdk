@@ -3,6 +3,7 @@ import logging
 import os
 import urllib.parse
 from enum import Enum
+from typing import Any
 from typing import Coroutine
 from typing import List
 from typing import Optional
@@ -38,14 +39,14 @@ def encode_uri_component(s: str) -> str:
 
 async def gather_with_max_concurrency(
     max_concurrency: int,
-    coroutines: List[Coroutine],
-):
+    coroutines: List[Coroutine[Any, Any, Any]],
+) -> List[Any]:
     """
     Borrowed from https://stackoverflow.com/a/61478547
     """
     semaphore = asyncio.Semaphore(max_concurrency)
 
-    async def sem_coro(coro: Coroutine):
+    async def sem_coro(coro: Coroutine[Any, Any, Any]) -> Any:
         async with semaphore:
             return await coro
 

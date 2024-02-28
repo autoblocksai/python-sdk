@@ -10,6 +10,7 @@ from datetime import timedelta
 from datetime import timezone
 from typing import Any
 from typing import Dict
+from typing import Generator
 from typing import List
 from typing import Optional
 
@@ -44,13 +45,13 @@ class AutoblocksTracer:
         # Additionally, these properties can be updated by:
         # - calling update_properties
         # - specifying properties when calling send_event
-        properties: Optional[Dict] = None,
+        properties: Optional[Dict[Any, Any]] = None,
         # Timeout for sending events to Autoblocks
         timeout: timedelta = timedelta(seconds=5),
     ):
         global_state.init()  # Start up event loop if not already started
         self._trace_id: Optional[str] = trace_id
-        self._properties: Dict = properties or {}
+        self._properties: Dict[Any, Any] = properties or {}
 
         ingestion_key = ingestion_key or AutoblocksEnvVar.INGESTION_KEY.get()
         if not ingestion_key:
@@ -74,7 +75,7 @@ class AutoblocksTracer:
         """
         return self._trace_id
 
-    def set_properties(self, properties: Dict) -> None:
+    def set_properties(self, properties: Dict[Any, Any]) -> None:
         """
         Set the properties for all events sent by this tracer.
 
@@ -82,14 +83,14 @@ class AutoblocksTracer:
         """
         self._properties = properties
 
-    def update_properties(self, properties: Dict) -> None:
+    def update_properties(self, properties: Dict[Any, Any]) -> None:
         """
         Update the properties for all events sent by this tracer.
         """
         self._properties.update(properties)
 
     @contextmanager
-    def start_span(self):
+    def start_span(self) -> Generator[None, None, None]:
         props = dict(span_id=str(uuid.uuid4()))
         prev_span_id = self._properties.get("span_id")
         prev_parent_span_id = self._properties.get("parent_span_id")
@@ -109,7 +110,7 @@ class AutoblocksTracer:
                 props["span_id"] = prev_span_id
             self.set_properties(props)
 
-    def _evaluation_to_json(evaluation: Evaluation, evaluator_external_id: str) -> Dict[str, Any]:
+    def _evaluation_to_json(self, evaluation: Evaluation, evaluator_external_id: str) -> Dict[str, Any]:
         return dict(
             id=str(uuid.uuid4()),
             score=evaluation.score,
@@ -148,7 +149,7 @@ class AutoblocksTracer:
         if len(evaluators) == 0:
             return []
         try:
-            evaluations: List[Optional[Evaluation]] = await gather_with_max_concurrency(
+            evaluations: List[Evaluation] = await gather_with_max_concurrency(
                 max_evaluator_concurrency,
                 [
                     self._evaluate_event(
@@ -159,7 +160,7 @@ class AutoblocksTracer:
                 ],
             )
             return [
-                self._evaluation_to_json(event_evaluation=evaluation, evaluator_external_id=evaluator.id)
+                self._evaluation_to_json(evaluation=evaluation, evaluator_external_id=evaluator.id)
                 for evaluator, evaluation in zip(evaluators, evaluations)
                 if evaluation is not None
             ]
@@ -173,14 +174,14 @@ class AutoblocksTracer:
         # Require all arguments to be specified via key=value
         *,
         message: str,
+        max_evaluator_concurrency: int,
         trace_id: Optional[str],
         span_id: Optional[str],
         parent_span_id: Optional[str],
         timestamp: Optional[str],
-        properties: Optional[Dict],
-        prompt_tracking: Optional[Dict],
+        properties: Optional[Dict[Any, Any]],
+        prompt_tracking: Optional[Dict[str, Any]],
         evaluators: Optional[List[BaseEventEvaluator]],
-        max_evaluator_concurrency: int,
     ) -> SendEventResponse:
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
@@ -239,10 +240,10 @@ class AutoblocksTracer:
         span_id: Optional[str] = None,
         parent_span_id: Optional[str] = None,
         timestamp: Optional[str] = None,
-        properties: Optional[Dict] = None,
+        properties: Optional[Dict[str, Any]] = None,
         evaluators: Optional[List[BaseEventEvaluator]] = None,
         max_evaluator_concurrency: int = 5,
-        prompt_tracking: Optional[Dict] = None,
+        prompt_tracking: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Sends an event to the Autoblocks ingestion API.
@@ -271,4 +272,3 @@ class AutoblocksTracer:
             log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
             if AutoblocksEnvVar.TRACER_THROW_ON_ERROR.get() == "1":
                 raise err
-            return SendEventResponse(trace_id=None)

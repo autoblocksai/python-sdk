@@ -8,7 +8,6 @@ from typing import Callable
 from typing import List
 from typing import Optional
 
-import httpx
 import orjson
 
 from autoblocks._impl import global_state
@@ -18,17 +17,16 @@ from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import gather_with_max_concurrency
 
-# Global httpx client
-client: httpx.AsyncClient = None
-
-# Context
-current_test_id_var = contextvars.ContextVar("current_test_id")
-current_test_case_var = contextvars.ContextVar("current_test_case")
+# Globals
+_cli_server_address: Optional[str] = None
 
 
-def init_client():
-    global client
-    if client is None:
+def cli() -> str:
+    """
+    Returns the CLI server address, which is required to send results and errors to the CLI.
+    """
+    global _cli_server_address
+    if not _cli_server_address:
         cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
         if not cli_server_address:
             raise RuntimeError(
@@ -36,10 +34,11 @@ def init_client():
                 "Make sure you are running your test command with:\n"
                 "$ npx autoblocks testing exec -- <your test command>"
             )
-        client = httpx.AsyncClient(base_url=cli_server_address)
+        _cli_server_address = cli_server_address
+    return _cli_server_address
 
 
-def orjson_default(o: Any) -> str:
+def orjson_default(o: Any) -> Any:
     if hasattr(o, "model_dump_json") and callable(o.model_dump_json):
         # pydantic v2
         return orjson.loads(o.model_dump_json())
@@ -59,8 +58,8 @@ async def send_error(
     evaluator_id: Optional[str],
     error: Exception,
 ) -> None:
-    await client.post(
-        "/errors",
+    await global_state.http_client().post(
+        f"{cli()}/errors",
         json=dict(
             testExternalId=test_id,
             testCaseHash=test_case_hash,
@@ -79,7 +78,7 @@ async def evaluate_output(
     test_case: BaseTestCase,
     output: Any,
     evaluator: BaseTestEvaluator,
-):
+) -> None:
     evaluation: Optional[Evaluation] = None
 
     if inspect.iscoroutinefunction(evaluator.evaluate_test_case):
@@ -113,8 +112,8 @@ async def evaluate_output(
     if evaluation is None:
         return
 
-    await client.post(
-        "/evals",
+    await global_state.http_client().post(
+        f"{cli()}/evals",
         json=dict(
             testExternalId=test_id,
             testCaseHash=test_case._cached_hash,
@@ -129,12 +128,9 @@ async def run_test_case(
     test_id: str,
     test_case: BaseTestCase,
     evaluators: List[BaseTestEvaluator],
-    fn: Callable,
+    fn: Callable[[BaseTestCase], Any],
     max_evaluator_concurrency: int,
-):
-    current_test_id_var.set(test_id)
-    current_test_case_var.set(test_case)
-
+) -> None:
     output = None
 
     if inspect.iscoroutinefunction(fn):
@@ -162,8 +158,8 @@ async def run_test_case(
     if output is None:
         return
 
-    await client.post(
-        "/results",
+    await global_state.http_client().post(
+        f"{cli()}/results",
         json=dict(
             testExternalId=test_id,
             testCaseHash=test_case._cached_hash,
@@ -198,10 +194,10 @@ async def async_run_test_suite(
     test_id: str,
     test_cases: List[BaseTestCase],
     evaluators: List[BaseTestEvaluator],
-    fn: Callable,
+    fn: Callable[[BaseTestCase], Any],
     max_test_case_concurrency: int,
     max_evaluator_concurrency: int,
-):
+) -> None:
     try:
         assert test_cases, f"[{test_id}] No test cases provided."
         for test_case in test_cases:
@@ -223,7 +219,7 @@ async def async_run_test_suite(
         )
         return
 
-    await client.post("/start", json=dict(testExternalId=test_id))
+    await global_state.http_client().post(f"{cli()}/start", json=dict(testExternalId=test_id))
 
     try:
         await gather_with_max_concurrency(
@@ -247,20 +243,19 @@ async def async_run_test_suite(
             error=err,
         )
 
-    await client.post("/end", json=dict(testExternalId=test_id))
+    await global_state.http_client().post(f"{cli()}/end", json=dict(testExternalId=test_id))
 
 
 def run_test_suite(
     id: str,
     test_cases: List[BaseTestCase],
     evaluators: List[BaseTestEvaluator],
-    fn: Callable,
+    fn: Callable[[BaseTestCase], Any],
     # How many test cases to run concurrently
     max_test_case_concurrency: int = 10,
     # How many evaluators to run concurrently on the result of a test case
     max_evaluator_concurrency: int = 5,
-):
-    init_client()
+) -> None:
     global_state.init()
     future = asyncio.run_coroutine_threadsafe(
         async_run_test_suite(

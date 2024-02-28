@@ -26,7 +26,7 @@ from autoblocks._impl.util import AutoblocksEnvVar
 log = logging.getLogger(__name__)
 
 
-def make_trace_response(data: Dict) -> Trace:
+def make_trace_response(data: Dict[str, Any]) -> Trace:
     return Trace(
         id=data["id"],
         events=[
@@ -42,7 +42,7 @@ def make_trace_response(data: Dict) -> Trace:
     )
 
 
-def make_traces_response(data: Dict) -> TracesResponse:
+def make_traces_response(data: Dict[str, Any]) -> TracesResponse:
     return TracesResponse(
         next_cursor=data.get("nextCursor"),
         traces=[make_trace_response(trace) for trace in data["traces"]],
@@ -53,7 +53,7 @@ def snake_to_camel(s: str) -> str:
     return "".join(word.lower() if i == 0 else word.capitalize() for i, word in enumerate(s.split("_")))
 
 
-def camel_case_factory(values: List[Tuple[str, Any]]) -> Dict:
+def camel_case_factory(values: List[Tuple[str, Any]]) -> Dict[str, Any]:
     return dict(((snake_to_camel(k)), v) for k, v in values if v is not None)
 
 

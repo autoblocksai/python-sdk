@@ -1,3 +1,4 @@
+import asyncio
 import os
 import uuid
 from datetime import datetime
@@ -501,7 +502,7 @@ def test_tracer_prod_async_evaluations(httpx_mock):
     class MyEvaluator1(BaseEventEvaluator):
         id = "my-evaluator-1"
 
-        async def evaluate_event(self, event: TracerEvent) -> Evaluation:
+        async def evaluate_event(self, event: TracerEvent) -> asyncio.Future[Evaluation]:
             return Evaluation(
                 score=0.9,
                 threshold=Threshold(gte=0.5),
@@ -510,7 +511,7 @@ def test_tracer_prod_async_evaluations(httpx_mock):
     class MyEvaluator2(BaseEventEvaluator):
         id = "my-evaluator-2"
 
-        async def evaluate_event(self, event: TracerEvent) -> Evaluation:
+        async def evaluate_event(self, event: TracerEvent) -> asyncio.Future[Evaluation]:
             return Evaluation(
                 score=0.3,
             )

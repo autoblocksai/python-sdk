@@ -1,17 +1,19 @@
 import abc
+import asyncio
 import dataclasses
 import functools
 from typing import Any
 from typing import Dict
 from typing import Optional
+from typing import Union
 
 
 @dataclasses.dataclass()
 class TracerEvent:
     message: str
-    trace_id: str
     timestamp: str
-    properties: dict
+    properties: Dict[str, Any]
+    trace_id: Optional[str]
 
     def to_json(self) -> Dict[str, Any]:
         return {
@@ -34,7 +36,7 @@ class Threshold:
 class Evaluation:
     score: float
     threshold: Optional[Threshold] = None
-    metadata: Optional[dict] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class BaseTestCase(abc.ABC):
@@ -75,5 +77,5 @@ class BaseEventEvaluator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def evaluate_event(self, event: TracerEvent) -> Evaluation:
+    def evaluate_event(self, event: TracerEvent) -> Union[Evaluation, asyncio.Future[Evaluation]]:
         pass

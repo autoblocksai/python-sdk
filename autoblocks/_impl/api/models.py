@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -12,7 +13,7 @@ class Event:
     trace_id: str
     message: str
     timestamp: str
-    properties: Dict
+    properties: Dict[Any, Any]
 
 
 @dataclass
