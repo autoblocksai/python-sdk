@@ -1,8 +1,12 @@
 import asyncio
+import logging
+import signal
 import threading
 from typing import Optional
 
 import httpx
+
+log = logging.getLogger(__name__)
 
 _client: Optional[httpx.AsyncClient] = None
 _loop: Optional[asyncio.AbstractEventLoop] = None
@@ -25,8 +29,17 @@ def init() -> None:
         daemon=True,
     )
     background_thread.start()
-
+    signal.signal(signal.SIGTERM, _on_unexpected_exit)
+    signal.signal(signal.SIGINT, _on_unexpected_exit)
     _started = True
+
+
+def _on_unexpected_exit(signum, frame):
+    if _loop and _loop.is_running():
+        log.info(f"Attempting to gracefully stop event loop. Received signal {signum}")
+        _loop.stop()
+        _loop.close()
+    exit(0)
 
 
 def _run_event_loop(_event_loop: asyncio.AbstractEventLoop) -> None:
