@@ -413,10 +413,6 @@ def test_tracer_sends_span_id_and_parent_span_id_as_property(httpx_mock):
     "uuid4",
     side_effect=[f"mock-uuid-{i}" for i in range(4)],
 )
-@mock.patch.dict(
-    os.environ,
-    {"AUTOBLOCKS_INGESTION_KEY": "key", "TRACER_BLOCK_ON_SEND_EVENT": "1"},
-)
 def test_tracer_start_span(*args, **kwargs):
     tracer = AutoblocksTracer()
 

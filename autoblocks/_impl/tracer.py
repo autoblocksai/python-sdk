@@ -127,7 +127,7 @@ class AutoblocksTracer:
             try:
                 evaluation = await evaluator.evaluate_event(event=event)
             except Exception as err:
-                log.error(f"Unable to execute evaluator with id: {evaluator.id}. Error: %s", str(err), exc_info=True)
+                log.error(f"Unable to execute evaluator with id: {evaluator.id}. Error: %s", err, exc_info=True)
         else:
             try:
                 ctx = contextvars.copy_context()
@@ -138,7 +138,7 @@ class AutoblocksTracer:
                     event,
                 )
             except Exception as err:
-                log.error(f"Unable to execute evaluator with id: {evaluator.id}. Error: %s", str(err), exc_info=True)
+                log.error(f"Unable to execute evaluator with id: {evaluator.id}. Error: %s", err, exc_info=True)
 
         return evaluation
 
@@ -165,7 +165,7 @@ class AutoblocksTracer:
             ]
 
         except Exception as err:
-            log.error("Unable to complete evaluating events. Error: %s", str(err), exc_info=True)
+            log.error("Unable to complete evaluating events. Error: %s", err, exc_info=True)
             return []
 
     async def _send_event_unsafe(
