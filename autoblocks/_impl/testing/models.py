@@ -1,11 +1,9 @@
 import abc
-import asyncio
 import dataclasses
 import functools
 from typing import Any
 from typing import Dict
 from typing import Optional
-from typing import Union
 
 
 @dataclasses.dataclass()
@@ -77,5 +75,5 @@ class BaseEventEvaluator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def evaluate_event(self, event: TracerEvent) -> Union[Evaluation, asyncio.Future[Evaluation]]:
+    def evaluate_event(self, event: TracerEvent) -> Evaluation:
         pass

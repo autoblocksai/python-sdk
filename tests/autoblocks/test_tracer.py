@@ -1,4 +1,3 @@
-import asyncio
 import os
 import uuid
 from datetime import datetime
@@ -12,6 +11,7 @@ from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import Threshold
 from autoblocks._impl.testing.models import TracerEvent
+from autoblocks._impl.util import SEND_EVENT_CORO_NAME
 from autoblocks.tracer import AutoblocksTracer
 from tests.autoblocks.util import make_expected_body
 
@@ -36,7 +36,7 @@ def test_client_headers_init_with_key():
 
 
 @pytest.fixture(autouse=True)
-def mock_evn_vars():
+def mock_env_vars():
     with mock.patch.dict(
         os.environ,
         {
@@ -502,7 +502,7 @@ def test_tracer_prod_async_evaluations(httpx_mock):
     class MyEvaluator1(BaseEventEvaluator):
         id = "my-evaluator-1"
 
-        async def evaluate_event(self, event: TracerEvent) -> asyncio.Future[Evaluation]:
+        async def evaluate_event(self, event: TracerEvent):
             return Evaluation(
                 score=0.9,
                 threshold=Threshold(gte=0.5),
@@ -511,7 +511,7 @@ def test_tracer_prod_async_evaluations(httpx_mock):
     class MyEvaluator2(BaseEventEvaluator):
         id = "my-evaluator-2"
 
-        async def evaluate_event(self, event: TracerEvent) -> asyncio.Future[Evaluation]:
+        async def evaluate_event(self, event: TracerEvent):
             return Evaluation(
                 score=0.3,
             )
@@ -615,7 +615,7 @@ def test_tracer_failing_evaluation(httpx_mock):
 
 @mock.patch.object(
     AutoblocksTracer,
-    "_run_evaluators",
+    "_run_evaluators_unsafe",
     side_effect=Exception("Something went wrong with our code when evaluating the event"),
 )
 def test_tracer_evaluation_unexpected_error(httpx_mock):
@@ -649,3 +649,7 @@ def test_tracer_evaluation_unexpected_error(httpx_mock):
         properties={},
         evaluators=[MyEvaluator()],
     )
+
+
+def test_tracer_has_send_event_unsafe():
+    assert AutoblocksTracer._send_event_unsafe.__name__ == SEND_EVENT_CORO_NAME

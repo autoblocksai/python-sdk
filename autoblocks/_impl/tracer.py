@@ -143,31 +143,26 @@ class AutoblocksTracer:
 
         return evaluation
 
-    async def _run_evaluators(
+    async def _run_evaluators_unsafe(
         self, evaluators: List[BaseEventEvaluator], event: TracerEvent, max_evaluator_concurrency: int
     ) -> List[Dict[str, Any]]:
         if len(evaluators) == 0:
             return []
-        try:
-            evaluations: List[Evaluation] = await gather_with_max_concurrency(
-                max_evaluator_concurrency,
-                [
-                    self._evaluate_event(
-                        event=event,
-                        evaluator=evaluator,
-                    )
-                    for evaluator in evaluators
-                ],
-            )
-            return [
-                self._evaluation_to_json(evaluation=evaluation, evaluator_external_id=evaluator.id)
-                for evaluator, evaluation in zip(evaluators, evaluations)
-                if evaluation is not None
-            ]
-
-        except Exception as err:
-            log.error("Unable to complete evaluating events. Error: %s", err, exc_info=True)
-            return []
+        evaluations: List[Evaluation] = await gather_with_max_concurrency(
+            max_evaluator_concurrency,
+            [
+                self._evaluate_event(
+                    event=event,
+                    evaluator=evaluator,
+                )
+                for evaluator in evaluators
+            ],
+        )
+        return [
+            self._evaluation_to_json(evaluation=evaluation, evaluator_external_id=evaluator.id)
+            for evaluator, evaluation in zip(evaluators, evaluations)
+            if evaluation is not None
+        ]
 
     async def _send_event_unsafe(
         self,
@@ -182,7 +177,7 @@ class AutoblocksTracer:
         properties: Optional[Dict[Any, Any]],
         prompt_tracking: Optional[Dict[str, Any]],
         evaluators: Optional[List[BaseEventEvaluator]],
-    ) -> SendEventResponse:
+    ) -> None:
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
 
@@ -199,7 +194,7 @@ class AutoblocksTracer:
         # If there are evaluators, run them and compute the evaluations property
         if evaluators:
             try:
-                evaluations = await self._run_evaluators(
+                evaluations = await self._run_evaluators_unsafe(
                     event=TracerEvent(
                         message=message,
                         trace_id=trace_id,
@@ -228,8 +223,6 @@ class AutoblocksTracer:
             timeout=self._timeout_seconds,
         )
         req.raise_for_status()
-        resp = req.json()
-        return SendEventResponse(trace_id=resp.get("traceId"))
 
     def send_event(
         self,
