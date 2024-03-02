@@ -47,7 +47,6 @@ def test_no_test_cases(httpx_mock):
         evaluators=[],
         fn=lambda _: None,
         max_test_case_concurrency=1,
-        max_evaluator_concurrency=1,
     )
 
     requests = httpx_mock.get_requests()
@@ -72,7 +71,6 @@ def test_invalid_test_cases(httpx_mock):
         evaluators=[],
         fn=lambda _: None,
         max_test_case_concurrency=1,
-        max_evaluator_concurrency=1,
     )
 
     requests = httpx_mock.get_requests()
@@ -101,7 +99,6 @@ def test_invalid_evaluators(httpx_mock):
         evaluators=[1, 2, 3],
         fn=lambda _: None,
         max_test_case_concurrency=1,
-        max_evaluator_concurrency=1,
     )
 
     requests = httpx_mock.get_requests()
@@ -176,7 +173,6 @@ def test_error_in_test_fn(httpx_mock):
         evaluators=[],
         fn=test_fn,
         max_test_case_concurrency=1,
-        max_evaluator_concurrency=1,
     )
 
     requests = httpx_mock.get_requests()
@@ -284,7 +280,6 @@ def test_error_in_evaluator(httpx_mock):
         evaluators=[MyEvaluator()],
         fn=test_fn,
         max_test_case_concurrency=1,
-        max_evaluator_concurrency=1,
     )
 
     requests = httpx_mock.get_requests()
@@ -359,7 +354,6 @@ def test_no_evaluators(httpx_mock):
         evaluators=[],
         fn=test_fn,
         max_test_case_concurrency=1,
-        max_evaluator_concurrency=1,
     )
 
 
@@ -494,7 +488,6 @@ def test_with_evaluators(httpx_mock):
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
-        max_evaluator_concurrency=1,
     )
 
 
@@ -506,12 +499,14 @@ def test_concurrency(httpx_mock):
 
     class EvaluatorA(BaseTestEvaluator):
         id = "evaluator-a"
+        max_concurrency = 1
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0)
 
     class EvaluatorB(BaseTestEvaluator):
         id = "evaluator-b"
+        max_concurrency = 1
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=1)
@@ -528,7 +523,6 @@ def test_concurrency(httpx_mock):
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
-        max_evaluator_concurrency=1,
     )
 
     # The requests should be in a deterministic order when the concurrency is set to 1
@@ -549,6 +543,15 @@ def test_concurrency(httpx_mock):
             ),
         ),
         (
+            "/results",
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="b",
+                testCaseBody=dict(input="b"),
+                testCaseOutput="b!",
+            ),
+        ),
+        (
             "/evals",
             dict(
                 testExternalId="my-test-id",
@@ -566,15 +569,6 @@ def test_concurrency(httpx_mock):
                 evaluatorExternalId="evaluator-b",
                 score=1,
                 threshold=None,
-            ),
-        ),
-        (
-            "/results",
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                testCaseBody=dict(input="b"),
-                testCaseOutput="b!",
             ),
         ),
         (
@@ -664,7 +658,6 @@ def test_async_test_fn(httpx_mock):
         evaluators=[],
         fn=test_fn,
         max_test_case_concurrency=1,
-        max_evaluator_concurrency=1,
     )
 
 
@@ -799,7 +792,6 @@ def test_async_evaluators(httpx_mock):
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
-        max_evaluator_concurrency=1,
     )
 
 
@@ -873,5 +865,22 @@ def test_serializes(httpx_mock):
         evaluators=[],
         fn=test_fn,
         max_test_case_concurrency=1,
-        max_evaluator_concurrency=1,
+    )
+
+
+def test_deprecated_max_evaluator_concurrency(httpx_mock):
+    """
+    Test that we can still pass the deprecated max_evaluator_concurrency argument
+    """
+    httpx_mock.add_response()
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[],
+        fn=lambda _: "hello",
+        max_test_case_concurrency=1,
+        max_evaluator_concurrency=5,
     )

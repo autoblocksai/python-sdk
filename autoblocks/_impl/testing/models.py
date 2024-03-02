@@ -35,6 +35,14 @@ class BaseTestEvaluator(abc.ABC):
     in an offline testing scenario.
     """
 
+    # Controls how many concurrent evaluations can be run for this evaluator
+    max_concurrency = 10
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if not isinstance(cls.max_concurrency, int):
+            raise TypeError(f"{cls.__name__}.max_concurrency must be an int")
+
     @property
     @abc.abstractmethod
     def id(self) -> str:

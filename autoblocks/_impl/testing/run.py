@@ -2,9 +2,11 @@ import asyncio
 import contextvars
 import dataclasses
 import inspect
+import logging
 import traceback
 from typing import Any
 from typing import Callable
+from typing import Coroutine
 from typing import List
 from typing import Optional
 
@@ -15,27 +17,25 @@ from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.util import AutoblocksEnvVar
-from autoblocks._impl.util import gather_with_max_concurrency
 
-# Globals
-_cli_server_address: Optional[str] = None
+log = logging.getLogger(__name__)
+
+test_case_semaphore_registry: dict[str, asyncio.Semaphore] = {}  # test_id -> semaphore
+evaluator_semaphore_registry: dict[str, dict[str, asyncio.Semaphore]] = {}  # test_id -> evaluator_id -> semaphore
 
 
 def cli() -> str:
     """
     Returns the CLI server address, which is required to send results and errors to the CLI.
     """
-    global _cli_server_address
-    if not _cli_server_address:
-        cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
-        if not cli_server_address:
-            raise RuntimeError(
-                "Autoblocks tests must be run within the context of the testing CLI.\n"
-                "Make sure you are running your test command with:\n"
-                "$ npx autoblocks testing exec -- <your test command>"
-            )
-        _cli_server_address = cli_server_address
-    return _cli_server_address
+    cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
+    if not cli_server_address:
+        raise RuntimeError(
+            "Autoblocks tests must be run within the context of the testing CLI.\n"
+            "Make sure you are running your test command with:\n"
+            "$ npx autoblocks testing exec -- <your test command>"
+        )
+    return cli_server_address
 
 
 def orjson_default(o: Any) -> Any:
@@ -50,6 +50,14 @@ def orjson_default(o: Any) -> Any:
 
 def serialize(x: Any) -> Any:
     return orjson.loads(orjson.dumps(x, default=orjson_default))
+
+
+async def all_settled(coroutines: list[Coroutine[Any, Any, Any]]) -> None:
+    """
+    Runs all the coroutines in parallel and waits for all of them to finish,
+    regardless of whether they succeed or fail. Similar to Promise.allSettled.
+    """
+    await asyncio.gather(*coroutines, return_exceptions=True)
 
 
 async def send_error(
@@ -73,43 +81,52 @@ async def send_error(
     )
 
 
-async def evaluate_output(
+async def run_evaluator_unsafe(
     test_id: str,
     test_case: BaseTestCase,
     output: Any,
     evaluator: BaseTestEvaluator,
-) -> None:
-    evaluation: Optional[Evaluation] = None
-
-    if inspect.iscoroutinefunction(evaluator.evaluate_test_case):
-        try:
-            evaluation = await evaluator.evaluate_test_case(test_case, output)
-        except Exception as err:
-            await send_error(
-                test_id=test_id,
-                test_case_hash=test_case._cached_hash,
-                evaluator_id=evaluator.id,
-                error=err,
-            )
-    else:
-        try:
+) -> Evaluation:
+    """
+    This is suffixed with _unsafe because doesn't handle exceptions.
+    Its caller will catch and handle all exceptions.
+    """
+    async with evaluator_semaphore_registry[test_id][evaluator.id]:
+        if inspect.iscoroutinefunction(evaluator.evaluate_test_case):
+            # mypy for some reason doesn't recognize that the return type of evaluate_test_case
+            # is an Evaluation
+            return await evaluator.evaluate_test_case(test_case, output)  # type: ignore
+        else:
             ctx = contextvars.copy_context()
-            evaluation = await global_state.event_loop().run_in_executor(
+            return await global_state.event_loop().run_in_executor(
                 None,
                 ctx.run,
                 evaluator.evaluate_test_case,
                 test_case,
                 output,
             )
-        except Exception as err:
-            await send_error(
-                test_id=test_id,
-                test_case_hash=test_case._cached_hash,
-                evaluator_id=evaluator.id,
-                error=err,
-            )
 
-    if evaluation is None:
+
+async def run_evaluator(
+    test_id: str,
+    test_case: BaseTestCase,
+    output: Any,
+    evaluator: BaseTestEvaluator,
+) -> None:
+    try:
+        evaluation = await run_evaluator_unsafe(
+            test_id=test_id,
+            test_case=test_case,
+            output=output,
+            evaluator=evaluator,
+        )
+    except Exception as err:
+        await send_error(
+            test_id=test_id,
+            test_case_hash=test_case._cached_hash,
+            evaluator_id=evaluator.id,
+            error=err,
+        )
         return
 
     await global_state.http_client().post(
@@ -124,38 +141,42 @@ async def evaluate_output(
     )
 
 
+async def run_test_case_unsafe(
+    test_id: str,
+    test_case: BaseTestCase,
+    fn: Callable[[BaseTestCase], Any],
+) -> Any:
+    """
+    This is suffixed with _unsafe because doesn't handle exceptions.
+    Its caller will catch and handle all exceptions.
+    """
+    async with test_case_semaphore_registry[test_id]:
+        if inspect.iscoroutinefunction(fn):
+            return await fn(test_case)
+        else:
+            ctx = contextvars.copy_context()
+            return await global_state.event_loop().run_in_executor(None, ctx.run, fn, test_case)
+
+
 async def run_test_case(
     test_id: str,
     test_case: BaseTestCase,
     evaluators: List[BaseTestEvaluator],
     fn: Callable[[BaseTestCase], Any],
-    max_evaluator_concurrency: int,
 ) -> None:
-    output = None
-
-    if inspect.iscoroutinefunction(fn):
-        try:
-            output = await fn(test_case)
-        except Exception as err:
-            await send_error(
-                test_id=test_id,
-                test_case_hash=test_case._cached_hash,
-                evaluator_id=None,
-                error=err,
-            )
-    else:
-        try:
-            ctx = contextvars.copy_context()
-            output = await global_state.event_loop().run_in_executor(None, ctx.run, fn, test_case)
-        except Exception as err:
-            await send_error(
-                test_id=test_id,
-                test_case_hash=test_case._cached_hash,
-                evaluator_id=None,
-                error=err,
-            )
-
-    if output is None:
+    try:
+        output = await run_test_case_unsafe(
+            test_id=test_id,
+            test_case=test_case,
+            fn=fn,
+        )
+    except Exception as err:
+        await send_error(
+            test_id=test_id,
+            test_case_hash=test_case._cached_hash,
+            evaluator_id=None,
+            error=err,
+        )
         return
 
     await global_state.http_client().post(
@@ -169,10 +190,9 @@ async def run_test_case(
     )
 
     try:
-        await gather_with_max_concurrency(
-            max_evaluator_concurrency,
+        await all_settled(
             [
-                evaluate_output(
+                run_evaluator(
                     test_id=test_id,
                     test_case=test_case,
                     output=output,
@@ -190,26 +210,37 @@ async def run_test_case(
         )
 
 
+def validate_test_suite_inputs(
+    test_id: str,
+    test_cases: List[BaseTestCase],
+    evaluators: List[BaseTestEvaluator],
+) -> None:
+    assert test_cases, f"[{test_id}] No test cases provided."
+    for test_case in test_cases:
+        assert isinstance(
+            test_case,
+            BaseTestCase,
+        ), f"[{test_id}] Test case {test_case} does not implement {BaseTestCase.__name__}."
+    for evaluator in evaluators:
+        assert isinstance(
+            evaluator,
+            BaseTestEvaluator,
+        ), f"[{test_id}] Evaluator {evaluator} does not implement {BaseTestEvaluator.__name__}."
+
+
 async def async_run_test_suite(
     test_id: str,
     test_cases: List[BaseTestCase],
     evaluators: List[BaseTestEvaluator],
     fn: Callable[[BaseTestCase], Any],
     max_test_case_concurrency: int,
-    max_evaluator_concurrency: int,
 ) -> None:
     try:
-        assert test_cases, f"[{test_id}] No test cases provided."
-        for test_case in test_cases:
-            assert isinstance(
-                test_case,
-                BaseTestCase,
-            ), f"[{test_id}] Test case {test_case} does not implement {BaseTestCase.__name__}."
-        for evaluator in evaluators:
-            assert isinstance(
-                evaluator,
-                BaseTestEvaluator,
-            ), f"[{test_id}] Evaluator {evaluator} does not implement {BaseTestEvaluator.__name__}."
+        validate_test_suite_inputs(
+            test_id=test_id,
+            test_cases=test_cases,
+            evaluators=evaluators,
+        )
     except Exception as err:
         await send_error(
             test_id=test_id,
@@ -219,18 +250,22 @@ async def async_run_test_suite(
         )
         return
 
+    # Initialize the semaphore registries
+    test_case_semaphore_registry[test_id] = asyncio.Semaphore(max_test_case_concurrency)
+    evaluator_semaphore_registry[test_id] = {
+        evaluator.id: asyncio.Semaphore(evaluator.max_concurrency) for evaluator in evaluators
+    }
+
     await global_state.http_client().post(f"{cli()}/start", json=dict(testExternalId=test_id))
 
     try:
-        await gather_with_max_concurrency(
-            max_test_case_concurrency,
+        await all_settled(
             [
                 run_test_case(
                     test_id=test_id,
                     test_case=test_case,
                     evaluators=evaluators,
                     fn=fn,
-                    max_evaluator_concurrency=max_evaluator_concurrency,
                 )
                 for test_case in test_cases
             ],
@@ -253,19 +288,26 @@ def run_test_suite(
     fn: Callable[[BaseTestCase], Any],
     # How many test cases to run concurrently
     max_test_case_concurrency: int = 10,
-    # How many evaluators to run concurrently on the result of a test case
-    max_evaluator_concurrency: int = 5,
+    # Deprecated arguments, but left for backwards compatibility
+    max_evaluator_concurrency: Optional[int] = None,
 ) -> None:
     global_state.init()
-    future = asyncio.run_coroutine_threadsafe(
+
+    if max_evaluator_concurrency is not None:
+        log.warning(
+            "`max_evaluator_concurrency` is deprecated and will be removed in a future release.\n"
+            "Its value is being ignored.\n"
+            "Set the `max_concurrency` attribute on the evaluator class instead.\n"
+            "See https://docs.autoblocks.ai/testing/sdks for more information."
+        )
+
+    asyncio.run_coroutine_threadsafe(
         async_run_test_suite(
             test_id=id,
             test_cases=test_cases,
             evaluators=evaluators,
             fn=fn,
             max_test_case_concurrency=max_test_case_concurrency,
-            max_evaluator_concurrency=max_evaluator_concurrency,
         ),
         global_state.event_loop(),
-    )
-    future.result()
+    ).result()
