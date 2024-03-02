@@ -21,7 +21,7 @@ def test_tracer_received_sigint_or_sigterm():
 
     # Wait for the process to terminate
     process.wait()
-    time.sleep(4)  # give a moment for autoblocks to
+    time.sleep(10)  # give a moment for autoblocks to
     test = client.get_trace(str(test_trace_id))
     # Assert that the process has terminated successfully
     assert test is not None

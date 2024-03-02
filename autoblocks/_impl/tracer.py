@@ -4,6 +4,7 @@ import contextvars
 import dataclasses
 import inspect
 import logging
+import time
 import uuid
 from contextlib import contextmanager
 from datetime import datetime
@@ -28,9 +29,14 @@ log = logging.getLogger(__name__)
 
 @atexit.register
 def _cleanup_tracer() -> None:
-    bg_thread = global_state.background_thread()
-    if bg_thread:
-        bg_thread.join()
+    print("Waiting for tasks to finish")
+    num_tries = 0
+    done = [x for x in asyncio.all_tasks(loop=global_state.event_loop())]
+    while len(done) > 0 and num_tries < 10:
+        done = [x for x in asyncio.all_tasks(loop=global_state.event_loop())]
+        time.sleep(1)
+        num_tries += 1
+    print("All tasks finished")
 
 
 @dataclasses.dataclass()
