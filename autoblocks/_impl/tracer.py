@@ -1,4 +1,5 @@
 import asyncio
+import atexit
 import contextvars
 import dataclasses
 import inspect
@@ -23,6 +24,13 @@ from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import gather_with_max_concurrency
 
 log = logging.getLogger(__name__)
+
+
+@atexit.register
+def _cleanup_tracer() -> None:
+    bg_thread = global_state.background_thread()
+    if bg_thread:
+        bg_thread.join()
 
 
 @dataclasses.dataclass()
@@ -216,7 +224,7 @@ class AutoblocksTracer:
             timestamp=timestamp,
             properties=merged_properties,
         )
-        req = await global_state.http_client().post(
+        req = global_state.sync_http_client().post(
             url=INGESTION_ENDPOINT,
             json=traced_event.to_json(),
             headers=self._client_headers,

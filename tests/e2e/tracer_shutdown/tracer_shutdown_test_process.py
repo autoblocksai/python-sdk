@@ -1,7 +1,7 @@
 # Write a main function that sends an event using the autoblocks tracer
 import asyncio
+import signal
 import sys
-import time
 
 from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import Evaluation
@@ -16,18 +16,29 @@ tracer = AutoblocksTracer()
 class MyEvaluator(BaseEventEvaluator):
     id = "e2e-test-evaluator"
 
-    async def evaluate_event(self, event: TracerEvent) -> Evaluation:
-        await asyncio.sleep(1)
+    async def evaluate_event(self, event: TracerEvent) -> Evaluation:  # type: ignore
+        await asyncio.sleep(15)
         return Evaluation(
             score=0.9,
             threshold=Threshold(gte=0.5),
         )
 
 
+_running = True
+
+
+def signal_handler(sig, frame):
+    global _running
+    _running = False
+
+
 def main():
+    signal.signal(signal.SIGINT, signal_handler)
     trace = sys.argv[1]
     tracer.send_event("tracer_shutdown", trace_id=str(trace), evaluators=[MyEvaluator()])
-    time.sleep(10)  # Sleep for 10 seconds to allow time for signal to be sent
+    while True:
+        if not _running:
+            break
 
 
 if __name__ == "__main__":
