@@ -14,11 +14,10 @@ _client: Optional[httpx.AsyncClient] = None
 _sync_client: Optional[httpx.Client] = None
 _loop: Optional[asyncio.AbstractEventLoop] = None
 _started: bool = False
-_background_thread: Optional[threading.Thread] = None
 
 
 def init() -> None:
-    global _client, _loop, _started, _background_thread, _sync_client
+    global _client, _loop, _started, _sync_client
 
     if _started:
         return
@@ -28,12 +27,12 @@ def init() -> None:
 
     _loop = asyncio.new_event_loop()
 
-    _background_thread = threading.Thread(
+    background_thread = threading.Thread(
         target=_run_event_loop,
         args=(_loop,),
         daemon=True,
     )
-    _background_thread.start()
+    background_thread.start()
     for sig in [signal.SIGINT, signal.SIGTERM]:
         _loop.add_signal_handler(sig, lambda: asyncio.create_task(_on_exit_signal()))
     _started = True
@@ -80,9 +79,3 @@ def sync_http_client() -> httpx.Client:
     if not _sync_client:
         raise Exception("HTTP client not initialized")
     return _sync_client
-
-
-def background_thread() -> threading.Thread:
-    if not _background_thread:
-        raise Exception("Background thread not initialized")
-    return _background_thread
