@@ -1,4 +1,5 @@
 import asyncio
+import atexit
 import logging
 import signal
 import threading
@@ -13,6 +14,7 @@ log = logging.getLogger(__name__)
 _client: Optional[httpx.AsyncClient] = None
 _loop: Optional[asyncio.AbstractEventLoop] = None
 _started: bool = False
+_event_loop_shutdown_lock = asyncio.Semaphore(1)
 
 
 def init() -> None:
@@ -28,7 +30,7 @@ def init() -> None:
     for s in (signal.SIGHUP, signal.SIGTERM, signal.SIGINT):
         _loop.add_signal_handler(
             s,
-            lambda *args, **kwargs: asyncio.create_task(_shutdown_event_loop(s, _loop)),
+            lambda *args, **kwargs: asyncio.create_task(_shutdown_event_loop_at_signal()),
         )
 
     background_thread = threading.Thread(
@@ -46,22 +48,37 @@ def _run_event_loop(_event_loop: asyncio.AbstractEventLoop) -> None:
     _event_loop.run_forever()
 
 
-async def _shutdown_event_loop(sig: int, loop: asyncio.AbstractEventLoop) -> None:
-    log.info(f"Gracefully shutting down event loop after receiving signal {sig}...")
-    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+async def _shutdown_event_loop(loop: asyncio.AbstractEventLoop) -> None:
+    async with _event_loop_shutdown_lock:
+        tasks_to_wait_for = []
+        for task in asyncio.all_tasks() - {asyncio.current_task()}:
+            coro_name = task.get_coro().__name__  # type: ignore
+            if coro_name == SEND_EVENT_CORO_NAME:
+                tasks_to_wait_for.append(task)
 
-    event_tasks = []
-    for task in tasks:
-        coro_name = task.get_coro().__name__  # type: ignore
-        if coro_name == SEND_EVENT_CORO_NAME:
-            event_tasks.append(task)
+        log.info(f"Waiting for {len(tasks_to_wait_for)} tasks to resolve")
+        await asyncio.gather(*tasks_to_wait_for, return_exceptions=True)
+        log.info("All tasks resolved")
+        log.info("Stopping event loop")
+        loop.stop()
+        log.info("Event loop stopped")
 
-    log.info(f"Waiting for {len(event_tasks)} outstanding events to be sent")
-    await asyncio.gather(*tasks, return_exceptions=True)
-    log.info("All events sent")
-    log.info("Stopping event loop")
-    loop.stop()
-    log.info("Event loop stopped")
+
+async def _shutdown_event_loop_at_signal() -> None:
+    while _loop and _loop.is_running() and not _event_loop_shutdown_lock.locked():
+        try:
+            await _shutdown_event_loop(_loop)
+        except Exception:
+            pass
+
+
+@atexit.register
+def _shutdown_event_loop_at_exit() -> None:
+    while _loop and _loop.is_running() and not _event_loop_shutdown_lock.locked():
+        try:
+            asyncio.run_coroutine_threadsafe(_shutdown_event_loop(_loop), _loop)
+        except Exception:
+            pass
 
 
 def event_loop() -> asyncio.AbstractEventLoop:

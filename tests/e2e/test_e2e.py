@@ -215,7 +215,7 @@ def test_prompt_manager_no_model_params_undeployed():
         assert prompt.params is None
 
 
-def test_tracer_received_sigint_or_sigterm_cleanup():
+def test_tracer_received_sigterm_cleanup():
     sig = signal.SIGTERM
 
     # Start the Flask app
