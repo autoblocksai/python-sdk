@@ -12,12 +12,11 @@ log = logging.getLogger(__name__)
 
 _client: Optional[httpx.AsyncClient] = None
 _loop: Optional[asyncio.AbstractEventLoop] = None
-_background_thread: Optional[threading.Thread] = None
 _started: bool = False
 
 
 def init() -> None:
-    global _client, _loop, _started, _background_thread
+    global _client, _loop, _started
 
     if _started:
         return
@@ -32,12 +31,12 @@ def init() -> None:
             lambda *args, **kwargs: asyncio.create_task(_shutdown_event_loop(s, _loop)),
         )
 
-    _background_thread = threading.Thread(
+    background_thread = threading.Thread(
         target=_run_event_loop,
         args=(_loop,),
         daemon=True,
     )
-    _background_thread.start()
+    background_thread.start()
 
     _started = True
 

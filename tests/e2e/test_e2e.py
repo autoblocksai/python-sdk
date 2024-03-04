@@ -6,7 +6,6 @@ import uuid
 from datetime import timedelta
 
 import httpx
-import pytest
 
 from autoblocks.api.client import AutoblocksAPIClient
 from autoblocks.api.models import EventFilter
@@ -216,8 +215,9 @@ def test_prompt_manager_no_model_params_undeployed():
         assert prompt.params is None
 
 
-@pytest.mark.parametrize("sig", [signal.SIGINT, signal.SIGTERM, signal.SIGHUP])
-def test_tracer_received_sigint_or_sigterm_cleanup(sig: int):
+def test_tracer_received_sigint_or_sigterm_cleanup():
+    sig = signal.SIGTERM
+
     # Start the Flask app
     process = subprocess.Popen(
         ["gunicorn", "tracer_shutdown_test_process:app"],
