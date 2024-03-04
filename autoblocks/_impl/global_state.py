@@ -11,56 +11,58 @@ from autoblocks._impl.util import SEND_EVENT_CORO_NAME
 log = logging.getLogger(__name__)
 
 _client: Optional[httpx.AsyncClient] = None
-_sync_client: Optional[httpx.Client] = None
 _loop: Optional[asyncio.AbstractEventLoop] = None
+_background_thread: Optional[threading.Thread] = None
 _started: bool = False
 
 
 def init() -> None:
-    global _client, _loop, _started, _sync_client
+    global _client, _loop, _started, _background_thread
 
     if _started:
         return
 
     _client = httpx.AsyncClient()
-    _sync_client = httpx.Client()
 
     _loop = asyncio.new_event_loop()
 
-    background_thread = threading.Thread(
+    for s in (signal.SIGHUP, signal.SIGTERM, signal.SIGINT):
+        _loop.add_signal_handler(
+            s,
+            lambda *args, **kwargs: asyncio.create_task(_shutdown_event_loop(s, _loop)),
+        )
+
+    _background_thread = threading.Thread(
         target=_run_event_loop,
         args=(_loop,),
         daemon=True,
     )
-    background_thread.start()
-    for sig in [signal.SIGINT, signal.SIGTERM]:
-        _loop.add_signal_handler(sig, lambda: asyncio.create_task(_on_exit_signal()))
+    _background_thread.start()
+
     _started = True
-
-
-async def _on_exit_signal() -> None:
-    """
-    This function handles if the event loop recieves
-    a SIGINT or SIGTERM signal. It will attempt to finish
-    all outstanding "send event" tasks and then stop.
-    Taken from blog: https://www.roguelynn.com/words/asyncio-graceful-shutdowns/
-    """
-    if _loop:
-        # Ignore type below - accessing __name__ on coro which mypy doesn't like
-        tasks = [
-            x
-            for x in asyncio.all_tasks(loop=_loop)
-            if x.get_coro().__name__ == SEND_EVENT_CORO_NAME and not x.done()  # type: ignore
-        ]
-        logging.info(f"Attempting to flush f{len(tasks)} outstanding send event tasks")
-        await asyncio.gather(*tasks, return_exceptions=True)
-        log.info("Stopping event loop")
-        _loop.stop()
 
 
 def _run_event_loop(_event_loop: asyncio.AbstractEventLoop) -> None:
     asyncio.set_event_loop(_event_loop)
     _event_loop.run_forever()
+
+
+async def _shutdown_event_loop(sig: int, loop: asyncio.AbstractEventLoop) -> None:
+    log.info(f"Gracefully shutting down event loop after receiving signal {sig}...")
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+
+    event_tasks = []
+    for task in tasks:
+        coro_name = task.get_coro().__name__  # type: ignore
+        if coro_name == SEND_EVENT_CORO_NAME:
+            event_tasks.append(task)
+
+    log.info(f"Waiting for {len(event_tasks)} outstanding events to be sent")
+    await asyncio.gather(*tasks, return_exceptions=True)
+    log.info("All events sent")
+    log.info("Stopping event loop")
+    loop.stop()
+    log.info("Event loop stopped")
 
 
 def event_loop() -> asyncio.AbstractEventLoop:
@@ -73,9 +75,3 @@ def http_client() -> httpx.AsyncClient:
     if not _client:
         raise Exception("HTTP client not initialized")
     return _client
-
-
-def sync_http_client() -> httpx.Client:
-    if not _sync_client:
-        raise Exception("HTTP client not initialized")
-    return _sync_client

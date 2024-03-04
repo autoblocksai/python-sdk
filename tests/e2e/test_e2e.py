@@ -5,6 +5,7 @@ import time
 import uuid
 from datetime import timedelta
 
+import httpx
 import pytest
 
 from autoblocks.api.client import AutoblocksAPIClient
@@ -215,18 +216,38 @@ def test_prompt_manager_no_model_params_undeployed():
         assert prompt.params is None
 
 
-@pytest.mark.parametrize("signal", [signal.SIGINT, signal.SIGTERM])
-def test_tracer_received_sigint_or_sigterm_cleanup(signal: int):
-    test_trace_id = str(uuid.uuid4())
-    # Start the main.py script as a subprocess
-    process = subprocess.Popen(["python", "tests/e2e/tracer_shutdown_test_process.py", test_trace_id])
+@pytest.mark.parametrize("sig", [signal.SIGINT, signal.SIGTERM, signal.SIGHUP])
+def test_tracer_received_sigint_or_sigterm_cleanup(sig: int):
+    # Start the Flask app
+    process = subprocess.Popen(
+        ["gunicorn", "tracer_shutdown_test_process:app"],
+        cwd="tests/e2e",
+    )
     time.sleep(1)
 
-    os.kill(process.pid, signal)
+    # Send event
+    test_trace_id = str(uuid.uuid4())
+    httpx.post("http://localhost:8000", json=dict(trace_id=test_trace_id))
+
+    # Shut down the Flask app
+    print(f"Killing process {process.pid} with signal {sig}...")
+    os.kill(process.pid, sig)
 
     # Wait for the process to terminate
     process.wait()
-    time.sleep(10)  # give a moment for autoblocks to
-    test = client.get_trace(test_trace_id)
-    # Assert that the process has terminated successfully
-    assert test is not None
+    print(f"Process {process.pid} terminated with return code {process.returncode}.")
+
+    num_tries = 0
+    while num_tries < 30:
+        try:
+            client.get_trace(test_trace_id)
+            print(f"Found trace {test_trace_id}!")
+            return
+        except httpx.HTTPStatusError:
+            pass
+
+        print(f"Trace {test_trace_id} not found... {num_tries} tries left.")
+        time.sleep(1)
+        num_tries += 1
+
+    raise Exception(f"Trace {test_trace_id} was not sent up after receiving signal {sig}.")

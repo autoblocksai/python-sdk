@@ -652,4 +652,5 @@ def test_tracer_evaluation_unexpected_error(httpx_mock):
 
 
 def test_tracer_has_send_event_unsafe():
+    # We use this name to find any unsent events when the process is shutting down
     assert AutoblocksTracer._send_event_unsafe.__name__ == SEND_EVENT_CORO_NAME
