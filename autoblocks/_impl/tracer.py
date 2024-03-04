@@ -21,6 +21,7 @@ from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import TracerEvent
+from autoblocks._impl.util import SEND_EVENT_CORO_NAME
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import gather_with_max_concurrency
 
@@ -29,14 +30,23 @@ log = logging.getLogger(__name__)
 
 @atexit.register
 def _cleanup_tracer() -> None:
-    print("Waiting for tasks to finish")
+    """
+    On program exit, attempt to flush any outstanding send event tasks.
+    Since the background thread is a daemon, we have to actively
+    check task counts and sleep to measure progress.
+    """
     num_tries = 0
-    done = [x for x in asyncio.all_tasks(loop=global_state.event_loop())]
-    while len(done) > 0 and num_tries < 10:
-        done = [x for x in asyncio.all_tasks(loop=global_state.event_loop())]
+
+    def get_pending() -> List[asyncio.Task[Any]]:
+        return [
+            task
+            for task in asyncio.all_tasks(loop=global_state.event_loop())
+            if task.get_coro().__name__ == SEND_EVENT_CORO_NAME and not task.done()  # type: ignore
+        ]
+
+    while len(get_pending()) > 0 and num_tries < 10:
         time.sleep(1)
         num_tries += 1
-    print("All tasks finished")
 
 
 @dataclasses.dataclass()

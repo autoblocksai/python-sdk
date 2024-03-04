@@ -17,7 +17,7 @@ class MyEvaluator(BaseEventEvaluator):
     id = "e2e-test-evaluator"
 
     async def evaluate_event(self, event: TracerEvent) -> Evaluation:  # type: ignore
-        await asyncio.sleep(10)
+        await asyncio.sleep(8)
         return Evaluation(
             score=0.9,
             threshold=Threshold(gte=0.5),
@@ -36,10 +36,12 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     trace = sys.argv[1]
     tracer.send_event("tracer_shutdown", trace_id=str(trace), evaluators=[MyEvaluator()])
+
+    # While a signal is not received, keep the this process
+    # running on the main thread
     while True:
         if not _running:
             break
-    print("Exiting")
 
 
 if __name__ == "__main__":

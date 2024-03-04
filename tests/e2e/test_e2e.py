@@ -1,3 +1,6 @@
+import os
+import signal
+import subprocess
 import time
 import uuid
 from datetime import timedelta
@@ -208,3 +211,19 @@ def test_prompt_manager_no_model_params_undeployed():
 
     with mgr.exec() as prompt:
         assert prompt.params is None
+
+
+def test_tracer_received_sigint_or_sigterm_cleanup():
+    test_trace_id = str(uuid.uuid4())
+    # Start the main.py script as a subprocess
+    process = subprocess.Popen(["python", "tests/e2e/tracer_shutdown_test_process.py", test_trace_id])
+    time.sleep(1)
+
+    os.kill(process.pid, signal.SIGINT)
+
+    # Wait for the process to terminate
+    process.wait()
+    time.sleep(10)  # give a moment for autoblocks to
+    test = client.get_trace(test_trace_id)
+    # Assert that the process has terminated successfully
+    assert test is not None
