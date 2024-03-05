@@ -171,7 +171,7 @@ class AutoblocksTracer:
         """
         if len(evaluators) == 0:
             return []
-        evaluations: Tuple[Union[Evaluation, BaseException]] = await all_settled(
+        evaluations: Tuple[Union[Optional[Evaluation], BaseException]] = await all_settled(
             [
                 self._evaluate_event(
                     event=event,
