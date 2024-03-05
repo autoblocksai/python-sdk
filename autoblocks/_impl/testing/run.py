@@ -88,7 +88,7 @@ async def run_evaluator_unsafe(
     evaluator: BaseTestEvaluator,
 ) -> Evaluation:
     """
-    This is suffixed with _unsafe because doesn't handle exceptions.
+    This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
     """
     async with evaluator_semaphore_registry[test_id][evaluator.id]:
