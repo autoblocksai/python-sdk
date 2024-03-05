@@ -655,7 +655,7 @@ def test_async_test_fn(httpx_mock):
 
     async def test_fn(test_case: MyTestCase):
         tracer = AutoblocksTracer("test")
-        tracer.sendEvent("test")
+        tracer.send_event("test")
         return test_case.input + "!"
 
     run_test_suite(
