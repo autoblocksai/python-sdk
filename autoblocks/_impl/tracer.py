@@ -14,6 +14,7 @@ from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
@@ -170,7 +171,7 @@ class AutoblocksTracer:
         """
         if len(evaluators) == 0:
             return []
-        evaluations: Tuple[Evaluation | BaseException] = await all_settled(
+        evaluations: Tuple[Union[Evaluation, BaseException]] = await all_settled(
             [
                 self._evaluate_event(
                     event=event,

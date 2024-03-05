@@ -7,6 +7,7 @@ from typing import Any
 from typing import Coroutine
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ def encode_uri_component(s: str) -> str:
     return urllib.parse.quote(s, safe="()*!.'")
 
 
-async def all_settled(coroutines: list[Coroutine[Any, Any, Any]]) -> Tuple[BaseException | Any]:
+async def all_settled(coroutines: list[Coroutine[Any, Any, Any]]) -> Tuple[Union[BaseException, Any]]:
     """
     Runs all the coroutines in parallel and waits for all of them to finish,
     regardless of whether they succeed or fail. Similar to Promise.allSettled.
