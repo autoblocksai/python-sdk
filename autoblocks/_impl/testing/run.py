@@ -139,7 +139,7 @@ async def run_test_case_unsafe(
     fn: Callable[[BaseTestCase], Any],
 ) -> Any:
     """
-    This is suffixed with _unsafe because doesn't handle exceptions.
+    This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
     """
     async with test_case_semaphore_registry[test_id]:
