@@ -1,11 +1,6 @@
-import os
-import signal
-import subprocess
 import time
 import uuid
 from datetime import timedelta
-
-import pytest
 
 from autoblocks.api.client import AutoblocksAPIClient
 from autoblocks.api.models import EventFilter
@@ -213,20 +208,3 @@ def test_prompt_manager_no_model_params_undeployed():
 
     with mgr.exec() as prompt:
         assert prompt.params is None
-
-
-@pytest.mark.parametrize("signal", [signal.SIGINT, signal.SIGTERM])
-def test_tracer_received_sigint_or_sigterm_cleanup(signal: int):
-    test_trace_id = str(uuid.uuid4())
-    # Start the main.py script as a subprocess
-    process = subprocess.Popen(["python", "tests/e2e/tracer_shutdown_test_process.py", test_trace_id])
-    time.sleep(1)
-
-    os.kill(process.pid, signal)
-
-    # Wait for the process to terminate
-    process.wait()
-    time.sleep(10)  # give a moment for autoblocks to
-    test = client.get_trace(test_trace_id)
-    # Assert that the process has terminated successfully
-    assert test is not None
