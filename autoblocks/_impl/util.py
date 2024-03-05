@@ -10,11 +10,6 @@ from typing import Optional
 
 log = logging.getLogger(__name__)
 
-# This constant is used during the shutdown process to find all outstanding
-# send event tasks and attempt to resolved them before stopping the event loop.
-# We have a test asserting that this function name does not change.
-SEND_EVENT_CORO_NAME = "_send_event_unsafe"
-
 
 class StrEnum(str, Enum):
     def __str__(self) -> str:
@@ -27,7 +22,6 @@ class AutoblocksEnvVar(StrEnum):
     CLI_SERVER_ADDRESS = "AUTOBLOCKS_CLI_SERVER_ADDRESS"
     INGESTION_KEY = "AUTOBLOCKS_INGESTION_KEY"
     TRACER_THROW_ON_ERROR = "AUTOBLOCKS_TRACER_THROW_ON_ERROR"
-    TRACER_BLOCK_ON_SEND_EVENT = "TRACER_BLOCK_ON_SEND_EVENT"
 
     def get(self) -> Optional[str]:
         return os.environ.get(self.value)

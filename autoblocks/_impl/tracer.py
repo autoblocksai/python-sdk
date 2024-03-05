@@ -216,7 +216,7 @@ class AutoblocksTracer:
             timestamp=timestamp,
             properties=merged_properties,
         )
-        req = global_state.sync_http_client().post(
+        req = await global_state.http_client().post(
             url=INGESTION_ENDPOINT,
             json=traced_event.to_json(),
             headers=self._client_headers,

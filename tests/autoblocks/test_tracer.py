@@ -11,7 +11,6 @@ from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import Threshold
 from autoblocks._impl.testing.models import TracerEvent
-from autoblocks._impl.util import SEND_EVENT_CORO_NAME
 from autoblocks.tracer import AutoblocksTracer
 from tests.autoblocks.util import make_expected_body
 
@@ -41,7 +40,6 @@ def mock_env_vars():
         os.environ,
         {
             "AUTOBLOCKS_INGESTION_KEY": "mock-ingestion-key",
-            "TRACER_BLOCK_ON_SEND_EVENT": "1",
         },
     ):
         yield
@@ -649,7 +647,3 @@ def test_tracer_evaluation_unexpected_error(httpx_mock):
         properties={},
         evaluators=[MyEvaluator()],
     )
-
-
-def test_tracer_has_send_event_unsafe():
-    assert AutoblocksTracer._send_event_unsafe.__name__ == SEND_EVENT_CORO_NAME
