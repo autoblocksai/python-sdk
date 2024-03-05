@@ -1,24 +1,31 @@
 import asyncio
+import contextvars
+import dataclasses
+import inspect
 import logging
 import uuid
 from contextlib import contextmanager
-from dataclasses import dataclass
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
 from typing import Any
 from typing import Dict
 from typing import Generator
+from typing import List
 from typing import Optional
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
+from autoblocks._impl.testing.models import BaseEventEvaluator
+from autoblocks._impl.testing.models import Evaluation
+from autoblocks._impl.testing.models import TracerEvent
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks._impl.util import gather_with_max_concurrency
 
 log = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclasses.dataclass()
 class SendEventResponse:
     trace_id: Optional[str]
 
@@ -103,44 +110,119 @@ class AutoblocksTracer:
                 props["span_id"] = prev_span_id
             self.set_properties(props)
 
+    def _evaluation_to_json(self, evaluation: Evaluation, evaluator_external_id: str) -> Dict[str, Any]:
+        return dict(
+            id=str(uuid.uuid4()),
+            score=evaluation.score,
+            threshold=dataclasses.asdict(evaluation.threshold) if evaluation.threshold else None,
+            metadata=evaluation.metadata,
+            evaluatorExternalId=evaluator_external_id,
+        )
+
+    async def _evaluate_event(self, event: TracerEvent, evaluator: BaseEventEvaluator) -> Optional[Evaluation]:
+        """
+        Evaluates an event using a provided evaluator.
+        """
+        evaluation = None
+        if inspect.iscoroutinefunction(evaluator.evaluate_event):
+            try:
+                evaluation = await evaluator.evaluate_event(event=event)
+            except Exception as err:
+                log.error(f"Unable to execute evaluator with id: {evaluator.id}. Error: %s", err, exc_info=True)
+        else:
+            try:
+                ctx = contextvars.copy_context()
+                evaluation = await global_state.event_loop().run_in_executor(
+                    None,
+                    ctx.run,
+                    evaluator.evaluate_event,
+                    event,
+                )
+            except Exception as err:
+                log.error(f"Unable to execute evaluator with id: {evaluator.id}. Error: %s", err, exc_info=True)
+
+        return evaluation
+
+    async def _run_evaluators_unsafe(
+        self, evaluators: List[BaseEventEvaluator], event: TracerEvent, max_evaluator_concurrency: int
+    ) -> List[Dict[str, Any]]:
+        if len(evaluators) == 0:
+            return []
+        evaluations: List[Evaluation] = await gather_with_max_concurrency(
+            max_evaluator_concurrency,
+            [
+                self._evaluate_event(
+                    event=event,
+                    evaluator=evaluator,
+                )
+                for evaluator in evaluators
+            ],
+        )
+        return [
+            self._evaluation_to_json(evaluation=evaluation, evaluator_external_id=evaluator.id)
+            for evaluator, evaluation in zip(evaluators, evaluations)
+            if isinstance(evaluation, Evaluation)
+        ]
+
     async def _send_event_unsafe(
         self,
         # Require all arguments to be specified via key=value
         *,
         message: str,
-        trace_id: Optional[str] = None,
-        span_id: Optional[str] = None,
-        parent_span_id: Optional[str] = None,
-        timestamp: Optional[str] = None,
-        properties: Optional[Dict[Any, Any]] = None,
-        prompt_tracking: Optional[Dict[str, Any]] = None,
-    ) -> SendEventResponse:
+        trace_id: Optional[str],
+        span_id: Optional[str],
+        parent_span_id: Optional[str],
+        timestamp: Optional[str],
+        properties: Optional[Dict[Any, Any]],
+        evaluators: Optional[List[BaseEventEvaluator]],
+        max_evaluator_concurrency: int,
+        prompt_tracking: Optional[Dict[str, Any]],
+    ) -> None:
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
+
+        # Overwrite properties with any provided as top level arguments
         if span_id:
             merged_properties["span_id"] = span_id
         if parent_span_id:
             merged_properties["parent_span_id"] = parent_span_id
         if prompt_tracking:
             merged_properties["promptTracking"] = prompt_tracking
-
         trace_id = trace_id or self._trace_id
         timestamp = timestamp or datetime.now(timezone.utc).isoformat()
 
+        # If there are evaluators, run them and compute the evaluations property
+        if evaluators:
+            try:
+                evaluations = await self._run_evaluators_unsafe(
+                    event=TracerEvent(
+                        message=message,
+                        trace_id=trace_id,
+                        timestamp=timestamp,
+                        properties=merged_properties,
+                    ),
+                    evaluators=evaluators,
+                    max_evaluator_concurrency=max_evaluator_concurrency,
+                )
+                if evaluations:
+                    # Update merged properties with computed evaluations property
+                    merged_properties["evaluations"] = evaluations
+            except Exception as err:
+                log.error("Unable to evaluate events. Error: %s", err, exc_info=True)
+
+        traced_event = TracerEvent(
+            message=message,
+            trace_id=trace_id,
+            timestamp=timestamp,
+            properties=merged_properties,
+        )
         req = await global_state.http_client().post(
             url=INGESTION_ENDPOINT,
-            json={
-                "message": message,
-                "traceId": trace_id,
-                "timestamp": timestamp,
-                "properties": merged_properties,
-            },
+            json=traced_event.to_json(),
             headers=self._client_headers,
             timeout=self._timeout_seconds,
         )
         req.raise_for_status()
-        resp = req.json()
-        return SendEventResponse(trace_id=resp.get("traceId"))
 
     def send_event(
         self,
@@ -151,9 +233,11 @@ class AutoblocksTracer:
         span_id: Optional[str] = None,
         parent_span_id: Optional[str] = None,
         timestamp: Optional[str] = None,
-        properties: Optional[Dict[Any, Any]] = None,
+        properties: Optional[Dict[str, Any]] = None,
+        evaluators: Optional[List[BaseEventEvaluator]] = None,
+        max_evaluator_concurrency: int = 5,
         prompt_tracking: Optional[Dict[str, Any]] = None,
-    ) -> SendEventResponse:
+    ) -> None:
         """
         Sends an event to the Autoblocks ingestion API.
 
@@ -169,13 +253,14 @@ class AutoblocksTracer:
                     parent_span_id=parent_span_id,
                     timestamp=timestamp,
                     properties=properties,
+                    evaluators=evaluators,
+                    max_evaluator_concurrency=max_evaluator_concurrency,
                     prompt_tracking=prompt_tracking,
                 ),
                 global_state.event_loop(),
             )
-            return future.result()
+            future.result()  # Block on result: Todo: make this not blocking
         except Exception as err:
             log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
             if AutoblocksEnvVar.TRACER_THROW_ON_ERROR.get() == "1":
                 raise err
-            return SendEventResponse(trace_id=None)

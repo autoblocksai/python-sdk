@@ -2,7 +2,24 @@ import abc
 import dataclasses
 import functools
 from typing import Any
+from typing import Dict
 from typing import Optional
+
+
+@dataclasses.dataclass()
+class TracerEvent:
+    message: str
+    timestamp: str
+    properties: Dict[str, Any]
+    trace_id: Optional[str]
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "message": self.message,
+            "traceId": self.trace_id,
+            "timestamp": self.timestamp,
+            "properties": self.properties,
+        }
 
 
 @dataclasses.dataclass()
@@ -17,6 +34,7 @@ class Threshold:
 class Evaluation:
     score: float
     threshold: Optional[Threshold] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class BaseTestCase(abc.ABC):
@@ -50,4 +68,20 @@ class BaseTestEvaluator(abc.ABC):
 
     @abc.abstractmethod
     def evaluate_test_case(self, test_case: BaseTestCase, output: Any) -> Evaluation:
+        pass
+
+
+class BaseEventEvaluator(abc.ABC):
+    """
+    An abstract base class for implementing an evaluator that runs on events
+    in an online testing scenario.
+    """
+
+    @property
+    @abc.abstractmethod
+    def id(self) -> str:
+        pass
+
+    @abc.abstractmethod
+    def evaluate_event(self, event: TracerEvent) -> Evaluation:
         pass
