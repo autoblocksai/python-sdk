@@ -13,6 +13,7 @@ from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
@@ -20,14 +21,11 @@ from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import TracerEvent
 from autoblocks._impl.util import AutoblocksEnvVar
-from autoblocks._impl.util import gather_with_max_concurrency
+from autoblocks._impl.util import all_settled
 
 log = logging.getLogger(__name__)
 
-
-@dataclasses.dataclass()
-class SendEventResponse:
-    trace_id: Optional[str]
+evaluator_semaphore_registry: dict[str, asyncio.Semaphore] = {}  # evaluator_id -> semaphore
 
 
 class AutoblocksTracer:
@@ -119,37 +117,60 @@ class AutoblocksTracer:
             evaluatorExternalId=evaluator_external_id,
         )
 
-    async def _evaluate_event(self, event: TracerEvent, evaluator: BaseEventEvaluator) -> Optional[Evaluation]:
+    async def _evaluate_event_unsafe(
+        self,
+        event: TracerEvent,
+        evaluator: BaseEventEvaluator,
+    ) -> Evaluation:
         """
-        Evaluates an event using a provided evaluator.
+        This function is suffixed with _unsafe because it doesn't handle exceptions.
+        Its caller will catch and handle all exceptions.
         """
-        evaluation = None
-        if inspect.iscoroutinefunction(evaluator.evaluate_event):
-            try:
-                evaluation = await evaluator.evaluate_event(event=event)
-            except Exception as err:
-                log.error(f"Unable to execute evaluator with id: {evaluator.id}. Error: %s", err, exc_info=True)
-        else:
-            try:
+        if evaluator.id not in evaluator_semaphore_registry:
+            evaluator_semaphore_registry[evaluator.id] = asyncio.Semaphore(evaluator.max_concurrency)
+
+        async with evaluator_semaphore_registry[evaluator.id]:
+            if inspect.iscoroutinefunction(evaluator.evaluate_event):
+                # mypy error:
+                # error: Returning Any from function declared to return "Evaluation"  [no-any-return]
+                # Not sure what mypy wants here, evaluate_event is typed correctly
+                return await evaluator.evaluate_event(event)  # type: ignore
+            else:
                 ctx = contextvars.copy_context()
-                evaluation = await global_state.event_loop().run_in_executor(
+                return await global_state.event_loop().run_in_executor(
                     None,
                     ctx.run,
                     evaluator.evaluate_event,
                     event,
                 )
-            except Exception as err:
-                log.error(f"Unable to execute evaluator with id: {evaluator.id}. Error: %s", err, exc_info=True)
 
-        return evaluation
+    async def _evaluate_event(self, event: TracerEvent, evaluator: BaseEventEvaluator) -> Optional[Evaluation]:
+        """
+        Evaluates an event using a provided evaluator.
+        """
+        try:
+            return await self._evaluate_event_unsafe(
+                event=event,
+                evaluator=evaluator,
+            )
+        except Exception as err:
+            log.error(f"Unable to execute evaluator with id: {evaluator.id}. Error: %s", err, exc_info=True)
+            return None
 
     async def _run_evaluators_unsafe(
-        self, evaluators: List[BaseEventEvaluator], event: TracerEvent, max_evaluator_concurrency: int
+        self,
+        event: TracerEvent,
+        evaluators: List[BaseEventEvaluator],
     ) -> List[Dict[str, Any]]:
+        """
+        Run a list of evaluators on an event and return the evaluations as a list of dictionaries.
+
+        This is suffixed with _unsafe because it doesn't handle exceptions.
+        Its caller will catch and handle all exceptions.
+        """
         if len(evaluators) == 0:
             return []
-        evaluations: List[Evaluation] = await gather_with_max_concurrency(
-            max_evaluator_concurrency,
+        evaluations: Tuple[Evaluation | BaseException] = await all_settled(
             [
                 self._evaluate_event(
                     event=event,
@@ -175,7 +196,6 @@ class AutoblocksTracer:
         timestamp: Optional[str],
         properties: Optional[Dict[Any, Any]],
         evaluators: Optional[List[BaseEventEvaluator]],
-        max_evaluator_concurrency: int,
         prompt_tracking: Optional[Dict[str, Any]],
     ) -> None:
         merged_properties = dict(self._properties)
@@ -202,7 +222,6 @@ class AutoblocksTracer:
                         properties=merged_properties,
                     ),
                     evaluators=evaluators,
-                    max_evaluator_concurrency=max_evaluator_concurrency,
                 )
                 if evaluations:
                     # Update merged properties with computed evaluations property
@@ -235,7 +254,6 @@ class AutoblocksTracer:
         timestamp: Optional[str] = None,
         properties: Optional[Dict[str, Any]] = None,
         evaluators: Optional[List[BaseEventEvaluator]] = None,
-        max_evaluator_concurrency: int = 5,
         prompt_tracking: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
@@ -254,7 +272,6 @@ class AutoblocksTracer:
                     timestamp=timestamp,
                     properties=properties,
                     evaluators=evaluators,
-                    max_evaluator_concurrency=max_evaluator_concurrency,
                     prompt_tracking=prompt_tracking,
                 ),
                 global_state.event_loop(),

@@ -5,8 +5,8 @@ import urllib.parse
 from enum import Enum
 from typing import Any
 from typing import Coroutine
-from typing import List
 from typing import Optional
+from typing import Tuple
 
 log = logging.getLogger(__name__)
 
@@ -36,19 +36,11 @@ def encode_uri_component(s: str) -> str:
     return urllib.parse.quote(s, safe="()*!.'")
 
 
-async def gather_with_max_concurrency(
-    max_concurrency: int,
-    coroutines: List[Coroutine[Any, Any, Any]],
-) -> List[Any]:
+async def all_settled(coroutines: list[Coroutine[Any, Any, Any]]) -> Tuple[BaseException | Any]:
     """
-    Borrowed from https://stackoverflow.com/a/61478547
+    Runs all the coroutines in parallel and waits for all of them to finish,
+    regardless of whether they succeed or fail. Similar to Promise.allSettled.
     """
-    semaphore = asyncio.Semaphore(max_concurrency)
-
-    async def sem_coro(coro: Coroutine[Any, Any, Any]) -> Any:
-        async with semaphore:
-            return await coro
-
-    # return_exceptions=True causes exceptions to be returned as values instead
-    # of propagating them to the caller. this is similar in behavior to Promise.allSettled
-    return await asyncio.gather(*(sem_coro(c) for c in coroutines), return_exceptions=True)
+    # mypy error:
+    # Returning Any from function declared to return "tuple[BaseException | Any]"  [no-any-return]
+    return await asyncio.gather(*coroutines, return_exceptions=True)  # type: ignore

@@ -6,7 +6,6 @@ import logging
 import traceback
 from typing import Any
 from typing import Callable
-from typing import Coroutine
 from typing import List
 from typing import Optional
 
@@ -17,6 +16,7 @@ from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks._impl.util import all_settled
 
 log = logging.getLogger(__name__)
 
@@ -50,14 +50,6 @@ def orjson_default(o: Any) -> Any:
 
 def serialize(x: Any) -> Any:
     return orjson.loads(orjson.dumps(x, default=orjson_default))
-
-
-async def all_settled(coroutines: list[Coroutine[Any, Any, Any]]) -> None:
-    """
-    Runs all the coroutines in parallel and waits for all of them to finish,
-    regardless of whether they succeed or fail. Similar to Promise.allSettled.
-    """
-    await asyncio.gather(*coroutines, return_exceptions=True)
 
 
 async def send_error(
