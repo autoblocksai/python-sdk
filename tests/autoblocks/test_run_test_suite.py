@@ -13,6 +13,7 @@ from autoblocks.testing.models import BaseTestEvaluator
 from autoblocks.testing.models import Evaluation
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.run import run_test_suite
+from autoblocks.tracer import AutoblocksTracer
 from tests.autoblocks.util import decode_request_body
 from tests.autoblocks.util import make_expected_body
 
@@ -653,6 +654,8 @@ def test_async_test_fn(httpx_mock):
     )
 
     async def test_fn(test_case: MyTestCase):
+        tracer = AutoblocksTracer("test")
+        tracer.sendEvent("test")
         return test_case.input + "!"
 
     run_test_suite(
