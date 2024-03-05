@@ -7,6 +7,10 @@ import freezegun
 import pytest
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
+from autoblocks._impl.testing.models import BaseEventEvaluator
+from autoblocks._impl.testing.models import Evaluation
+from autoblocks._impl.testing.models import Threshold
+from autoblocks._impl.testing.models import TracerEvent
 from autoblocks.tracer import AutoblocksTracer
 from tests.autoblocks.util import make_expected_body
 
@@ -30,12 +34,17 @@ def test_client_headers_init_with_key():
     assert tracer._client_headers["Authorization"] == "Bearer mock-ingestion-key"
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        "AUTOBLOCKS_INGESTION_KEY": "mock-ingestion-key",
-    },
-)
+@pytest.fixture(autouse=True)
+def mock_env_vars():
+    with mock.patch.dict(
+        os.environ,
+        {
+            "AUTOBLOCKS_INGESTION_KEY": "mock-ingestion-key",
+        },
+    ):
+        yield
+
+
 def test_client_init_headers_with_env_var():
     tracer = AutoblocksTracer()
     assert tracer._client_headers["Authorization"] == "Bearer mock-ingestion-key"
@@ -58,9 +67,7 @@ def test_tracer_prod(httpx_mock):
         ),
     )
     tracer = AutoblocksTracer("mock-ingestion-key")
-    resp = tracer.send_event("my-message")
-
-    assert resp.trace_id == "my-trace-id"
+    tracer.send_event("my-message")
 
 
 def test_tracer_prod_no_trace_id_in_response(httpx_mock):
@@ -80,9 +87,7 @@ def test_tracer_prod_no_trace_id_in_response(httpx_mock):
         ),
     )
     tracer = AutoblocksTracer("mock-ingestion-key")
-    resp = tracer.send_event("my-message")
-
-    assert resp.trace_id is None
+    tracer.send_event("my-message")
 
 
 def test_tracer_prod_with_trace_id_in_send_event(httpx_mock):
@@ -303,8 +308,7 @@ def test_tracer_prod_swallows_errors(httpx_mock):
     httpx_mock.add_exception(Exception())
 
     tracer = AutoblocksTracer("mock-ingestion-key")
-    resp = tracer.send_event("my-message")
-    assert resp.trace_id is None
+    tracer.send_event("my-message")
 
 
 @mock.patch.dict(
@@ -340,8 +344,7 @@ def test_tracer_prod_handles_non_200(httpx_mock):
     )
 
     tracer = AutoblocksTracer("mock-ingestion-key")
-    resp = tracer.send_event("my-message")
-    assert resp.trace_id is None
+    tracer.send_event("my-message")
 
 
 def test_tracer_sends_span_id_as_property(httpx_mock):
@@ -361,9 +364,7 @@ def test_tracer_sends_span_id_as_property(httpx_mock):
         ),
     )
     tracer = AutoblocksTracer("mock-ingestion-key")
-    resp = tracer.send_event("my-message", span_id="my-span-id")
-
-    assert resp.trace_id == "my-trace-id"
+    tracer.send_event("my-message", span_id="my-span-id")
 
 
 def test_tracer_sends_parent_span_id_as_property(httpx_mock):
@@ -383,9 +384,7 @@ def test_tracer_sends_parent_span_id_as_property(httpx_mock):
         ),
     )
     tracer = AutoblocksTracer("mock-ingestion-key")
-    resp = tracer.send_event("my-message", parent_span_id="my-parent-span-id")
-
-    assert resp.trace_id == "my-trace-id"
+    tracer.send_event("my-message", parent_span_id="my-parent-span-id")
 
 
 def test_tracer_sends_span_id_and_parent_span_id_as_property(httpx_mock):
@@ -405,21 +404,13 @@ def test_tracer_sends_span_id_and_parent_span_id_as_property(httpx_mock):
         ),
     )
     tracer = AutoblocksTracer("mock-ingestion-key")
-    resp = tracer.send_event("my-message", span_id="my-span-id", parent_span_id="my-parent-span-id")
-
-    assert resp.trace_id == "my-trace-id"
+    tracer.send_event("my-message", span_id="my-span-id", parent_span_id="my-parent-span-id")
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        "AUTOBLOCKS_INGESTION_KEY": "key",
-    },
-)
 @mock.patch.object(
     uuid,
     "uuid4",
-    side_effect=[f"mock-uuid-{i}" for i in range(10)],
+    side_effect=[f"mock-uuid-{i}" for i in range(4)],
 )
 def test_tracer_start_span(*args, **kwargs):
     tracer = AutoblocksTracer()
@@ -448,3 +439,211 @@ def test_tracer_start_span(*args, **kwargs):
 
     assert tracer._properties.get("span_id") is None
     assert tracer._properties.get("parent_span_id") is None
+
+
+@mock.patch.object(
+    uuid,
+    "uuid4",
+    side_effect=["mock-uuid-1"],
+)
+def test_tracer_prod_evaluations(httpx_mock):
+    class MyEvaluator(BaseEventEvaluator):
+        id = "my-evaluator"
+
+        def evaluate_event(self, event: TracerEvent) -> Evaluation:
+            return Evaluation(
+                score=0.9,
+                threshold=Threshold(gte=0.5),
+            )
+
+    httpx_mock.add_response(
+        url=INGESTION_ENDPOINT,
+        method="POST",
+        status_code=200,
+        json={"traceId": "my-trace-id"},
+        match_headers={"Authorization": "Bearer mock-ingestion-key"},
+        match_content=make_expected_body(
+            dict(
+                message="my-message",
+                traceId="my-trace-id",
+                timestamp=timestamp,
+                properties={
+                    "evaluations": [
+                        {
+                            "id": "mock-uuid-1",
+                            "score": 0.9,
+                            "metadata": None,
+                            "threshold": {"lt": None, "lte": None, "gt": None, "gte": 0.5},
+                            "evaluatorExternalId": "my-evaluator",
+                        }
+                    ]
+                },
+            )
+        ),
+    )
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    tracer.send_event(
+        "my-message",
+        trace_id="my-trace-id",
+        timestamp=timestamp,
+        properties={},
+        evaluators=[MyEvaluator()],
+    )
+
+
+@mock.patch.object(
+    uuid,
+    "uuid4",
+    side_effect=["mock-uuid" for _ in range(2)],
+)
+def test_tracer_prod_async_evaluations(httpx_mock):
+    class MyEvaluator1(BaseEventEvaluator):
+        id = "my-evaluator-1"
+
+        async def evaluate_event(self, event: TracerEvent):
+            return Evaluation(
+                score=0.9,
+                threshold=Threshold(gte=0.5),
+            )
+
+    class MyEvaluator2(BaseEventEvaluator):
+        id = "my-evaluator-2"
+
+        async def evaluate_event(self, event: TracerEvent):
+            return Evaluation(
+                score=0.3,
+            )
+
+    httpx_mock.add_response(
+        url=INGESTION_ENDPOINT,
+        method="POST",
+        status_code=200,
+        json={"traceId": "my-trace-id"},
+        match_headers={"Authorization": "Bearer mock-ingestion-key"},
+        match_content=make_expected_body(
+            dict(
+                message="my-message",
+                traceId="my-trace-id",
+                timestamp=timestamp,
+                properties={
+                    "evaluations": [
+                        {
+                            "evaluatorExternalId": "my-evaluator-1",
+                            "id": "mock-uuid",
+                            "score": 0.9,
+                            "metadata": None,
+                            "threshold": {"lt": None, "lte": None, "gt": None, "gte": 0.5},
+                        },
+                        {
+                            "evaluatorExternalId": "my-evaluator-2",
+                            "id": "mock-uuid",
+                            "score": 0.3,
+                            "metadata": None,
+                            "threshold": None,
+                        },
+                    ]
+                },
+            )
+        ),
+    )
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    tracer.send_event(
+        "my-message",
+        trace_id="my-trace-id",
+        timestamp=timestamp,
+        properties={},
+        evaluators=[MyEvaluator1(), MyEvaluator2()],
+    )
+
+
+@mock.patch.object(
+    uuid,
+    "uuid4",
+    side_effect=["mock-uuid" for i in range(2)],
+)
+def test_tracer_failing_evaluation(httpx_mock):
+    class MyValidEvaluator(BaseEventEvaluator):
+        id = "my-valid-evaluator"
+
+        def evaluate_event(self, event: TracerEvent) -> Evaluation:
+            return Evaluation(
+                score=0.3,
+            )
+
+    class MyFailingEvaluator(BaseEventEvaluator):
+        id = "my-failing-evaluator"
+
+        def evaluate_event(self, event: TracerEvent) -> Evaluation:
+            raise Exception("Something terrible went wrong")
+
+    httpx_mock.add_response(
+        url=INGESTION_ENDPOINT,
+        method="POST",
+        status_code=200,
+        json={"traceId": "my-trace-id"},
+        match_headers={"Authorization": "Bearer mock-ingestion-key"},
+        match_content=make_expected_body(
+            dict(
+                message="my-message",
+                traceId="my-trace-id",
+                timestamp=timestamp,
+                properties={
+                    "evaluations": [
+                        {
+                            "evaluatorExternalId": "my-valid-evaluator",
+                            "id": "mock-uuid",
+                            "score": 0.3,
+                            "metadata": None,
+                            "threshold": None,
+                        },
+                    ]
+                },
+            )
+        ),
+    )
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    tracer.send_event(
+        "my-message",
+        trace_id="my-trace-id",
+        timestamp=timestamp,
+        properties={},
+        evaluators=[MyFailingEvaluator(), MyValidEvaluator()],
+    )
+
+
+@mock.patch.object(
+    AutoblocksTracer,
+    "_run_evaluators_unsafe",
+    side_effect=Exception("Something went wrong with our code when evaluating the event"),
+)
+def test_tracer_evaluation_unexpected_error(httpx_mock):
+    class MyEvaluator:
+        id = "my-evaluator"
+
+        def evaluate_event(self, event: TracerEvent) -> Evaluation:
+            return Evaluation(score=1)
+
+        httpx_mock.add_response(
+            url=INGESTION_ENDPOINT,
+            method="POST",
+            status_code=200,
+            json={"traceId": "my-trace-id"},
+            match_headers={"Authorization": "Bearer mock-ingestion-key"},
+            match_content=make_expected_body(
+                dict(
+                    message="my-message",
+                    traceId="my-trace-id",
+                    timestamp=timestamp,
+                    properties={},
+                )
+            ),
+        )
+
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    tracer.send_event(
+        "my-message",
+        trace_id="my-trace-id",
+        timestamp=timestamp,
+        properties={},
+        evaluators=[MyEvaluator()],
+    )
