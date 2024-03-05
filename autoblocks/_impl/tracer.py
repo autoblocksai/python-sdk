@@ -161,7 +161,7 @@ class AutoblocksTracer:
         return [
             self._evaluation_to_json(evaluation=evaluation, evaluator_external_id=evaluator.id)
             for evaluator, evaluation in zip(evaluators, evaluations)
-            if evaluation is not None
+            if isinstance(evaluation, Evaluation)
         ]
 
     async def _send_event_unsafe(
@@ -169,14 +169,14 @@ class AutoblocksTracer:
         # Require all arguments to be specified via key=value
         *,
         message: str,
-        max_evaluator_concurrency: int,
         trace_id: Optional[str],
         span_id: Optional[str],
         parent_span_id: Optional[str],
         timestamp: Optional[str],
         properties: Optional[Dict[Any, Any]],
-        prompt_tracking: Optional[Dict[str, Any]],
         evaluators: Optional[List[BaseEventEvaluator]],
+        max_evaluator_concurrency: int,
+        prompt_tracking: Optional[Dict[str, Any]],
     ) -> None:
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
