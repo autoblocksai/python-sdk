@@ -307,6 +307,7 @@ def test_error_in_evaluator(httpx_mock):
                 evaluatorExternalId="my-async-evaluator",
                 score=0.6,
                 threshold=dict(lt=0.7, lte=None, gt=None, gte=None),
+                metadata=None,
             ),
         ),
     )
