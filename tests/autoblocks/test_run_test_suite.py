@@ -292,6 +292,7 @@ def test_error_in_evaluator(httpx_mock):
                 evaluatorExternalId="my-sync-evaluator",
                 score=0.5,
                 threshold=dict(lt=0.6, lte=None, gt=None, gte=None),
+                metadata=None,
             ),
         ),
     )
@@ -306,6 +307,7 @@ def test_error_in_evaluator(httpx_mock):
                 evaluatorExternalId="my-async-evaluator",
                 score=0.6,
                 threshold=dict(lt=0.7, lte=None, gt=None, gte=None),
+                metadata=None,
             ),
         ),
     )
@@ -497,6 +499,7 @@ def test_with_evaluators(httpx_mock):
                 evaluatorExternalId="evaluator-a",
                 score=0,
                 threshold=None,
+                metadata=dict(reason="because"),
             ),
         ),
     )
@@ -511,6 +514,7 @@ def test_with_evaluators(httpx_mock):
                 evaluatorExternalId="evaluator-b",
                 score=1,
                 threshold=None,
+                metadata=None,
             ),
         ),
     )
@@ -538,6 +542,7 @@ def test_with_evaluators(httpx_mock):
                 evaluatorExternalId="evaluator-a",
                 score=0,
                 threshold=None,
+                metadata=dict(reason="because"),
             ),
         ),
     )
@@ -552,6 +557,7 @@ def test_with_evaluators(httpx_mock):
                 evaluatorExternalId="evaluator-b",
                 score=1,
                 threshold=None,
+                metadata=None,
             ),
         ),
     )
@@ -573,7 +579,7 @@ def test_with_evaluators(httpx_mock):
         id = "evaluator-a"
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
-            return Evaluation(score=0)
+            return Evaluation(score=0, metadata=dict(reason="because"))
 
     class EvaluatorB(BaseTestEvaluator):
         id = "evaluator-b"
@@ -664,6 +670,7 @@ def test_concurrency(httpx_mock):
                 evaluatorExternalId="evaluator-a",
                 score=0,
                 threshold=None,
+                metadata=None,
             ),
         ),
         (
@@ -674,6 +681,7 @@ def test_concurrency(httpx_mock):
                 evaluatorExternalId="evaluator-b",
                 score=1,
                 threshold=None,
+                metadata=None,
             ),
         ),
         (
@@ -684,6 +692,7 @@ def test_concurrency(httpx_mock):
                 evaluatorExternalId="evaluator-a",
                 score=0,
                 threshold=None,
+                metadata=None,
             ),
         ),
         (
@@ -694,6 +703,7 @@ def test_concurrency(httpx_mock):
                 evaluatorExternalId="evaluator-b",
                 score=1,
                 threshold=None,
+                metadata=None,
             ),
         ),
         (
@@ -801,6 +811,7 @@ def test_async_evaluators(httpx_mock):
                 evaluatorExternalId="evaluator-a",
                 score=0,
                 threshold=None,
+                metadata=None,
             ),
         ),
     )
@@ -815,6 +826,7 @@ def test_async_evaluators(httpx_mock):
                 evaluatorExternalId="evaluator-b",
                 score=1,
                 threshold=None,
+                metadata=None,
             ),
         ),
     )
@@ -842,6 +854,7 @@ def test_async_evaluators(httpx_mock):
                 evaluatorExternalId="evaluator-a",
                 score=0,
                 threshold=None,
+                metadata=None,
             ),
         ),
     )
@@ -856,6 +869,7 @@ def test_async_evaluators(httpx_mock):
                 evaluatorExternalId="evaluator-b",
                 score=1,
                 threshold=None,
+                metadata=None,
             ),
         ),
     )

@@ -129,6 +129,7 @@ async def run_evaluator(
             evaluatorExternalId=evaluator.id,
             score=evaluation.score,
             threshold=dataclasses.asdict(evaluation.threshold) if evaluation.threshold else None,
+            metadata=evaluation.metadata,
         ),
     )
 
