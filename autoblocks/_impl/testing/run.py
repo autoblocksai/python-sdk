@@ -52,6 +52,22 @@ def serialize(x: Any) -> Any:
     return orjson.loads(orjson.dumps(x, default=orjson_default))
 
 
+def serialize_test_case(test_case: BaseTestCase) -> Any:
+    # See https://docs.python.org/3/library/dataclasses.html#dataclasses.is_dataclass:
+    # isinstance(test_case, type) checks test_case is an instance and not a type
+    if dataclasses.is_dataclass(test_case) and not isinstance(test_case, type):
+        serialized: dict[Any, Any] = {}
+        for k, v in dataclasses.asdict(test_case).items():
+            try:
+                serialized[k] = serialize(v)
+            except Exception:
+                # Skip over non-serializable test case attributes
+                pass
+        return serialized
+
+    return serialize(test_case)
+
+
 async def send_error(
     test_id: str,
     test_case_hash: Optional[str],
@@ -177,7 +193,7 @@ async def run_test_case(
         json=dict(
             testExternalId=test_id,
             testCaseHash=test_case._cached_hash,
-            testCaseBody=serialize(test_case),
+            testCaseBody=serialize_test_case(test_case),
             testCaseOutput=serialize(output),
         ),
     )
