@@ -987,6 +987,77 @@ def test_serializes(httpx_mock):
     )
 
 
+def test_skips_non_serializable_test_case_attributes(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/start",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+            )
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/results",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
+                testCaseBody=dict(
+                    d="2021-01-01T01:01:01",
+                    u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
+                ),
+                testCaseOutput="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
+            ),
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/end",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+            )
+        ),
+    )
+
+    class SomeClass:
+        pass
+
+    @dataclasses.dataclass()
+    class TestCaseWithNonSerializableAttrs(BaseTestCase):
+        # Serializable
+        d: datetime.datetime
+        u: uuid.UUID
+
+        # Not serializable
+        c: SomeClass
+
+        def hash(self) -> str:
+            return str(self.u)
+
+    def test_fn(test_case: TestCaseWithNonSerializableAttrs) -> str:
+        return str(test_case.u)
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            TestCaseWithNonSerializableAttrs(
+                d=datetime.datetime(2021, 1, 1, 1, 1, 1),
+                u=uuid.UUID("ed022d1e-d0f2-41e4-ad55-9df0479cb62d"),
+                c=SomeClass(),
+            ),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+
 def test_deprecated_max_evaluator_concurrency(httpx_mock):
     """
     Test that we can still pass the deprecated max_evaluator_concurrency argument
