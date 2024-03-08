@@ -987,6 +987,71 @@ def test_serializes(httpx_mock):
     )
 
 
+def test_logs_errors_from_our_code(httpx_mock):
+    """
+    Tests that we propagate errors from our code (as opposed to the user's
+    code, fn and evaluate_test_case).
+    """
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/start",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+            )
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/errors",
+        method="POST",
+        status_code=200,
+        # Content will be asserted below since we
+        # can't match on the stacktrace exactly
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/end",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+            )
+        ),
+    )
+
+    class SomeClass:
+        pass
+
+    # Output is not serializable, so this should raise an error
+    # when we attempt to serialize and it should be logged
+    def test_fn(test_case: MyTestCase) -> SomeClass:
+        return SomeClass()
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(
+                input="hi",
+            ),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+    requests = httpx_mock.get_requests()
+    error_req = [r for r in requests if r.url.path == "/errors"][0]
+    error_req_body = decode_request_body(error_req)
+
+    assert error_req_body["testExternalId"] == "my-test-id"
+    assert error_req_body["testCaseHash"] == "hi"
+    assert error_req_body["evaluatorExternalId"] is None
+    assert error_req_body["error"]["name"] == "TypeError"
+    assert error_req_body["error"]["message"] == "Type is not JSON serializable: SomeClass"
+    assert "TypeError: Type is not JSON serializable: SomeClass" in error_req_body["error"]["stacktrace"]
+
+
 def test_skips_non_serializable_test_case_attributes(httpx_mock):
     httpx_mock.add_response(
         url=f"{CLI_SERVER_ADDRESS}/start",
