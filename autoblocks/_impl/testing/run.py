@@ -9,12 +9,11 @@ from typing import Callable
 from typing import List
 from typing import Optional
 
-import orjson
-
 from autoblocks._impl import global_state
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
-from autoblocks._impl.testing.models import Evaluation
+from autoblocks._impl.testing.util import serialize
+from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 
@@ -36,36 +35,6 @@ def cli() -> str:
             "$ npx autoblocks testing exec -- <your test command>"
         )
     return cli_server_address
-
-
-def orjson_default(o: Any) -> Any:
-    if hasattr(o, "model_dump_json") and callable(o.model_dump_json):
-        # pydantic v2
-        return orjson.loads(o.model_dump_json())
-    elif hasattr(o, "json") and callable(o.json):
-        # pydantic v1
-        return orjson.loads(o.json())
-    raise TypeError
-
-
-def serialize(x: Any) -> Any:
-    return orjson.loads(orjson.dumps(x, default=orjson_default))
-
-
-def serialize_test_case(test_case: BaseTestCase) -> Any:
-    # See https://docs.python.org/3/library/dataclasses.html#dataclasses.is_dataclass:
-    # isinstance(test_case, type) checks test_case is an instance and not a type
-    if dataclasses.is_dataclass(test_case) and not isinstance(test_case, type):
-        serialized: dict[Any, Any] = {}
-        for k, v in dataclasses.asdict(test_case).items():
-            try:
-                serialized[k] = serialize(v)
-            except Exception:
-                # Skip over non-serializable test case attributes
-                pass
-        return serialized
-
-    return serialize(test_case)
 
 
 async def send_error(
@@ -94,48 +63,23 @@ async def run_evaluator_unsafe(
     test_case: BaseTestCase,
     output: Any,
     evaluator: BaseTestEvaluator,
-) -> Evaluation:
+) -> None:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
     """
     async with evaluator_semaphore_registry[test_id][evaluator.id]:
         if inspect.iscoroutinefunction(evaluator.evaluate_test_case):
-            # mypy for some reason doesn't recognize that the return type of evaluate_test_case
-            # is an Evaluation
-            return await evaluator.evaluate_test_case(test_case, output)  # type: ignore
+            evaluation = await evaluator.evaluate_test_case(test_case, output)
         else:
             ctx = contextvars.copy_context()
-            return await global_state.event_loop().run_in_executor(
+            evaluation = await global_state.event_loop().run_in_executor(
                 None,
                 ctx.run,
                 evaluator.evaluate_test_case,
                 test_case,
                 output,
             )
-
-
-async def run_evaluator(
-    test_id: str,
-    test_case: BaseTestCase,
-    output: Any,
-    evaluator: BaseTestEvaluator,
-) -> None:
-    try:
-        evaluation = await run_evaluator_unsafe(
-            test_id=test_id,
-            test_case=test_case,
-            output=output,
-            evaluator=evaluator,
-        )
-    except Exception as err:
-        await send_error(
-            test_id=test_id,
-            test_case_hash=test_case._cached_hash,
-            evaluator_id=evaluator.id,
-            error=err,
-        )
-        return
 
     await global_state.http_client().post(
         f"{cli()}/evals",
@@ -150,6 +94,28 @@ async def run_evaluator(
     )
 
 
+async def run_evaluator(
+    test_id: str,
+    test_case: BaseTestCase,
+    output: Any,
+    evaluator: BaseTestEvaluator,
+) -> None:
+    try:
+        await run_evaluator_unsafe(
+            test_id=test_id,
+            test_case=test_case,
+            output=output,
+            evaluator=evaluator,
+        )
+    except Exception as err:
+        await send_error(
+            test_id=test_id,
+            test_case_hash=test_case._cached_hash,
+            evaluator_id=evaluator.id,
+            error=err,
+        )
+
+
 async def run_test_case_unsafe(
     test_id: str,
     test_case: BaseTestCase,
@@ -161,10 +127,22 @@ async def run_test_case_unsafe(
     """
     async with test_case_semaphore_registry[test_id]:
         if inspect.iscoroutinefunction(fn):
-            return await fn(test_case)
+            output = await fn(test_case)
         else:
             ctx = contextvars.copy_context()
-            return await global_state.event_loop().run_in_executor(None, ctx.run, fn, test_case)
+            output = await global_state.event_loop().run_in_executor(None, ctx.run, fn, test_case)
+
+    await global_state.http_client().post(
+        f"{cli()}/results",
+        json=dict(
+            testExternalId=test_id,
+            testCaseHash=test_case._cached_hash,
+            testCaseBody=serialize_test_case(test_case),
+            testCaseOutput=serialize(output),
+        ),
+    )
+
+    return output
 
 
 async def run_test_case(
@@ -187,16 +165,6 @@ async def run_test_case(
             error=err,
         )
         return
-
-    await global_state.http_client().post(
-        f"{cli()}/results",
-        json=dict(
-            testExternalId=test_id,
-            testCaseHash=test_case._cached_hash,
-            testCaseBody=serialize_test_case(test_case),
-            testCaseOutput=serialize(output),
-        ),
-    )
 
     try:
         await all_settled(
