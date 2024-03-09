@@ -134,7 +134,6 @@ async def run_test_case_unsafe(
             output = await fn(test_case)
         else:
             ctx = contextvars.copy_context()
-            print(ctx.items())
             output = await global_state.event_loop().run_in_executor(None, ctx.run, fn, test_case)
 
     await global_state.http_client().post(
