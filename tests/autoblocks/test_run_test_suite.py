@@ -5,7 +5,6 @@ import os
 import uuid
 from unittest import mock
 
-import freezegun
 import pydantic
 import pytest
 
@@ -20,15 +19,6 @@ from tests.autoblocks.util import decode_request_body
 from tests.autoblocks.util import make_expected_body
 
 CLI_SERVER_ADDRESS = "http://localhost:8080"
-
-
-@pytest.fixture(autouse=True)
-def freeze_time():
-    with freezegun.freeze_time(datetime(2021, 1, 1, 1, 1, 1, 1)):
-        yield
-
-
-timestamp = "2021-01-01T01:01:01.000001+00:00"
 
 
 @pytest.fixture(autouse=True)
@@ -1156,6 +1146,7 @@ def test_deprecated_max_evaluator_concurrency(httpx_mock):
 
 
 def test_sends_tracer_events(httpx_mock):
+    timestamp = datetime.datetime(2021, 1, 1, 1, 1, 1).isoformat()
     httpx_mock.add_response(
         url=f"{CLI_SERVER_ADDRESS}/start",
         method="POST",
@@ -1230,8 +1221,9 @@ def test_sends_tracer_events(httpx_mock):
     async def test_fn(test_case: MyTestCase):
         tracer = AutoblocksTracer("test")
         if test_case.input == "a":
-            await asyncio.sleep(5)
-        tracer.send_event(message=test_case.input)
+            # simulate doing more work than b to make sure context manager is working correctly
+            await asyncio.sleep(1)
+        tracer.send_event(message=test_case.input, timestamp=timestamp)
         return test_case.input + "!"
 
     run_test_suite(
@@ -1242,5 +1234,7 @@ def test_sends_tracer_events(httpx_mock):
         ],
         evaluators=[],
         fn=test_fn,
+        # concurrency is set to 2 because we want test cases to run in parallel
+        # to ensure context manager is working correctly
         max_test_case_concurrency=2,
     )
