@@ -764,8 +764,6 @@ def test_async_test_fn(httpx_mock):
     )
 
     async def test_fn(test_case: MyTestCase):
-        if test_case.input == "a":
-            await asyncio.sleep(5)
         return test_case.input + "!"
 
     run_test_suite(
