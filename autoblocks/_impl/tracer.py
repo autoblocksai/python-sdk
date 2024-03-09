@@ -323,7 +323,7 @@ class AutoblocksTracer:
                     properties=merged_properties,
                     evaluators=evaluators,
                 ),
-                asyncio.get_event_loop(),
+                global_state.event_loop(),
             )
             future.result()  # Block on result: Todo: make this not blocking
         except Exception as err:
