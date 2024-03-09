@@ -10,6 +10,8 @@ from typing import List
 from typing import Optional
 
 from autoblocks._impl import global_state
+from autoblocks._impl.context_vars import current_external_test_id
+from autoblocks._impl.context_vars import current_test_case_hash
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.util import serialize
@@ -126,6 +128,7 @@ async def run_test_case_unsafe(
     Its caller will catch and handle all exceptions.
     """
     async with test_case_semaphore_registry[test_id]:
+        current_test_case_hash.set(test_case._cached_hash)
         if inspect.iscoroutinefunction(fn):
             output = await fn(test_case)
         else:
@@ -236,6 +239,7 @@ async def async_run_test_suite(
     await global_state.http_client().post(f"{cli()}/start", json=dict(testExternalId=test_id))
 
     try:
+        current_external_test_id.set(test_id)
         await all_settled(
             [
                 run_test_case(

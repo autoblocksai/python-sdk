@@ -1,9 +1,11 @@
+import asyncio
 import dataclasses
 import datetime
 import os
 import uuid
 from unittest import mock
 
+import freezegun
 import pydantic
 import pytest
 
@@ -13,10 +15,20 @@ from autoblocks.testing.models import BaseTestEvaluator
 from autoblocks.testing.models import Evaluation
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.run import run_test_suite
+from autoblocks.tracer import AutoblocksTracer
 from tests.autoblocks.util import decode_request_body
 from tests.autoblocks.util import make_expected_body
 
 CLI_SERVER_ADDRESS = "http://localhost:8080"
+
+
+@pytest.fixture(autouse=True)
+def freeze_time():
+    with freezegun.freeze_time(datetime(2021, 1, 1, 1, 1, 1, 1)):
+        yield
+
+
+timestamp = "2021-01-01T01:01:01.000001+00:00"
 
 
 @pytest.fixture(autouse=True)
@@ -762,6 +774,8 @@ def test_async_test_fn(httpx_mock):
     )
 
     async def test_fn(test_case: MyTestCase):
+        if test_case.input == "a":
+            await asyncio.sleep(5)
         return test_case.input + "!"
 
     run_test_suite(
@@ -1138,4 +1152,95 @@ def test_deprecated_max_evaluator_concurrency(httpx_mock):
         fn=lambda _: "hello",
         max_test_case_concurrency=1,
         max_evaluator_concurrency=5,
+    )
+
+
+def test_sends_tracer_events(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/start",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+            )
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/events",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="a",
+                event=dict(message="a", traceId=None, timestamp=timestamp, properties=dict()),
+            ),
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/results",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="a",
+                testCaseBody=dict(input="a"),
+                testCaseOutput="a!",
+            ),
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/events",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="b",
+                event=dict(message="b", traceId=None, timestamp=timestamp, properties=dict()),
+            ),
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/results",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="b",
+                testCaseBody=dict(input="b"),
+                testCaseOutput="b!",
+            ),
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/end",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+            )
+        ),
+    )
+
+    async def test_fn(test_case: MyTestCase):
+        tracer = AutoblocksTracer("test")
+        if test_case.input == "a":
+            await asyncio.sleep(5)
+        tracer.send_event(message=test_case.input)
+        return test_case.input + "!"
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+            MyTestCase(input="b"),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        max_test_case_concurrency=2,
     )
