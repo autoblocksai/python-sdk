@@ -1216,8 +1216,11 @@ def test_sends_tracer_events(httpx_mock):
         ),
     )
 
+    # initialize the tracer outside the test function
+    # this ensures the context variables are being access inside send_event
+    tracer = AutoblocksTracer("test")
+
     async def test_fn(test_case: MyTestCase):
-        tracer = AutoblocksTracer("test")
         if test_case.input == "a":
             # simulate doing more work than b to make sure context manager is working correctly
             await asyncio.sleep(1)
