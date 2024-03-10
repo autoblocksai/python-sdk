@@ -270,6 +270,27 @@ class AutoblocksTracer:
         )
         req.raise_for_status()
 
+    def merge_properties(
+        self,
+        *,
+        span_id: Optional[str] = None,
+        parent_span_id: Optional[str] = None,
+        properties: Optional[Dict[str, Any]] = None,
+        prompt_tracking: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        merged_properties = dict(self._properties)
+        merged_properties.update(properties or {})
+
+        # Overwrite properties with any provided as top level arguments
+        if span_id:
+            merged_properties["span_id"] = span_id
+        if parent_span_id:
+            merged_properties["parent_span_id"] = parent_span_id
+        if prompt_tracking:
+            merged_properties["promptTracking"] = prompt_tracking
+
+        return merged_properties
+
     def send_event(
         self,
         message: str,
@@ -290,19 +311,11 @@ class AutoblocksTracer:
         the event failed, the trace_id will be None.
         """
         try:
-            merged_properties = dict(self._properties)
-            merged_properties.update(properties or {})
-
-            # Overwrite properties with any provided as top level arguments
-            if span_id:
-                merged_properties["span_id"] = span_id
-            if parent_span_id:
-                merged_properties["parent_span_id"] = parent_span_id
-            if prompt_tracking:
-                merged_properties["promptTracking"] = prompt_tracking
+            merged_properties = self.merge_properties(
+                span_id=span_id, parent_span_id=parent_span_id, properties=properties, prompt_tracking=prompt_tracking
+            )
             trace_id = trace_id or self._trace_id
             timestamp = timestamp or datetime.now(timezone.utc).isoformat()
-
             # If the CLI server address is set, we are in a test context and should send events to the CLI
             # We also do not run evaluators in a test context
             if self._cli_server_address:
