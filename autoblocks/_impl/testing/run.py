@@ -128,7 +128,6 @@ async def run_test_case_unsafe(
     Its caller will catch and handle all exceptions.
     """
     async with test_case_semaphore_registry[test_id]:
-
         if inspect.iscoroutinefunction(fn):
             output = await fn(test_case)
         else:
@@ -239,6 +238,7 @@ async def async_run_test_suite(
     }
 
     await global_state.http_client().post(f"{cli()}/start", json=dict(testExternalId=test_id))
+
     token = current_external_test_id.set(test_id)
     try:
         await all_settled(
