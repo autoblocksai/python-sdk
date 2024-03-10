@@ -270,7 +270,7 @@ class AutoblocksTracer:
         )
         req.raise_for_status()
 
-    def merge_properties(
+    def _merge_properties(
         self,
         *,
         span_id: Optional[str] = None,
@@ -311,7 +311,7 @@ class AutoblocksTracer:
         the event failed, the trace_id will be None.
         """
         try:
-            merged_properties = self.merge_properties(
+            merged_properties = self._merge_properties(
                 span_id=span_id, parent_span_id=parent_span_id, properties=properties, prompt_tracking=prompt_tracking
             )
             trace_id = trace_id or self._trace_id
