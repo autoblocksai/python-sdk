@@ -127,7 +127,6 @@ async def run_test_case_unsafe(
     This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
     """
-    token = current_test_case_hash.set(test_case._cached_hash)
     async with test_case_semaphore_registry[test_id]:
 
         if inspect.iscoroutinefunction(fn):
@@ -145,7 +144,6 @@ async def run_test_case_unsafe(
             testCaseOutput=serialize(output),
         ),
     )
-    current_test_case_hash.reset(token)
     return output
 
 
@@ -155,6 +153,7 @@ async def run_test_case(
     evaluators: List[BaseTestEvaluator],
     fn: Callable[[BaseTestCase], Any],
 ) -> None:
+    token = current_test_case_hash.set(test_case._cached_hash)
     try:
         output = await run_test_case_unsafe(
             test_id=test_id,
@@ -169,6 +168,8 @@ async def run_test_case(
             error=err,
         )
         return
+    finally:
+        current_test_case_hash.reset(token)
 
     try:
         await all_settled(
@@ -259,9 +260,10 @@ async def async_run_test_suite(
             evaluator_id=None,
             error=err,
         )
+    finally:
+        current_external_test_id.reset(token)
 
     await global_state.http_client().post(f"{cli()}/end", json=dict(testExternalId=test_id))
-    current_external_test_id.reset(token)
 
 
 def run_test_suite(
