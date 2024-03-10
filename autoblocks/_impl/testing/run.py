@@ -238,9 +238,8 @@ async def async_run_test_suite(
         evaluator.id: asyncio.Semaphore(evaluator.max_concurrency) for evaluator in evaluators
     }
 
-    token = current_external_test_id.set(test_id)
     await global_state.http_client().post(f"{cli()}/start", json=dict(testExternalId=test_id))
-
+    token = current_external_test_id.set(test_id)
     try:
         await all_settled(
             [
