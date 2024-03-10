@@ -18,6 +18,8 @@ from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
+from autoblocks._impl.context_vars import current_external_test_id
+from autoblocks._impl.context_vars import current_test_case_hash
 from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import TracerEvent
@@ -60,6 +62,7 @@ class AutoblocksTracer:
 
         self._client_headers = {"Authorization": f"Bearer {ingestion_key}"}
         self._timeout_seconds = timeout.total_seconds()
+        self._cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
 
     def set_trace_id(self, trace_id: str) -> None:
         """
@@ -191,14 +194,90 @@ class AutoblocksTracer:
         # Require all arguments to be specified via key=value
         *,
         message: str,
+        timestamp: str,
+        properties: Dict[Any, Any],
         trace_id: Optional[str],
-        span_id: Optional[str],
-        parent_span_id: Optional[str],
-        timestamp: Optional[str],
-        properties: Optional[Dict[Any, Any]],
         evaluators: Optional[List[BaseEventEvaluator]],
-        prompt_tracking: Optional[Dict[str, Any]],
     ) -> None:
+        # If there are evaluators, run them and compute the evaluations property
+        if evaluators:
+            try:
+                evaluations = await self._run_evaluators_unsafe(
+                    event=TracerEvent(
+                        message=message,
+                        trace_id=trace_id,
+                        timestamp=timestamp,
+                        properties=properties,
+                    ),
+                    evaluators=evaluators,
+                )
+                if evaluations:
+                    # Update merged properties with computed evaluations property
+                    properties["evaluations"] = evaluations
+            except Exception as err:
+                log.error("Unable to evaluate events. Error: %s", err, exc_info=True)
+
+        traced_event = TracerEvent(
+            message=message,
+            trace_id=trace_id,
+            timestamp=timestamp,
+            properties=properties,
+        )
+        req = await global_state.http_client().post(
+            url=INGESTION_ENDPOINT,
+            json=traced_event.to_json(),
+            headers=self._client_headers,
+            timeout=self._timeout_seconds,
+        )
+        req.raise_for_status()
+
+    def _send_test_event_unsafe(
+        self,
+        # Require all arguments to be specified via key=value
+        *,
+        message: str,
+        timestamp: str,
+        properties: Dict[Any, Any],
+        trace_id: Optional[str],
+    ) -> None:
+        """Sends an event to the Autoblocks CLI in a testing environment."""
+        if not self._cli_server_address:
+            log.error("Failed to send test event to Autoblocks. CLI server address not set.")
+            return
+
+        if not current_external_test_id.get():
+            log.error("Failed to send test event to Autoblocks. No test ID set.")
+            return
+
+        if not current_test_case_hash.get():
+            log.error("Failed to send test event to Autoblocks. No test case hash set.")
+            return
+
+        traced_event = TracerEvent(
+            message=message,
+            trace_id=trace_id,
+            timestamp=timestamp,
+            properties=properties,
+        )
+        req = global_state.sync_http_client().post(
+            url=f"{self._cli_server_address}/events",
+            json=dict(
+                testExternalId=current_external_test_id.get(),
+                testCaseHash=current_test_case_hash.get(),
+                event=traced_event.to_json(),
+            ),
+            timeout=self._timeout_seconds,
+        )
+        req.raise_for_status()
+
+    def _merge_properties(
+        self,
+        *,
+        span_id: Optional[str] = None,
+        parent_span_id: Optional[str] = None,
+        properties: Optional[Dict[str, Any]] = None,
+        prompt_tracking: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})
 
@@ -209,40 +288,8 @@ class AutoblocksTracer:
             merged_properties["parent_span_id"] = parent_span_id
         if prompt_tracking:
             merged_properties["promptTracking"] = prompt_tracking
-        trace_id = trace_id or self._trace_id
-        timestamp = timestamp or datetime.now(timezone.utc).isoformat()
 
-        # If there are evaluators, run them and compute the evaluations property
-        if evaluators:
-            try:
-                evaluations = await self._run_evaluators_unsafe(
-                    event=TracerEvent(
-                        message=message,
-                        trace_id=trace_id,
-                        timestamp=timestamp,
-                        properties=merged_properties,
-                    ),
-                    evaluators=evaluators,
-                )
-                if evaluations:
-                    # Update merged properties with computed evaluations property
-                    merged_properties["evaluations"] = evaluations
-            except Exception as err:
-                log.error("Unable to evaluate events. Error: %s", err, exc_info=True)
-
-        traced_event = TracerEvent(
-            message=message,
-            trace_id=trace_id,
-            timestamp=timestamp,
-            properties=merged_properties,
-        )
-        req = await global_state.http_client().post(
-            url=INGESTION_ENDPOINT,
-            json=traced_event.to_json(),
-            headers=self._client_headers,
-            timeout=self._timeout_seconds,
-        )
-        req.raise_for_status()
+        return merged_properties
 
     def send_event(
         self,
@@ -264,16 +311,30 @@ class AutoblocksTracer:
         the event failed, the trace_id will be None.
         """
         try:
+            merged_properties = self._merge_properties(
+                span_id=span_id, parent_span_id=parent_span_id, properties=properties, prompt_tracking=prompt_tracking
+            )
+            trace_id = trace_id or self._trace_id
+            timestamp = timestamp or datetime.now(timezone.utc).isoformat()
+            # If the CLI server address is set, we are in a test context and should send events to the CLI
+            # We also do not run evaluators in a test context
+            if self._cli_server_address:
+                self._send_test_event_unsafe(
+                    message=message,
+                    trace_id=trace_id,
+                    timestamp=timestamp,
+                    properties=merged_properties,
+                )
+                return
+
+            # Otherwise we are in a real context and should send events to the Autoblocks ingestion API
             future = asyncio.run_coroutine_threadsafe(
                 self._send_event_unsafe(
                     message=message,
                     trace_id=trace_id,
-                    span_id=span_id,
-                    parent_span_id=parent_span_id,
                     timestamp=timestamp,
-                    properties=properties,
+                    properties=merged_properties,
                     evaluators=evaluators,
-                    prompt_tracking=prompt_tracking,
                 ),
                 global_state.event_loop(),
             )

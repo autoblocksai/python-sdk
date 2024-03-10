@@ -1,3 +1,4 @@
+import asyncio
 import dataclasses
 import datetime
 import os
@@ -13,6 +14,7 @@ from autoblocks.testing.models import BaseTestEvaluator
 from autoblocks.testing.models import Evaluation
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.run import run_test_suite
+from autoblocks.tracer import AutoblocksTracer
 from tests.autoblocks.util import decode_request_body
 from tests.autoblocks.util import make_expected_body
 
@@ -1138,4 +1140,102 @@ def test_deprecated_max_evaluator_concurrency(httpx_mock):
         fn=lambda _: "hello",
         max_test_case_concurrency=1,
         max_evaluator_concurrency=5,
+    )
+
+
+def test_sends_tracer_events(httpx_mock):
+    timestamp = datetime.datetime(2021, 1, 1, 1, 1, 1).isoformat()
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/start",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+            )
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/events",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="a",
+                event=dict(message="a", traceId=None, timestamp=timestamp, properties=dict()),
+            ),
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/results",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="a",
+                testCaseBody=dict(input="a"),
+                testCaseOutput="a!",
+            ),
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/events",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="b",
+                event=dict(message="b", traceId=None, timestamp=timestamp, properties=dict()),
+            ),
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/results",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+                testCaseHash="b",
+                testCaseBody=dict(input="b"),
+                testCaseOutput="b!",
+            ),
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}/end",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(
+            dict(
+                testExternalId="my-test-id",
+            )
+        ),
+    )
+
+    # initialize the tracer outside the test function
+    # this ensures the context variables are being access inside send_event
+    tracer = AutoblocksTracer("test")
+
+    async def test_fn(test_case: MyTestCase):
+        if test_case.input == "a":
+            # simulate doing more work than b to make sure context manager is working correctly
+            await asyncio.sleep(1)
+        tracer.send_event(message=test_case.input, timestamp=timestamp)
+        return test_case.input + "!"
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+            MyTestCase(input="b"),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        # concurrency is set to 2 because we want test cases to run in parallel
+        # to ensure context manager is working correctly
+        max_test_case_concurrency=2,
     )
