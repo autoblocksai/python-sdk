@@ -3,7 +3,7 @@ import re
 from typing import Any
 from typing import Dict
 
-from autoblocks._impl.prompts.models import HeadlessPrompt
+from autoblocks._impl.prompts.models import Prompt
 
 # Regular expression pattern for finding placeholders
 # in templates
@@ -19,7 +19,7 @@ class TemplateRenderer(abc.ABC):
         if cls.__name_mapper__ is None:
             raise ValueError(f"TemplateRenderer subclass {cls} must define __name_mapper__")
 
-    def __init__(self, prompt: HeadlessPrompt) -> None:
+    def __init__(self, prompt: Prompt) -> None:
         self.__template_map = {template.id: template.template for template in prompt.templates}
 
     def _render(self, template_id: str, **kwargs: Any) -> str:

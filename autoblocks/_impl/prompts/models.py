@@ -28,14 +28,14 @@ class FrozenModel(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(frozen=True)
 
 
-class HeadlessPromptParams(FrozenModel):
+class PromptParams(FrozenModel):
     """LLM model parameters for a prompt."""
 
     version: str
     params: Optional[Dict[str, Any]]
 
 
-class HeadlessPromptTemplate(FrozenModel):
+class PromptTemplate(FrozenModel):
     """An individual template for a prompt."""
 
     id: str
@@ -43,13 +43,13 @@ class HeadlessPromptTemplate(FrozenModel):
     template: str
 
 
-class HeadlessPrompt(FrozenModel):
-    """A prompt managed in the Autoblocks platform."""
+class Prompt(FrozenModel):
+    """A schema representing a prompt managed in the Autoblocks platform."""
 
     id: str
     version: str
-    params: Optional[HeadlessPromptParams] = None
-    templates: List[HeadlessPromptTemplate]
+    params: Optional[PromptParams] = None
+    templates: List[PromptTemplate]
 
     @property
     def major_version(self) -> str:

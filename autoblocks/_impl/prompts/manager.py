@@ -18,7 +18,7 @@ from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.prompts.constants import LATEST
 from autoblocks._impl.prompts.context import PromptExecutionContext
-from autoblocks._impl.prompts.models import HeadlessPrompt
+from autoblocks._impl.prompts.models import Prompt
 from autoblocks._impl.prompts.models import PromptMinorVersion
 from autoblocks._impl.prompts.models import WeightedMinorVersion
 from autoblocks._impl.util import AutoblocksEnvVar
@@ -66,7 +66,7 @@ class AutoblocksPromptManager(
         self._minor_version = PromptMinorVersion.model_validate({"version": minor_version})
         self._refresh_timeout = refresh_timeout
         self._refresh_interval = refresh_interval
-        self._minor_version_to_prompt: Dict[str, HeadlessPrompt] = {}
+        self._minor_version_to_prompt: Dict[str, Prompt] = {}
 
         api_key = api_key or AutoblocksEnvVar.API_KEY.get()
         if not api_key:
@@ -100,14 +100,14 @@ class AutoblocksPromptManager(
         self,
         minor_version: str,
         timeout: timedelta,
-    ) -> HeadlessPrompt:
+    ) -> Prompt:
         resp = await global_state.http_client().get(
             self._make_request_url(minor_version),
             timeout=timeout.total_seconds(),
             headers={"Authorization": f"Bearer {self._api_key}"},
         )
         resp.raise_for_status()
-        return HeadlessPrompt.model_validate(resp.json())
+        return Prompt.model_validate(resp.json())
 
     async def _init_async(self, timeout: timedelta) -> None:
         # Convert all_minor_versions (which is a set) to a list
@@ -174,7 +174,7 @@ class AutoblocksPromptManager(
         if old_latest and old_latest.version != new_latest.version:
             log.info(f"Updated latest prompt from v{old_latest.version} to v{new_latest.version}")
 
-    def _choose_execution_prompt(self) -> HeadlessPrompt:
+    def _choose_execution_prompt(self) -> Prompt:
         rand_version = self._minor_version.random_version()
         if rand_version in self._minor_version_to_prompt:
             return self._minor_version_to_prompt[rand_version]
