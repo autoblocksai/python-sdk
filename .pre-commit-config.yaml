@@ -30,3 +30,22 @@ repos:
         types: [python]
         pass_filenames: false
         require_serial: true
+
+  - repo: local
+    hooks:
+      - id: poetry-relax
+        name: poetry-relax
+        entry: poetry relax --without dev
+        language: system
+        types: [toml]
+        pass_filenames: false
+        require_serial: true
+
+  - repo: local
+    hooks:
+      - id: poetry-lock
+        name: poetry-lock
+        entry: poetry check --lock
+        language: system
+        pass_filenames: false
+        require_serial: true

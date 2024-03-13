@@ -8,11 +8,14 @@ authors = ["Autoblocks Engineering <engineering@autoblocks.ai>"]
 readme = "README.md"
 homepage = "https://github.com/autoblocksai/python-sdk"
 repository = "https://github.com/autoblocksai/python-sdk"
-documentation = "https://docs.autoblocks.ai/sdks/python"
+documentation = "https://docs.autoblocks.ai"
 packages = [{include = "autoblocks"}]
 
 [tool.poetry.dependencies]
-python = "^3.8.1"
+python = "^3.9.0"
+
+# NOTE: These dependencies should be as relaxed as possible.
+# See CONTRIBUTING.md for more information.
 httpx = ">=0.24.0"
 click = ">=8.0.0"
 pyyaml = ">=6.0.0"
