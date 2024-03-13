@@ -3,12 +3,15 @@ import dataclasses
 import datetime
 import os
 import uuid
+from typing import Any
+from typing import Optional
 from unittest import mock
 
 import pydantic
 import pytest
 
 from autoblocks._impl.testing.models import BaseTestCase
+from autoblocks._impl.testing.models import TestCaseConfig
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks.testing.models import BaseTestEvaluator
 from autoblocks.testing.models import Evaluation
@@ -32,12 +35,25 @@ def mock_cli_server_address_env_var():
         yield
 
 
-@dataclasses.dataclass()
+@dataclasses.dataclass
 class MyTestCase(BaseTestCase):
     input: str
 
     def hash(self) -> str:
         return self.input
+
+
+def expect_post_request(
+    httpx_mock,
+    path: str,
+    body: dict[str, Any],
+):
+    httpx_mock.add_response(
+        url=f"{CLI_SERVER_ADDRESS}{path}",
+        method="POST",
+        status_code=200,
+        match_content=make_expected_body(body),
+    )
 
 
 def test_no_test_cases(httpx_mock):
@@ -957,7 +973,7 @@ def test_serializes(httpx_mock):
         ),
     )
 
-    @dataclasses.dataclass()
+    @dataclasses.dataclass
     class ATestCase(BaseTestCase):
         d: datetime.datetime
         u: uuid.UUID
@@ -1095,7 +1111,7 @@ def test_skips_non_serializable_test_case_attributes(httpx_mock):
     class SomeClass:
         pass
 
-    @dataclasses.dataclass()
+    @dataclasses.dataclass
     class TestCaseWithNonSerializableAttrs(BaseTestCase):
         # Serializable
         d: datetime.datetime
@@ -1238,4 +1254,172 @@ def test_sends_tracer_events(httpx_mock):
         # concurrency is set to 2 because we want test cases to run in parallel
         # to ensure context manager is working correctly
         max_test_case_concurrency=2,
+    )
+
+
+def test_repeated_test_cases(httpx_mock):
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(testExternalId="my-test-id"),
+    )
+
+    # We should have three results for A
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a-0",
+            # test_case_config should not be in the serialized body
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+        ),
+    )
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a-1",
+            # test_case_config should not be in the serialized body
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+        ),
+    )
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a-2",
+            # test_case_config should not be in the serialized body
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+        ),
+    )
+
+    # We should have one result for B
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            testCaseBody=dict(input="b"),
+            testCaseOutput="b!",
+        ),
+    )
+
+    # We should have 3 evals for A
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a-0",
+            evaluatorExternalId="my-evaluator",
+            score=0.97,
+            threshold=None,
+            metadata=None,
+        ),
+    )
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a-1",
+            evaluatorExternalId="my-evaluator",
+            score=0.97,
+            threshold=None,
+            metadata=None,
+        ),
+    )
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a-2",
+            evaluatorExternalId="my-evaluator",
+            score=0.97,
+            threshold=None,
+            metadata=None,
+        ),
+    )
+
+    # We should have one eval for B
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            evaluatorExternalId="my-evaluator",
+            score=0.98,
+            threshold=None,
+            metadata=None,
+        ),
+    )
+
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
+    )
+
+    @dataclasses.dataclass
+    class SomeTestCase(BaseTestCase):
+        """
+        Unfortunately, users will need to specify the test_case_config
+        field themselves. Ideally we would make BaseTestCase a dataclass
+        and add this field as optional with a default, like:
+
+        @dataclasses.dataclass
+        class BaseTestCase:
+            test_case_config: TestCaseConfig = dataclasses.field(default_factory=TestCaseConfig)
+
+        But then users would not be able to inherit from BaseTestCase and have non-default fields
+        on their own test case dataclass. This is due to how inheritance works for dataclasses:
+
+        * https://docs.python.org/3/library/dataclasses.html#inheritance
+        * https://stackoverflow.com/q/51575931
+
+        This could be worked around by making BaseTestCase keyword-only via kw_only=True, but
+        this was only added in Python 3.10, and we want to support 3.9 until it's closer to
+        end of life.
+        """
+
+        input: str
+
+        test_case_config: Optional[TestCaseConfig] = None
+
+        def hash(self) -> str:
+            return self.input
+
+    class MyEvaluator(BaseTestEvaluator):
+        id = "my-evaluator"
+
+        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
+            return Evaluation(score=ord(test_case.input) / 100)
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            SomeTestCase(
+                test_case_config=TestCaseConfig(
+                    repeat_num_times=3,
+                ),
+                input="a",
+            ),
+            SomeTestCase(
+                input="b",
+            ),
+        ],
+        evaluators=[
+            MyEvaluator(),
+        ],
+        fn=lambda test_case: test_case.input + "!",
+        max_test_case_concurrency=1,
     )
