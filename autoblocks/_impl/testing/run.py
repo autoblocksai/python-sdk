@@ -14,8 +14,10 @@ from autoblocks._impl.context_vars import current_external_test_id
 from autoblocks._impl.context_vars import current_test_case_hash
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
+from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.util import serialize
 from autoblocks._impl.testing.util import serialize_test_case
+from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cases
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 
@@ -62,7 +64,7 @@ async def send_error(
 
 async def run_evaluator_unsafe(
     test_id: str,
-    test_case: BaseTestCase,
+    test_case_ctx: TestCaseContext,
     output: Any,
     evaluator: BaseTestEvaluator,
 ) -> None:
@@ -72,14 +74,14 @@ async def run_evaluator_unsafe(
     """
     async with evaluator_semaphore_registry[test_id][evaluator.id]:
         if inspect.iscoroutinefunction(evaluator.evaluate_test_case):
-            evaluation = await evaluator.evaluate_test_case(test_case, output)
+            evaluation = await evaluator.evaluate_test_case(test_case_ctx.test_case, output)
         else:
             ctx = contextvars.copy_context()
             evaluation = await global_state.event_loop().run_in_executor(
                 None,
                 ctx.run,
                 evaluator.evaluate_test_case,
-                test_case,
+                test_case_ctx.test_case,
                 output,
             )
 
@@ -87,7 +89,7 @@ async def run_evaluator_unsafe(
         f"{cli()}/evals",
         json=dict(
             testExternalId=test_id,
-            testCaseHash=test_case._cached_hash,
+            testCaseHash=test_case_ctx.hash(),
             evaluatorExternalId=evaluator.id,
             score=evaluation.score,
             threshold=dataclasses.asdict(evaluation.threshold) if evaluation.threshold else None,
@@ -98,21 +100,21 @@ async def run_evaluator_unsafe(
 
 async def run_evaluator(
     test_id: str,
-    test_case: BaseTestCase,
+    test_case_ctx: TestCaseContext,
     output: Any,
     evaluator: BaseTestEvaluator,
 ) -> None:
     try:
         await run_evaluator_unsafe(
             test_id=test_id,
-            test_case=test_case,
+            test_case_ctx=test_case_ctx,
             output=output,
             evaluator=evaluator,
         )
     except Exception as err:
         await send_error(
             test_id=test_id,
-            test_case_hash=test_case._cached_hash,
+            test_case_hash=test_case_ctx.hash(),
             evaluator_id=evaluator.id,
             error=err,
         )
@@ -120,7 +122,7 @@ async def run_evaluator(
 
 async def run_test_case_unsafe(
     test_id: str,
-    test_case: BaseTestCase,
+    test_case_ctx: TestCaseContext,
     fn: Callable[[BaseTestCase], Any],
 ) -> Any:
     """
@@ -129,17 +131,22 @@ async def run_test_case_unsafe(
     """
     async with test_case_semaphore_registry[test_id]:
         if inspect.iscoroutinefunction(fn):
-            output = await fn(test_case)
+            output = await fn(test_case_ctx.test_case)
         else:
             ctx = contextvars.copy_context()
-            output = await global_state.event_loop().run_in_executor(None, ctx.run, fn, test_case)
+            output = await global_state.event_loop().run_in_executor(
+                None,
+                ctx.run,
+                fn,
+                test_case_ctx.test_case,
+            )
 
     await global_state.http_client().post(
         f"{cli()}/results",
         json=dict(
             testExternalId=test_id,
-            testCaseHash=test_case._cached_hash,
-            testCaseBody=serialize_test_case(test_case),
+            testCaseHash=test_case_ctx.hash(),
+            testCaseBody=serialize_test_case(test_case_ctx.test_case),
             testCaseOutput=serialize(output),
         ),
     )
@@ -148,21 +155,21 @@ async def run_test_case_unsafe(
 
 async def run_test_case(
     test_id: str,
-    test_case: BaseTestCase,
+    test_case_ctx: TestCaseContext,
     evaluators: List[BaseTestEvaluator],
     fn: Callable[[BaseTestCase], Any],
 ) -> None:
-    token = current_test_case_hash.set(test_case._cached_hash)
+    token = current_test_case_hash.set(test_case_ctx.hash())
     try:
         output = await run_test_case_unsafe(
             test_id=test_id,
-            test_case=test_case,
+            test_case_ctx=test_case_ctx,
             fn=fn,
         )
     except Exception as err:
         await send_error(
             test_id=test_id,
-            test_case_hash=test_case._cached_hash,
+            test_case_hash=test_case_ctx.hash(),
             evaluator_id=None,
             error=err,
         )
@@ -175,7 +182,7 @@ async def run_test_case(
             [
                 run_evaluator(
                     test_id=test_id,
-                    test_case=test_case,
+                    test_case_ctx=test_case_ctx,
                     output=output,
                     evaluator=evaluator,
                 )
@@ -185,7 +192,7 @@ async def run_test_case(
     except Exception as err:
         await send_error(
             test_id=test_id,
-            test_case_hash=test_case._cached_hash,
+            test_case_hash=test_case_ctx.hash(),
             evaluator_id=None,
             error=err,
         )
@@ -245,11 +252,11 @@ async def async_run_test_suite(
             [
                 run_test_case(
                     test_id=test_id,
-                    test_case=test_case,
+                    test_case_ctx=test_case_ctx,
                     evaluators=evaluators,
                     fn=fn,
                 )
-                for test_case in test_cases
+                for test_case_ctx in yield_test_case_contexts_from_test_cases(test_cases)
             ],
         )
     except Exception as err:

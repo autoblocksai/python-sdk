@@ -47,7 +47,6 @@ class PromptExecutionContext(abc.ABC, Generic[ParamsType, TemplateRendererType])
             self._prompt,
         )
 
-    @functools.lru_cache(1)
     def track(self) -> Dict[str, Any]:
         prompt = self._prompt.model_dump()
         prompt.pop("params", None)
