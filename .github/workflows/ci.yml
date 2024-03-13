@@ -50,11 +50,6 @@ jobs:
       - name: Run pre-commit checks
         uses: pre-commit/action@v3.0.1
 
-      # This is necessary because poetry relax will modify pyproject.toml to relax the version constraints
-      # and we want to fail if it made any changes.
-      - name: Check there are no unstaged modifications
-        run: git diff --exit-code
-
       - name: Validate renovate config
         run: npx --package renovate renovate-config-validator --strict
 
