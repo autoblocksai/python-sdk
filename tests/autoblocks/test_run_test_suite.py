@@ -46,13 +46,13 @@ class MyTestCase(BaseTestCase):
 def expect_post_request(
     httpx_mock,
     path: str,
-    body: dict[str, Any],
+    body: Optional[dict[str, Any]],
 ):
     httpx_mock.add_response(
         url=f"{CLI_SERVER_ADDRESS}{path}",
         method="POST",
         status_code=200,
-        match_content=make_expected_body(body),
+        match_content=make_expected_body(body) if body is not None else None,
     )
 
 
@@ -136,44 +136,35 @@ def test_invalid_evaluators(httpx_mock):
 
 
 def test_error_in_test_fn(httpx_mock):
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/start",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                testCaseBody=dict(input="a"),
-                testCaseOutput="a!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/errors",
-        method="POST",
-        status_code=200,
+    expect_post_request(
+        httpx_mock,
+        path="/errors",
         # Content will be asserted below since we
         # can't match on the stacktrace exactly
+        body=None,
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/end",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
 
@@ -206,44 +197,35 @@ def test_error_in_test_fn(httpx_mock):
 
 
 def test_error_in_async_test_fn(httpx_mock):
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/start",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                testCaseBody=dict(input="a"),
-                testCaseOutput="a!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/errors",
-        method="POST",
-        status_code=200,
+    expect_post_request(
+        httpx_mock,
+        path="/errors",
         # Content will be asserted below since we
         # can't match on the stacktrace exactly
+        body=None,
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/end",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
 
@@ -276,88 +258,69 @@ def test_error_in_async_test_fn(httpx_mock):
 
 
 def test_error_in_evaluator(httpx_mock):
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/start",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                testCaseBody=dict(input="a"),
-                testCaseOutput="a!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/evals",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                evaluatorExternalId="my-sync-evaluator",
-                score=0.5,
-                threshold=dict(lt=0.6, lte=None, gt=None, gte=None),
-                metadata=None,
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            evaluatorExternalId="my-sync-evaluator",
+            score=0.5,
+            threshold=dict(lt=0.6, lte=None, gt=None, gte=None),
+            metadata=None,
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/evals",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                evaluatorExternalId="my-async-evaluator",
-                score=0.6,
-                threshold=dict(lt=0.7, lte=None, gt=None, gte=None),
-                metadata=None,
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            evaluatorExternalId="my-async-evaluator",
+            score=0.6,
+            threshold=dict(lt=0.7, lte=None, gt=None, gte=None),
+            metadata=None,
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                testCaseBody=dict(input="b"),
-                testCaseOutput="b!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            testCaseBody=dict(input="b"),
+            testCaseOutput="b!",
         ),
     )
-
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/errors",
-        method="POST",
-        status_code=200,
+    expect_post_request(
+        httpx_mock,
+        path="/errors",
         # Content will be asserted below since we
         # can't match on the stacktrace exactly
+        body=None,
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/end",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
 
@@ -420,50 +383,38 @@ def test_error_in_evaluator(httpx_mock):
 
 
 def test_no_evaluators(httpx_mock):
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/start",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                testCaseBody=dict(input="a"),
-                testCaseOutput="a!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                testCaseBody=dict(input="b"),
-                testCaseOutput="b!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            testCaseBody=dict(input="b"),
+            testCaseOutput="b!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/end",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
 
@@ -483,110 +434,86 @@ def test_no_evaluators(httpx_mock):
 
 
 def test_with_evaluators(httpx_mock):
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/start",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                testCaseBody=dict(input="a"),
-                testCaseOutput="a!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/evals",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                evaluatorExternalId="evaluator-a",
-                score=0,
-                threshold=None,
-                metadata=dict(reason="because"),
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            evaluatorExternalId="evaluator-a",
+            score=0,
+            threshold=None,
+            metadata=dict(reason="because"),
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/evals",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                evaluatorExternalId="evaluator-b",
-                score=1,
-                threshold=None,
-                metadata=None,
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            evaluatorExternalId="evaluator-b",
+            score=1,
+            threshold=None,
+            metadata=None,
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                testCaseBody=dict(input="b"),
-                testCaseOutput="b!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            testCaseBody=dict(input="b"),
+            testCaseOutput="b!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/evals",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                evaluatorExternalId="evaluator-a",
-                score=0,
-                threshold=None,
-                metadata=dict(reason="because"),
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            evaluatorExternalId="evaluator-a",
+            score=0,
+            threshold=None,
+            metadata=dict(reason="because"),
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/evals",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                evaluatorExternalId="evaluator-b",
-                score=1,
-                threshold=None,
-                metadata=None,
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            evaluatorExternalId="evaluator-b",
+            score=1,
+            threshold=None,
+            metadata=None,
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/end",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
 
@@ -732,50 +659,38 @@ def test_concurrency(httpx_mock):
 
 
 def test_async_test_fn(httpx_mock):
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/start",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                testCaseBody=dict(input="a"),
-                testCaseOutput="a!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                testCaseBody=dict(input="b"),
-                testCaseOutput="b!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            testCaseBody=dict(input="b"),
+            testCaseOutput="b!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/end",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
 
@@ -795,111 +710,85 @@ def test_async_test_fn(httpx_mock):
 
 
 def test_async_evaluators(httpx_mock):
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/start",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                testCaseBody=dict(input="a"),
-                testCaseOutput="a!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/evals",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                evaluatorExternalId="evaluator-a",
-                score=0,
-                threshold=None,
-                metadata=None,
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            evaluatorExternalId="evaluator-a",
+            score=0,
+            threshold=None,
+            metadata=None,
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/evals",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                evaluatorExternalId="evaluator-b",
-                score=1,
-                threshold=None,
-                metadata=None,
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            evaluatorExternalId="evaluator-b",
+            score=1,
+            threshold=None,
+            metadata=None,
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                testCaseBody=dict(input="b"),
-                testCaseOutput="b!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            testCaseBody=dict(input="b"),
+            testCaseOutput="b!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/evals",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                evaluatorExternalId="evaluator-a",
-                score=0,
-                threshold=None,
-                metadata=None,
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            evaluatorExternalId="evaluator-a",
+            score=0,
+            threshold=None,
+            metadata=None,
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/evals",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                evaluatorExternalId="evaluator-b",
-                score=1,
-                threshold=None,
-                metadata=None,
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            evaluatorExternalId="evaluator-b",
+            score=1,
+            threshold=None,
+            metadata=None,
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/end",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
-        ),
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
     )
 
     def test_fn(test_case: MyTestCase):
@@ -933,44 +822,33 @@ def test_async_evaluators(httpx_mock):
 
 
 def test_serializes(httpx_mock):
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/start",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
-                testCaseBody=dict(
-                    d="2021-01-01T01:01:01",
-                    u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
-                ),
-                testCaseOutput=dict(
-                    d="2021-01-01T01:01:01",
-                    u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
-                ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
+            testCaseBody=dict(
+                d="2021-01-01T01:01:01",
+                u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
+            ),
+            testCaseOutput=dict(
+                d="2021-01-01T01:01:01",
+                u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
             ),
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/end",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
-        ),
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
     )
 
     @dataclasses.dataclass
@@ -1010,32 +888,24 @@ def test_logs_errors_from_our_code(httpx_mock):
     Tests that we propagate errors from our code (as opposed to the user's
     code, fn and evaluate_test_case).
     """
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/start",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/errors",
-        method="POST",
-        status_code=200,
+    expect_post_request(
+        httpx_mock,
+        path="/errors",
         # Content will be asserted below since we
         # can't match on the stacktrace exactly
+        body=None,
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/end",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
-        ),
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
     )
 
     class SomeClass:
@@ -1071,41 +941,30 @@ def test_logs_errors_from_our_code(httpx_mock):
 
 
 def test_skips_non_serializable_test_case_attributes(httpx_mock):
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/start",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
-                testCaseBody=dict(
-                    d="2021-01-01T01:01:01",
-                    u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
-                ),
-                testCaseOutput="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
+            testCaseBody=dict(
+                d="2021-01-01T01:01:01",
+                u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
             ),
+            testCaseOutput="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/end",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
-        ),
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
     )
 
     class SomeClass:
@@ -1161,75 +1020,56 @@ def test_deprecated_max_evaluator_concurrency(httpx_mock):
 
 def test_sends_tracer_events(httpx_mock):
     timestamp = datetime.datetime(2021, 1, 1, 1, 1, 1).isoformat()
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/start",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
+
+    expect_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/events",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                event=dict(message="a", traceId=None, timestamp=timestamp, properties=dict()),
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/events",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            event=dict(message="a", traceId=None, timestamp=timestamp, properties=dict()),
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="a",
-                testCaseBody=dict(input="a"),
-                testCaseOutput="a!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/events",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                event=dict(message="b", traceId=None, timestamp=timestamp, properties=dict()),
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/events",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            event=dict(message="b", traceId=None, timestamp=timestamp, properties=dict()),
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/results",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-                testCaseHash="b",
-                testCaseBody=dict(input="b"),
-                testCaseOutput="b!",
-            ),
+    expect_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="b",
+            testCaseBody=dict(input="b"),
+            testCaseOutput="b!",
         ),
     )
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}/end",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(
-            dict(
-                testExternalId="my-test-id",
-            )
-        ),
+    expect_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
     )
 
     # initialize the tracer outside the test function

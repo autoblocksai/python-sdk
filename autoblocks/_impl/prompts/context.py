@@ -8,7 +8,7 @@ from typing import TypeVar
 
 import pydantic
 
-from autoblocks._impl.prompts.models import HeadlessPrompt
+from autoblocks._impl.prompts.models import Prompt
 from autoblocks._impl.prompts.renderer import TemplateRenderer
 
 ParamsType = TypeVar("ParamsType", bound=pydantic.BaseModel)
@@ -28,7 +28,7 @@ class PromptExecutionContext(abc.ABC, Generic[ParamsType, TemplateRendererType])
             if not hasattr(cls, attr):
                 raise ValueError(f"PromptExecutionContext subclass {cls} must define {attr}")
 
-    def __init__(self, prompt: HeadlessPrompt) -> None:
+    def __init__(self, prompt: Prompt) -> None:
         self._prompt = prompt
 
     @functools.cached_property
