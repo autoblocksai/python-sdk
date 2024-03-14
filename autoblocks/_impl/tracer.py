@@ -18,8 +18,7 @@ from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
-from autoblocks._impl.context_vars import current_external_test_id
-from autoblocks._impl.context_vars import current_test_case_hash
+from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import TracerEvent
@@ -244,13 +243,9 @@ class AutoblocksTracer:
         if not self._cli_server_address:
             log.error("Failed to send test event to Autoblocks. CLI server address not set.")
             return
-
-        if not current_external_test_id.get():
+        test_case_run = test_case_run_context_var.get()
+        if not test_case_run:
             log.error("Failed to send test event to Autoblocks. No test ID set.")
-            return
-
-        if not current_test_case_hash.get():
-            log.error("Failed to send test event to Autoblocks. No test case hash set.")
             return
 
         traced_event = TracerEvent(
@@ -262,8 +257,8 @@ class AutoblocksTracer:
         req = global_state.sync_http_client().post(
             url=f"{self._cli_server_address}/events",
             json=dict(
-                testExternalId=current_external_test_id.get(),
-                testCaseHash=current_test_case_hash.get(),
+                testExternalId=test_case_run.test_id,
+                testCaseHash=test_case_run.test_case_hash,
                 event=traced_event.to_json(),
             ),
             timeout=self._timeout_seconds,
@@ -318,7 +313,7 @@ class AutoblocksTracer:
             timestamp = timestamp or datetime.now(timezone.utc).isoformat()
             # If the CLI server address is set, we are in a test context and should send events to the CLI
             # We also do not run evaluators in a test context
-            if self._cli_server_address:
+            if test_case_run_context_var.get() is not None:
                 self._send_test_event_unsafe(
                     message=message,
                     trace_id=trace_id,
