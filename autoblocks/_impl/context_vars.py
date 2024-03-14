@@ -10,5 +10,5 @@ class TestCaseRunContext:
 
 
 test_case_run_context_var: ContextVar[Optional[TestCaseRunContext]] = ContextVar(
-    "autoblocks_sdk_current_external_test_id", default=None
+    "autoblocks_sdk_test_case_run_context_var", default=None
 )
