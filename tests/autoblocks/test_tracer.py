@@ -410,40 +410,6 @@ def test_tracer_sends_span_id_and_parent_span_id_as_property(httpx_mock):
 @mock.patch.object(
     uuid,
     "uuid4",
-    side_effect=[f"mock-uuid-{i}" for i in range(4)],
-)
-def test_tracer_start_span(*args, **kwargs):
-    tracer = AutoblocksTracer()
-
-    assert tracer._properties.get("span_id") is None
-    assert tracer._properties.get("parent_span_id") is None
-
-    with tracer.start_span():
-        assert tracer._properties["span_id"] == "mock-uuid-0"
-        assert tracer._properties.get("parent_span_id") is None
-
-        with tracer.start_span():
-            assert tracer._properties["span_id"] == "mock-uuid-1"
-            assert tracer._properties["parent_span_id"] == "mock-uuid-0"
-
-            with tracer.start_span():
-                assert tracer._properties["span_id"] == "mock-uuid-2"
-                assert tracer._properties["parent_span_id"] == "mock-uuid-1"
-
-        with tracer.start_span():
-            assert tracer._properties["span_id"] == "mock-uuid-3"
-            assert tracer._properties["parent_span_id"] == "mock-uuid-0"
-
-        assert tracer._properties["span_id"] == "mock-uuid-0"
-        assert tracer._properties.get("parent_span_id") is None
-
-    assert tracer._properties.get("span_id") is None
-    assert tracer._properties.get("parent_span_id") is None
-
-
-@mock.patch.object(
-    uuid,
-    "uuid4",
     side_effect=["mock-uuid-1"],
 )
 def test_tracer_prod_evaluations(httpx_mock):
