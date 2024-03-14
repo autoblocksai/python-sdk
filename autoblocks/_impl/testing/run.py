@@ -10,8 +10,8 @@ from typing import List
 from typing import Optional
 
 from autoblocks._impl import global_state
-from autoblocks._impl.context_vars import current_external_test_id
-from autoblocks._impl.context_vars import current_test_case_hash
+from autoblocks._impl.context_vars import TestCaseRunContext
+from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import TestCaseContext
@@ -159,7 +159,7 @@ async def run_test_case(
     evaluators: List[BaseTestEvaluator],
     fn: Callable[[BaseTestCase], Any],
 ) -> None:
-    token = current_test_case_hash.set(test_case_ctx.hash())
+    token = test_case_run_context_var.set(TestCaseRunContext(test_id=test_id, test_case_hash=test_case_ctx.hash()))
     try:
         output = await run_test_case_unsafe(
             test_id=test_id,
@@ -175,7 +175,7 @@ async def run_test_case(
         )
         return
     finally:
-        current_test_case_hash.reset(token)
+        test_case_run_context_var.reset(token)
 
     try:
         await all_settled(
@@ -246,7 +246,6 @@ async def async_run_test_suite(
 
     await global_state.http_client().post(f"{cli()}/start", json=dict(testExternalId=test_id))
 
-    token = current_external_test_id.set(test_id)
     try:
         await all_settled(
             [
@@ -266,8 +265,6 @@ async def async_run_test_suite(
             evaluator_id=None,
             error=err,
         )
-    finally:
-        current_external_test_id.reset(token)
 
     await global_state.http_client().post(f"{cli()}/end", json=dict(testExternalId=test_id))
 
