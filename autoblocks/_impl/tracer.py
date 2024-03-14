@@ -303,8 +303,8 @@ class AutoblocksTracer:
                 prompt_tracking=prompt_tracking,
             )
 
-            # If the CLI server address is set, we are in a test context and should send events to the CLI
-            # We also do not run evaluators in a test context
+            # If the test case run contextvar is set, we are in a test context and should send events to the CLI.
+            # We also do not run evaluators in a test context, so the only argument we pass here is `payload`.
             if test_case_run_context_var.get() is not None:
                 self._send_test_event_unsafe(payload)
                 return
