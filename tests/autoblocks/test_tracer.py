@@ -1,6 +1,7 @@
 import os
 import uuid
 from datetime import datetime
+from typing import Any
 from unittest import mock
 
 import freezegun
@@ -30,8 +31,8 @@ timestamp = "2021-01-01T01:01:01.000001+00:00"
 
 
 def test_client_headers_init_with_key():
-    tracer = AutoblocksTracer("mock-ingestion-key")
-    assert tracer._client_headers["Authorization"] == "Bearer mock-ingestion-key"
+    tracer = AutoblocksTracer("mock-ingestion-key-as-argument")
+    assert tracer._client_headers["Authorization"] == "Bearer mock-ingestion-key-as-argument"
 
 
 @pytest.fixture(autouse=True)
@@ -48,6 +49,19 @@ def mock_env_vars():
 def test_client_init_headers_with_env_var():
     tracer = AutoblocksTracer()
     assert tracer._client_headers["Authorization"] == "Bearer mock-ingestion-key"
+
+
+def expect_post_request(
+    httpx_mock,
+    body: dict[str, Any],
+):
+    httpx_mock.add_response(
+        url=INGESTION_ENDPOINT,
+        method="POST",
+        status_code=200,
+        match_headers={"Authorization": "Bearer mock-ingestion-key"},
+        match_content=make_expected_body(body),
+    )
 
 
 def test_tracer_prod(httpx_mock):
@@ -413,41 +427,46 @@ def test_tracer_sends_span_id_and_parent_span_id_as_property(httpx_mock):
     side_effect=["mock-uuid-1"],
 )
 def test_tracer_prod_evaluations(httpx_mock):
+    tracer = AutoblocksTracer()
+
     class MyEvaluator(BaseEventEvaluator):
         id = "my-evaluator"
 
         def evaluate_event(self, event: TracerEvent) -> Evaluation:
+            tracer.send_event(f"i am inside evaluator {self.id} with event {event.message}")
             return Evaluation(
                 score=0.9,
                 threshold=Threshold(gte=0.5),
             )
 
-    httpx_mock.add_response(
-        url=INGESTION_ENDPOINT,
-        method="POST",
-        status_code=200,
-        json={"traceId": "my-trace-id"},
-        match_headers={"Authorization": "Bearer mock-ingestion-key"},
-        match_content=make_expected_body(
-            dict(
-                message="my-message",
-                traceId="my-trace-id",
-                timestamp=timestamp,
-                properties={
-                    "evaluations": [
-                        {
-                            "id": "mock-uuid-1",
-                            "score": 0.9,
-                            "metadata": None,
-                            "threshold": {"lt": None, "lte": None, "gt": None, "gte": 0.5},
-                            "evaluatorExternalId": "my-evaluator",
-                        }
-                    ]
-                },
-            )
+    expect_post_request(
+        httpx_mock,
+        body=dict(
+            message="my-message",
+            traceId="my-trace-id",
+            timestamp=timestamp,
+            properties={
+                "evaluations": [
+                    {
+                        "id": "mock-uuid-1",
+                        "score": 0.9,
+                        "metadata": None,
+                        "threshold": {"lt": None, "lte": None, "gt": None, "gte": 0.5},
+                        "evaluatorExternalId": "my-evaluator",
+                    }
+                ]
+            },
         ),
     )
-    tracer = AutoblocksTracer("mock-ingestion-key")
+    expect_post_request(
+        httpx_mock,
+        body=dict(
+            message="i am inside evaluator my-evaluator with event my-message",
+            timestamp=timestamp,
+            properties={},
+        ),
+    )
+
     tracer.send_event(
         "my-message",
         trace_id="my-trace-id",
@@ -463,10 +482,13 @@ def test_tracer_prod_evaluations(httpx_mock):
     side_effect=["mock-uuid" for _ in range(2)],
 )
 def test_tracer_prod_async_evaluations(httpx_mock):
+    tracer = AutoblocksTracer()
+
     class MyEvaluator1(BaseEventEvaluator):
         id = "my-evaluator-1"
 
         async def evaluate_event(self, event: TracerEvent):
+            tracer.send_event(f"i am inside evaluator {self.id} with event {event.message}")
             return Evaluation(
                 score=0.9,
                 threshold=Threshold(gte=0.5),
@@ -476,43 +498,55 @@ def test_tracer_prod_async_evaluations(httpx_mock):
         id = "my-evaluator-2"
 
         async def evaluate_event(self, event: TracerEvent):
+            tracer.send_event(f"i am inside evaluator {self.id} with event {event.message}")
             return Evaluation(
                 score=0.3,
             )
 
-    httpx_mock.add_response(
-        url=INGESTION_ENDPOINT,
-        method="POST",
-        status_code=200,
-        json={"traceId": "my-trace-id"},
-        match_headers={"Authorization": "Bearer mock-ingestion-key"},
-        match_content=make_expected_body(
-            dict(
-                message="my-message",
-                traceId="my-trace-id",
-                timestamp=timestamp,
-                properties={
-                    "evaluations": [
-                        {
-                            "evaluatorExternalId": "my-evaluator-1",
-                            "id": "mock-uuid",
-                            "score": 0.9,
-                            "metadata": None,
-                            "threshold": {"lt": None, "lte": None, "gt": None, "gte": 0.5},
-                        },
-                        {
-                            "evaluatorExternalId": "my-evaluator-2",
-                            "id": "mock-uuid",
-                            "score": 0.3,
-                            "metadata": None,
-                            "threshold": None,
-                        },
-                    ]
-                },
-            )
+    expect_post_request(
+        httpx_mock,
+        body=dict(
+            message="my-message",
+            traceId="my-trace-id",
+            timestamp=timestamp,
+            properties={
+                "evaluations": [
+                    {
+                        "evaluatorExternalId": "my-evaluator-1",
+                        "id": "mock-uuid",
+                        "score": 0.9,
+                        "metadata": None,
+                        "threshold": {"lt": None, "lte": None, "gt": None, "gte": 0.5},
+                    },
+                    {
+                        "evaluatorExternalId": "my-evaluator-2",
+                        "id": "mock-uuid",
+                        "score": 0.3,
+                        "metadata": None,
+                        "threshold": None,
+                    },
+                ]
+            },
         ),
     )
-    tracer = AutoblocksTracer("mock-ingestion-key")
+
+    expect_post_request(
+        httpx_mock,
+        body=dict(
+            message="i am inside evaluator my-evaluator-1 with event my-message",
+            timestamp=timestamp,
+            properties={},
+        ),
+    )
+    expect_post_request(
+        httpx_mock,
+        body=dict(
+            message="i am inside evaluator my-evaluator-2 with event my-message",
+            timestamp=timestamp,
+            properties={},
+        ),
+    )
+
     tracer.send_event(
         "my-message",
         trace_id="my-trace-id",
