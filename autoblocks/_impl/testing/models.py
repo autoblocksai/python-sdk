@@ -13,14 +13,6 @@ class TracerEvent:
     properties: Dict[str, Any]
     trace_id: Optional[str]
 
-    def to_json(self) -> Dict[str, Any]:
-        return {
-            "message": self.message,
-            "traceId": self.trace_id,
-            "timestamp": self.timestamp,
-            "properties": self.properties,
-        }
-
 
 @dataclasses.dataclass
 class Threshold:
