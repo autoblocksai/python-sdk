@@ -68,13 +68,7 @@ class Prompt(FrozenModel):
         """
         Returns the schema expected by our ingestion endpoint's prompt tracking property.
         """
-        data = self.model_dump()
-
-        # Move params to the top (without the version) if it's defined
-        if params := (data.get("params") or {}).get("params"):
-            data["params"] = params
-
-        return data
+        return self.model_dump()
 
 
 MinorVersionEnumType = TypeVar("MinorVersionEnumType", bound=Enum)

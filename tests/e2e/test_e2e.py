@@ -162,13 +162,16 @@ def test_prompt_manager():
             "id": "used-by-ci-dont-delete",
             "version": "2.1",
             "params": {
-                "frequencyPenalty": 0,
-                "maxTokens": 256,
-                "model": "gpt-4",
-                "presencePenalty": -0.3,
-                "stopSequences": [],
-                "temperature": 0.7,
-                "topP": 1,
+                "version": "1.1",
+                "params": {
+                    "frequencyPenalty": 0,
+                    "maxTokens": 256,
+                    "model": "gpt-4",
+                    "presencePenalty": -0.3,
+                    "stopSequences": [],
+                    "temperature": 0.7,
+                    "topP": 1,
+                },
             },
             "templates": [
                 {
