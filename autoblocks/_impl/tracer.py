@@ -26,6 +26,7 @@ from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import TracerEvent
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
+from autoblocks._impl.util import get_running_loop
 
 log = logging.getLogger(__name__)
 
@@ -307,10 +308,7 @@ class AutoblocksTracer:
         evaluators: Optional[List[BaseEventEvaluator]],
     ) -> None:
         # Check if we're already in a running event loop
-        try:
-            running_loop = asyncio.get_running_loop()
-        except RuntimeError:
-            running_loop = None
+        running_loop = get_running_loop()
 
         task: Union[asyncio.Task[Any], Future[Any]]
         if running_loop:

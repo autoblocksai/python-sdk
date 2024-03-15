@@ -13,7 +13,7 @@ from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import Threshold
 from autoblocks._impl.testing.models import TracerEvent
 from autoblocks.tracer import AutoblocksTracer
-from tests.autoblocks.util import make_expected_body
+from tests.util import make_expected_body
 
 
 @pytest.fixture(autouse=True)
@@ -51,7 +51,7 @@ def test_client_init_headers_with_env_var():
     assert tracer._client_headers["Authorization"] == "Bearer mock-ingestion-key"
 
 
-def expect_post_request(
+def expect_cli_post_request(
     httpx_mock,
     body: dict[str, Any],
 ):
@@ -439,7 +439,7 @@ def test_tracer_prod_evaluations(httpx_mock):
                 threshold=Threshold(gte=0.5),
             )
 
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         body=dict(
             message="my-message",
@@ -458,7 +458,7 @@ def test_tracer_prod_evaluations(httpx_mock):
             },
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         body=dict(
             message="i am inside evaluator my-evaluator with event my-message",
@@ -503,7 +503,7 @@ def test_tracer_prod_async_evaluations(httpx_mock):
                 score=0.3,
             )
 
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         body=dict(
             message="my-message",
@@ -530,7 +530,7 @@ def test_tracer_prod_async_evaluations(httpx_mock):
         ),
     )
 
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         body=dict(
             message="i am inside evaluator my-evaluator-1 with event my-message",
@@ -538,7 +538,7 @@ def test_tracer_prod_async_evaluations(httpx_mock):
             properties={},
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         body=dict(
             message="i am inside evaluator my-evaluator-2 with event my-message",

@@ -3,7 +3,6 @@ import dataclasses
 import datetime
 import os
 import uuid
-from typing import Any
 from typing import Optional
 from unittest import mock
 
@@ -18,10 +17,9 @@ from autoblocks.testing.models import Evaluation
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.run import run_test_suite
 from autoblocks.tracer import AutoblocksTracer
-from tests.autoblocks.util import decode_request_body
-from tests.autoblocks.util import make_expected_body
-
-CLI_SERVER_ADDRESS = "http://localhost:8080"
+from tests.util import MOCK_CLI_SERVER_ADDRESS
+from tests.util import decode_request_body
+from tests.util import expect_cli_post_request
 
 
 @pytest.fixture(autouse=True)
@@ -29,7 +27,7 @@ def mock_cli_server_address_env_var():
     with mock.patch.dict(
         os.environ,
         {
-            AutoblocksEnvVar.CLI_SERVER_ADDRESS.value: CLI_SERVER_ADDRESS,
+            AutoblocksEnvVar.CLI_SERVER_ADDRESS.value: MOCK_CLI_SERVER_ADDRESS,
         },
     ):
         yield
@@ -41,19 +39,6 @@ class MyTestCase(BaseTestCase):
 
     def hash(self) -> str:
         return self.input
-
-
-def expect_post_request(
-    httpx_mock,
-    path: str,
-    body: Optional[dict[str, Any]],
-):
-    httpx_mock.add_response(
-        url=f"{CLI_SERVER_ADDRESS}{path}",
-        method="POST",
-        status_code=200,
-        match_content=make_expected_body(body) if body is not None else None,
-    )
 
 
 def test_no_test_cases(httpx_mock):
@@ -136,14 +121,14 @@ def test_invalid_evaluators(httpx_mock):
 
 
 def test_error_in_test_fn(httpx_mock):
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(
             testExternalId="my-test-id",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -153,14 +138,14 @@ def test_error_in_test_fn(httpx_mock):
             testCaseOutput="a!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/errors",
         # Content will be asserted below since we
         # can't match on the stacktrace exactly
         body=None,
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(
@@ -197,14 +182,14 @@ def test_error_in_test_fn(httpx_mock):
 
 
 def test_error_in_async_test_fn(httpx_mock):
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(
             testExternalId="my-test-id",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -214,14 +199,14 @@ def test_error_in_async_test_fn(httpx_mock):
             testCaseOutput="a!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/errors",
         # Content will be asserted below since we
         # can't match on the stacktrace exactly
         body=None,
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(
@@ -258,14 +243,14 @@ def test_error_in_async_test_fn(httpx_mock):
 
 
 def test_error_in_evaluator(httpx_mock):
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(
             testExternalId="my-test-id",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -275,7 +260,7 @@ def test_error_in_evaluator(httpx_mock):
             testCaseOutput="a!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -287,7 +272,7 @@ def test_error_in_evaluator(httpx_mock):
             metadata=None,
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -299,7 +284,7 @@ def test_error_in_evaluator(httpx_mock):
             metadata=None,
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -309,14 +294,14 @@ def test_error_in_evaluator(httpx_mock):
             testCaseOutput="b!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/errors",
         # Content will be asserted below since we
         # can't match on the stacktrace exactly
         body=None,
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(
@@ -383,14 +368,14 @@ def test_error_in_evaluator(httpx_mock):
 
 
 def test_no_evaluators(httpx_mock):
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(
             testExternalId="my-test-id",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -400,7 +385,7 @@ def test_no_evaluators(httpx_mock):
             testCaseOutput="a!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -410,7 +395,7 @@ def test_no_evaluators(httpx_mock):
             testCaseOutput="b!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(
@@ -434,14 +419,14 @@ def test_no_evaluators(httpx_mock):
 
 
 def test_with_evaluators(httpx_mock):
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(
             testExternalId="my-test-id",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -451,7 +436,7 @@ def test_with_evaluators(httpx_mock):
             testCaseOutput="a!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -463,7 +448,7 @@ def test_with_evaluators(httpx_mock):
             metadata=dict(reason="because"),
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -475,7 +460,7 @@ def test_with_evaluators(httpx_mock):
             metadata=None,
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -485,7 +470,7 @@ def test_with_evaluators(httpx_mock):
             testCaseOutput="b!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -497,7 +482,7 @@ def test_with_evaluators(httpx_mock):
             metadata=dict(reason="because"),
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -509,7 +494,7 @@ def test_with_evaluators(httpx_mock):
             metadata=None,
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(
@@ -659,14 +644,14 @@ def test_concurrency(httpx_mock):
 
 
 def test_async_test_fn(httpx_mock):
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(
             testExternalId="my-test-id",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -676,7 +661,7 @@ def test_async_test_fn(httpx_mock):
             testCaseOutput="a!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -686,7 +671,7 @@ def test_async_test_fn(httpx_mock):
             testCaseOutput="b!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(
@@ -710,14 +695,14 @@ def test_async_test_fn(httpx_mock):
 
 
 def test_async_evaluators(httpx_mock):
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(
             testExternalId="my-test-id",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -727,7 +712,7 @@ def test_async_evaluators(httpx_mock):
             testCaseOutput="a!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -739,7 +724,7 @@ def test_async_evaluators(httpx_mock):
             metadata=None,
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -751,7 +736,7 @@ def test_async_evaluators(httpx_mock):
             metadata=None,
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -761,7 +746,7 @@ def test_async_evaluators(httpx_mock):
             testCaseOutput="b!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -773,7 +758,7 @@ def test_async_evaluators(httpx_mock):
             metadata=None,
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -785,7 +770,7 @@ def test_async_evaluators(httpx_mock):
             metadata=None,
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(testExternalId="my-test-id"),
@@ -822,14 +807,14 @@ def test_async_evaluators(httpx_mock):
 
 
 def test_serializes(httpx_mock):
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(
             testExternalId="my-test-id",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -845,7 +830,7 @@ def test_serializes(httpx_mock):
             ),
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(testExternalId="my-test-id"),
@@ -888,21 +873,21 @@ def test_logs_errors_from_our_code(httpx_mock):
     Tests that we propagate errors from our code (as opposed to the user's
     code, fn and evaluate_test_case).
     """
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(
             testExternalId="my-test-id",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/errors",
         # Content will be asserted below since we
         # can't match on the stacktrace exactly
         body=None,
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(testExternalId="my-test-id"),
@@ -941,14 +926,14 @@ def test_logs_errors_from_our_code(httpx_mock):
 
 
 def test_skips_non_serializable_test_case_attributes(httpx_mock):
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(
             testExternalId="my-test-id",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -961,7 +946,7 @@ def test_skips_non_serializable_test_case_attributes(httpx_mock):
             testCaseOutput="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(testExternalId="my-test-id"),
@@ -1021,14 +1006,14 @@ def test_deprecated_max_evaluator_concurrency(httpx_mock):
 def test_sends_tracer_events(httpx_mock):
     timestamp = datetime.datetime(2021, 1, 1, 1, 1, 1).isoformat()
 
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(
             testExternalId="my-test-id",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/events",
         body=dict(
@@ -1037,7 +1022,7 @@ def test_sends_tracer_events(httpx_mock):
             event=dict(message="a", traceId=None, timestamp=timestamp, properties=dict()),
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -1047,7 +1032,7 @@ def test_sends_tracer_events(httpx_mock):
             testCaseOutput="a!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/events",
         body=dict(
@@ -1056,7 +1041,7 @@ def test_sends_tracer_events(httpx_mock):
             event=dict(message="b", traceId=None, timestamp=timestamp, properties=dict()),
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -1066,7 +1051,7 @@ def test_sends_tracer_events(httpx_mock):
             testCaseOutput="b!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(testExternalId="my-test-id"),
@@ -1098,14 +1083,14 @@ def test_sends_tracer_events(httpx_mock):
 
 
 def test_repeated_test_cases(httpx_mock):
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/start",
         body=dict(testExternalId="my-test-id"),
     )
 
     # We should have three results for A
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -1116,7 +1101,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseOutput="a!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -1127,7 +1112,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseOutput="a!",
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -1140,7 +1125,7 @@ def test_repeated_test_cases(httpx_mock):
     )
 
     # We should have one result for B
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
@@ -1152,7 +1137,7 @@ def test_repeated_test_cases(httpx_mock):
     )
 
     # We should have 3 evals for A
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -1164,7 +1149,7 @@ def test_repeated_test_cases(httpx_mock):
             metadata=None,
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -1176,7 +1161,7 @@ def test_repeated_test_cases(httpx_mock):
             metadata=None,
         ),
     )
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -1190,7 +1175,7 @@ def test_repeated_test_cases(httpx_mock):
     )
 
     # We should have one eval for B
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/evals",
         body=dict(
@@ -1203,7 +1188,7 @@ def test_repeated_test_cases(httpx_mock):
         ),
     )
 
-    expect_post_request(
+    expect_cli_post_request(
         httpx_mock,
         path="/end",
         body=dict(testExternalId="my-test-id"),

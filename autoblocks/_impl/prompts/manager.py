@@ -2,6 +2,7 @@ import abc
 import asyncio
 import contextlib
 import logging
+from concurrent.futures import Future
 from datetime import timedelta
 from enum import Enum
 from typing import Any
@@ -23,6 +24,7 @@ from autoblocks._impl.prompts.models import PromptMinorVersion
 from autoblocks._impl.prompts.models import WeightedMinorVersion
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import encode_uri_component
+from autoblocks._impl.util import get_running_loop
 
 log = logging.getLogger(__name__)
 
@@ -133,11 +135,23 @@ class AutoblocksPromptManager(
             log.info(f"Successfully fetched version v{self.__prompt_major_version__}.{prompt.minor_version}")
 
     def _init(self, timeout: timedelta) -> None:
-        future = asyncio.run_coroutine_threadsafe(
-            self._init_async(timeout),
-            global_state.event_loop(),
-        )
-        future.result()
+        running_loop = get_running_loop()
+
+        task: Union[asyncio.Task[Any], Future[Any]]
+        if running_loop:
+            # If we're already in a running loop, execute the task on that loop
+            task = running_loop.create_task(
+                self._init_async(timeout),
+            )
+        else:
+            # Otherwise, send the task to our background loop
+            task = asyncio.run_coroutine_threadsafe(
+                self._init_async(timeout),
+                global_state.event_loop(),
+            )
+
+        # Wait for prompts to be initialized
+        task.result()
 
         log.info("Successfully initialized prompt manager!")
 
@@ -175,17 +189,23 @@ class AutoblocksPromptManager(
             log.info(f"Updated latest prompt from v{old_latest.version} to v{new_latest.version}")
 
     def _choose_execution_prompt(self) -> Prompt:
-        rand_version = self._minor_version.random_version()
-        if rand_version in self._minor_version_to_prompt:
-            return self._minor_version_to_prompt[rand_version]
+        # Choose the minor version to use
+        chosen_minor_version = self._minor_version.choose_version()
 
+        # Return that version from the cache
+        if chosen_minor_version in self._minor_version_to_prompt:
+            return self._minor_version_to_prompt[chosen_minor_version]
+
+        # This shouldn't happen, but the chosen version is not in the cache
+        # Use the most recent cached prompt
         cache_keys = list(self._minor_version_to_prompt.keys())
         if cache_keys:
             last_in_cache = self._minor_version_to_prompt[cache_keys[-1]]
             log.error(
-                f"Failed to choose execution prompt: v{self.__prompt_major_version__}.{rand_version} not found.\n"
+                f"Failed to choose execution prompt: "
+                f"v{self.__prompt_major_version__}.{chosen_minor_version} not found.\n"
                 f"Available versions are: {self._minor_version_to_prompt.keys()}.\n"
-                f"Using cached prompt: v{last_in_cache.version}."
+                f"Falling back to latest cached prompt: v{last_in_cache.version}."
             )
             return last_in_cache
 

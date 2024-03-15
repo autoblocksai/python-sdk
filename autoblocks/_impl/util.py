@@ -45,3 +45,14 @@ async def all_settled(coroutines: list[Coroutine[Any, Any, Any]]) -> Tuple[Union
     # mypy error:
     # Returning Any from function declared to return "tuple[BaseException | Any]"  [no-any-return]
     return await asyncio.gather(*coroutines, return_exceptions=True)  # type: ignore
+
+
+def get_running_loop() -> Optional[asyncio.AbstractEventLoop]:
+    """
+    Returns the currently-running event loop if there is one.
+    """
+    try:
+        # Raises a RuntimeError if no loop is running
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        return None
