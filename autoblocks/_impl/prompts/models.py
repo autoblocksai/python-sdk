@@ -63,6 +63,19 @@ class Prompt(FrozenModel):
             return UNDEPLOYED
         return self.version.split(".")[1]
 
+    @functools.cached_property
+    def tracking(self) -> dict[str, Any]:
+        """
+        Returns the schema expected by our ingestion endpoint's prompt tracking property.
+        """
+        data = self.model_dump()
+
+        # Move params to the top (without the version) if it's defined
+        if params := (data.get("params") or {}).get("params"):
+            data["params"] = params
+
+        return data
+
 
 MinorVersionEnumType = TypeVar("MinorVersionEnumType", bound=Enum)
 
@@ -106,8 +119,10 @@ class PromptMinorVersion(FrozenModel):
             versions.add(str_version)
         return versions
 
-    def random_version(self) -> str:
+    def choose_version(self) -> str:
         if weighted_versions := self.weighted_versions:
+            # Minor version is a weighted list; choose one according
+            # to their weights.
             (rand_str_version,) = random.choices(
                 population=[v.str_version for v in weighted_versions],
                 weights=[v.weight for v in weighted_versions],
@@ -115,6 +130,7 @@ class PromptMinorVersion(FrozenModel):
             )
             return rand_str_version
         elif str_version := self.str_version:
+            # Minor version is a constant; return it.
             return str_version
 
         raise RuntimeError("Minor version should either be a string or a list of weighted versions.")

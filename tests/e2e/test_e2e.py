@@ -1,6 +1,11 @@
+import dataclasses
+import os
 import time
 import uuid
 from datetime import timedelta
+from unittest import mock
+
+import pytest
 
 from autoblocks.api.client import AutoblocksAPIClient
 from autoblocks.api.models import EventFilter
@@ -10,14 +15,17 @@ from autoblocks.api.models import SystemEventFilterKey
 from autoblocks.api.models import TraceFilter
 from autoblocks.api.models import TraceFilterOperator
 from autoblocks.prompts.models import WeightedMinorVersion
+from autoblocks.testing.models import BaseTestCase
+from autoblocks.testing.run import run_test_suite
 from autoblocks.tracer import AutoblocksTracer
-
-from .prompts import UsedByCiDontDeleteMinorVersion
-from .prompts import UsedByCiDontDeleteNoParamsMinorVersion
-from .prompts import UsedByCiDontDeleteNoParamsPromptManager
-from .prompts import UsedByCiDontDeleteNoParamsUndeployedMinorVersion
-from .prompts import UsedByCiDontDeleteNoParamsUndeployedPromptManager
-from .prompts import UsedByCiDontDeletePromptManager
+from tests.e2e.prompts import UsedByCiDontDeleteMinorVersion
+from tests.e2e.prompts import UsedByCiDontDeleteNoParamsMinorVersion
+from tests.e2e.prompts import UsedByCiDontDeleteNoParamsPromptManager
+from tests.e2e.prompts import UsedByCiDontDeleteNoParamsUndeployedMinorVersion
+from tests.e2e.prompts import UsedByCiDontDeleteNoParamsUndeployedPromptManager
+from tests.e2e.prompts import UsedByCiDontDeletePromptManager
+from tests.util import MOCK_CLI_SERVER_ADDRESS
+from tests.util import expect_cli_post_request
 
 # The below are entities in our Autoblocks CI org that we use for testing.
 E2E_TESTS_DATASET_ID = "clpup7f9400075us75nin99f0"
@@ -27,6 +35,16 @@ E2E_TESTS_EXPECTED_MESSAGE = "sdk.e2e"
 
 client = AutoblocksAPIClient(timeout=timedelta(seconds=30))
 tracer = AutoblocksTracer()
+
+
+@pytest.fixture
+def non_mocked_hosts() -> list[str]:
+    """
+    Don't mock requests to our API.
+
+    https://colin-b.github.io/pytest_httpx/#do-not-mock-some-requests
+    """
+    return ["api.autoblocks.ai"]
 
 
 def test_get_datasets():
@@ -143,6 +161,15 @@ def test_prompt_manager():
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
             "version": "2.1",
+            "params": {
+                "frequencyPenalty": 0,
+                "maxTokens": 256,
+                "model": "gpt-4",
+                "presencePenalty": -0.3,
+                "stopSequences": [],
+                "temperature": 0.7,
+                "topP": 1,
+            },
             "templates": [
                 {
                     "id": "template-a",
@@ -200,6 +227,15 @@ def test_prompt_manager_no_model_params():
     with mgr.exec() as prompt:
         assert prompt.params is None
 
+        assert prompt.track() == dict(
+            id="used-by-ci-dont-delete-no-params",
+            version="1.0",
+            params=None,
+            templates=[
+                dict(id="my-template-id", version="1.0", template="Hello, {{ name }}!"),
+            ],
+        )
+
 
 def test_prompt_manager_no_model_params_undeployed():
     mgr = UsedByCiDontDeleteNoParamsUndeployedPromptManager(
@@ -208,3 +244,59 @@ def test_prompt_manager_no_model_params_undeployed():
 
     with mgr.exec() as prompt:
         assert prompt.params is None
+
+        assert prompt.track()["id"] == "used-by-ci-dont-delete-no-params"
+        assert prompt.track()["version"] == "undeployed"
+        assert prompt.track().get("params") is None
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
+    },
+)
+def test_init_prompt_manager_inside_test_suite(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(testExternalId="my-test-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hash",
+            testCaseBody={"x": 1},
+            testCaseOutput="gpt-4",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
+    )
+
+    @dataclasses.dataclass
+    class MyTestCase(BaseTestCase):
+        x: int
+
+        def hash(self):
+            return "hash"
+
+    def test_fn(test_case: MyTestCase) -> str:
+        mgr = UsedByCiDontDeletePromptManager(
+            UsedByCiDontDeleteMinorVersion.v1,
+        )
+        with mgr.exec() as prompt:
+            return prompt.params.model
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(x=1),
+        ],
+        evaluators=[],
+        fn=test_fn,
+    )

@@ -48,6 +48,4 @@ class PromptExecutionContext(abc.ABC, Generic[ParamsType, TemplateRendererType])
         )
 
     def track(self) -> Dict[str, Any]:
-        prompt = self._prompt.model_dump()
-        prompt.pop("params", None)
-        return prompt
+        return self._prompt.tracking
