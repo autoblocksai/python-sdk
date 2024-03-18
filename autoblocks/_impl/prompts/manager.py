@@ -5,6 +5,7 @@ import logging
 from concurrent.futures import Future
 from datetime import timedelta
 from enum import Enum
+from http import HTTPStatus
 from typing import Any
 from typing import ContextManager
 from typing import Dict
@@ -17,6 +18,7 @@ from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
+from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.prompts.constants import LATEST
 from autoblocks._impl.prompts.context import PromptExecutionContext
 from autoblocks._impl.prompts.models import Prompt
@@ -65,7 +67,9 @@ class AutoblocksPromptManager(
         refresh_interval: timedelta = timedelta(seconds=10),
     ):
         global_state.init()
+        self._name = type(self).__name__
         self._minor_version = PromptMinorVersion.model_validate({"version": minor_version})
+        self._init_timeout = init_timeout
         self._refresh_timeout = refresh_timeout
         self._refresh_interval = refresh_interval
         self._minor_version_to_prompt: Dict[str, Prompt] = {}
@@ -79,18 +83,27 @@ class AutoblocksPromptManager(
 
         self._api_key = api_key
 
+        self._prompt_snapshot: Optional[Prompt] = None
+
         refresh_seconds = refresh_interval.total_seconds()
         if refresh_seconds < 1:
             raise ValueError(f"Refresh interval can't be shorter than 1 second (got {refresh_seconds}s)")
 
-        self._init(init_timeout)
+        self._init()
 
         if LATEST in self._minor_version.all_minor_versions:
+            if test_case_run_context_var.get():
+                log.info("Prompt refreshing is disabled when in a testing context.")
+                return
+
             log.info(f"Refreshing latest prompt every {refresh_seconds} seconds")
-            asyncio.run_coroutine_threadsafe(
-                self._refresh_loop(),
-                global_state.event_loop(),
-            )
+            if running_loop := get_running_loop():
+                running_loop.create_task(self._refresh_loop())
+            else:
+                asyncio.run_coroutine_threadsafe(
+                    self._refresh_loop(),
+                    global_state.event_loop(),
+                )
 
     def _make_request_url(self, minor_version: str) -> str:
         prompt_id = encode_uri_component(self.__prompt_id__)
@@ -111,7 +124,59 @@ class AutoblocksPromptManager(
         resp.raise_for_status()
         return Prompt.model_validate(resp.json())
 
-    async def _init_async(self, timeout: timedelta) -> None:
+    async def _get_prompt_snapshot(self, snapshot_id: str) -> Optional[Prompt]:
+        """
+        If we're running in a test context where a prompt snapshot is being used,
+        use the /override endpoint to check if the major version this prompt
+        manager is configured to use is compatible to be overridden with the snapshot.
+        """
+        # Double check we're in a testing context
+        if not test_case_run_context_var.get():
+            log.error("Can't get prompt snapshot unless in a testing context.")
+            return None
+
+        resp = await global_state.http_client().post(
+            f"{API_ENDPOINT}/prompts/override",
+            timeout=self._init_timeout.total_seconds(),
+            headers={"Authorization": f"Bearer {self._api_key}"},
+            json=dict(
+                id=self.__prompt_id__,
+                majorVersion=self.__prompt_major_version__,
+                snapshotId=snapshot_id,
+            ),
+        )
+
+        if resp.status_code == HTTPStatus.FORBIDDEN:
+            # We return a 403 if the snapshot's prompt ID doesn't match.
+            # This is an expected error, since the prompt snapshot is set
+            # globally by an environment variable but a codebase will be
+            # initializing many managers with different prompt IDs.
+            return None
+        if resp.status_code == HTTPStatus.CONFLICT:
+            # The endpoint returns this status code when the snapshot's prompt ID
+            # matches but is not compatible with the major version selected for this prompt.
+            # In this case we should throw, because the snapshot requested for this prompt
+            # is not compatible.
+            raise RuntimeError(
+                f"Can't override '{self._name}' with prompt snapshot '{snapshot_id}' because it is not compatible "
+                f"with major version '{self.__prompt_major_version__}'."
+            )
+
+        # Raise for any unexpected errors
+        resp.raise_for_status()
+
+        # Return the prompt snapshot
+        return Prompt.model_validate(resp.json())
+
+    async def _init_async(self) -> None:
+        # Set the snapshot prompt if we're in a testing context and a prompt snapshot ID is set.
+        if test_case_run_context_var.get() and (snapshot_id := AutoblocksEnvVar.PROMPT_SNAPSHOT_ID.get()):
+            prompt_snapshot = await self._get_prompt_snapshot(snapshot_id)
+            if prompt_snapshot:
+                log.warning(f"Overriding '{self._name}' with prompt snapshot '{snapshot_id}'!")
+                self._prompt_snapshot = prompt_snapshot
+                return
+
         # Convert all_minor_versions (which is a set) to a list
         # to guarantee we get the same order both when fetching
         # via gather and zipping together the minor versions to
@@ -119,10 +184,10 @@ class AutoblocksPromptManager(
         minor_versions = sorted(self._minor_version.all_minor_versions)
         try:
             prompts = await asyncio.gather(
-                *[self._get_prompt(minor_version, timeout) for minor_version in minor_versions],
+                *[self._get_prompt(minor_version, self._init_timeout) for minor_version in minor_versions],
             )
         except Exception as err:
-            log.error(f"Failed to initialize prompt manager: {err}")
+            log.error(f"Failed to initialize prompt manager for prompt '{self.__prompt_id__}': {err}")
             raise err
 
         for minor_version, prompt in zip(minor_versions, prompts):
@@ -132,21 +197,19 @@ class AutoblocksPromptManager(
             # different from the minor version we requested (in the case
             # where we requested LATEST or UNDEPLOYED).
             self._minor_version_to_prompt[minor_version] = prompt
-            log.info(f"Successfully fetched version v{self.__prompt_major_version__}.{prompt.minor_version}")
+            log.info(f"Successfully fetched version '{prompt.version}' of prompt '{self.__prompt_id__}'")
 
-    def _init(self, timeout: timedelta) -> None:
-        running_loop = get_running_loop()
-
+    def _init(self) -> None:
         task: Union[asyncio.Task[Any], Future[Any]]
-        if running_loop:
+        if running_loop := get_running_loop():
             # If we're already in a running loop, execute the task on that loop
             task = running_loop.create_task(
-                self._init_async(timeout),
+                self._init_async(),
             )
         else:
             # Otherwise, send the task to our background loop
             task = asyncio.run_coroutine_threadsafe(
-                self._init_async(timeout),
+                self._init_async(),
                 global_state.event_loop(),
             )
 
@@ -189,6 +252,10 @@ class AutoblocksPromptManager(
             log.info(f"Updated latest prompt from v{old_latest.version} to v{new_latest.version}")
 
     def _choose_execution_prompt(self) -> Prompt:
+        # Always use the prompt snapshot if it is set
+        if self._prompt_snapshot:
+            return self._prompt_snapshot
+
         # Choose the minor version to use
         chosen_minor_version = self._minor_version.choose_version()
 

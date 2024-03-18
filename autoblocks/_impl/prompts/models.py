@@ -51,18 +51,6 @@ class Prompt(FrozenModel):
     params: Optional[PromptParams] = None
     templates: List[PromptTemplate]
 
-    @property
-    def major_version(self) -> str:
-        if self.version == UNDEPLOYED:
-            return UNDEPLOYED
-        return self.version.split(".")[0]
-
-    @property
-    def minor_version(self) -> str:
-        if self.version == UNDEPLOYED:
-            return UNDEPLOYED
-        return self.version.split(".")[1]
-
     @functools.cached_property
     def tracking(self) -> dict[str, Any]:
         """
