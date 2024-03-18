@@ -1,14 +1,18 @@
+import dataclasses
 import os
 import uuid
 from datetime import datetime
 from typing import Any
+from typing import Optional
 from unittest import mock
 
 import freezegun
 import pytest
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
+from autoblocks._impl.testing.models import BaseEvaluator
 from autoblocks._impl.testing.models import BaseEventEvaluator
+from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import Threshold
 from autoblocks._impl.testing.models import TracerEvent
@@ -49,6 +53,29 @@ def mock_env_vars():
 def test_client_init_headers_with_env_var():
     tracer = AutoblocksTracer()
     assert tracer._client_headers["Authorization"] == "Bearer mock-ingestion-key"
+
+
+def expect_ingestion_post_request(
+    httpx_mock,
+    *,
+    message: str,
+    trace_id: Optional[str],
+    properties: dict[str, Any],
+):
+    httpx_mock.add_response(
+        url=INGESTION_ENDPOINT,
+        method="POST",
+        status_code=200,
+        match_headers={"Authorization": "Bearer mock-ingestion-key"},
+        match_content=make_expected_body(
+            dict(
+                message=message,
+                traceId=trace_id,
+                timestamp=timestamp,
+                properties=properties,
+            )
+        ),
+    )
 
 
 def expect_cli_post_request(
@@ -479,7 +506,7 @@ def test_tracer_prod_evaluations(httpx_mock):
 @mock.patch.object(
     uuid,
     "uuid4",
-    side_effect=["mock-uuid" for _ in range(2)],
+    side_effect=[f"mock-uuid={i}" for i in range(2)],
 )
 def test_tracer_prod_async_evaluations(httpx_mock):
     tracer = AutoblocksTracer()
@@ -513,14 +540,14 @@ def test_tracer_prod_async_evaluations(httpx_mock):
                 "evaluations": [
                     {
                         "evaluatorExternalId": "my-evaluator-1",
-                        "id": "mock-uuid",
+                        "id": "mock-uuid-0",
                         "score": 0.9,
                         "metadata": None,
                         "threshold": {"lt": None, "lte": None, "gt": None, "gte": 0.5},
                     },
                     {
                         "evaluatorExternalId": "my-evaluator-2",
-                        "id": "mock-uuid",
+                        "id": "mock-uuid-1",
                         "score": 0.3,
                         "metadata": None,
                         "threshold": None,
@@ -559,7 +586,7 @@ def test_tracer_prod_async_evaluations(httpx_mock):
 @mock.patch.object(
     uuid,
     "uuid4",
-    side_effect=["mock-uuid" for i in range(2)],
+    side_effect=[f"mock-uuid={i}" for i in range(2)],
 )
 def test_tracer_failing_evaluation(httpx_mock):
     class MyValidEvaluator(BaseEventEvaluator):
@@ -591,7 +618,7 @@ def test_tracer_failing_evaluation(httpx_mock):
                     "evaluations": [
                         {
                             "evaluatorExternalId": "my-valid-evaluator",
-                            "id": "mock-uuid",
+                            "id": "mock-uuid-0",
                             "score": 0.3,
                             "metadata": None,
                             "threshold": None,
@@ -646,4 +673,62 @@ def test_tracer_evaluation_unexpected_error(httpx_mock):
         timestamp=timestamp,
         properties={},
         evaluators=[MyEvaluator()],
+    )
+
+
+@mock.patch.object(
+    uuid,
+    "uuid4",
+    side_effect=[f"mock-uuid={i}" for i in range(1)],
+)
+def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
+    @dataclasses.dataclass
+    class SomeTestCase(BaseTestCase):
+        x: float
+
+        def hash(self):
+            return f"{self.x}"
+
+    class MyCombinedEvaluator(BaseEvaluator):
+        id = "my-combined-evaluator"
+
+        @staticmethod
+        def _some_shared_implementation(x: float) -> float:
+            return x
+
+        def evaluate_test_case(self, test_case: SomeTestCase, output: str) -> Evaluation:
+            return Evaluation(
+                score=self._some_shared_implementation(test_case.x),
+            )
+
+        def evaluate_event(self, event: TracerEvent) -> Evaluation:
+            return Evaluation(
+                score=self._some_shared_implementation(event.properties["x"]),
+            )
+
+    expect_ingestion_post_request(
+        httpx_mock,
+        message="this is a test",
+        trace_id=None,
+        properties=dict(
+            x=0.5,
+            evaluations=[
+                dict(
+                    id="mock-uuid-0",
+                    score=0.5,
+                    threshold=None,
+                    metadata=None,
+                    evaluatorExternalId="my-combined-evaluator",
+                ),
+            ],
+        ),
+    )
+
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    tracer.send_event(
+        message="this is a test",
+        properties=dict(x=0.5),
+        evaluators=[
+            MyCombinedEvaluator(),
+        ],
     )

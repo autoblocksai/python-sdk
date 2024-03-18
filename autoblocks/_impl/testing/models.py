@@ -72,8 +72,7 @@ class TestCaseContext:
 
 class BaseTestEvaluator(abc.ABC):
     """
-    An abstract base class for implementing an evaluator that runs on test cases
-    in an offline testing scenario.
+    An ABC for users that are implementing an evaluator that will only be run against test cases.
     """
 
     # Controls how many concurrent evaluations can be run for this evaluator
@@ -96,8 +95,7 @@ class BaseTestEvaluator(abc.ABC):
 
 class BaseEventEvaluator(abc.ABC):
     """
-    An abstract base class for implementing an evaluator that runs on events
-    in an online testing scenario.
+    An ABC for users that are implementing an evaluator that will only be run against production events.
     """
 
     # Controls how many concurrent evaluations can be run for this evaluator
@@ -116,3 +114,9 @@ class BaseEventEvaluator(abc.ABC):
     @abc.abstractmethod
     def evaluate_event(self, event: TracerEvent) -> Evaluation:
         pass
+
+
+class BaseEvaluator(BaseTestEvaluator, BaseEventEvaluator, abc.ABC):
+    """
+    An ABC for users that are implementing an evaluator that will be run against both test cases and production events.
+    """

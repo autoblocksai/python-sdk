@@ -9,8 +9,10 @@ from unittest import mock
 import pydantic
 import pytest
 
+from autoblocks._impl.testing.models import BaseEvaluator
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import TestCaseConfig
+from autoblocks._impl.testing.models import TracerEvent
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks.testing.models import BaseTestEvaluator
 from autoblocks.testing.models import Evaluation
@@ -1247,4 +1249,104 @@ def test_repeated_test_cases(httpx_mock):
         ],
         fn=lambda test_case: test_case.input + "!",
         max_test_case_concurrency=1,
+    )
+
+
+def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
+    timestamp = datetime.datetime(2021, 1, 1, 1, 1, 1).isoformat()
+
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(testExternalId="my-test-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/events",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="0.5",
+            event=dict(
+                message="this is a test",
+                traceId=None,
+                timestamp=timestamp,
+                properties=dict(x=0.5),
+            ),
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="0.5",
+            testCaseBody=dict(x=0.5),
+            testCaseOutput="whatever",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="0.5",
+            evaluatorExternalId="my-combined-evaluator",
+            score=0.5,
+            threshold=None,
+            metadata=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
+    )
+
+    @dataclasses.dataclass
+    class SomeTestCase(BaseTestCase):
+        x: float
+
+        def hash(self):
+            return f"{self.x}"
+
+    class MyCombinedEvaluator(BaseEvaluator):
+        id = "my-combined-evaluator"
+
+        @staticmethod
+        def _some_shared_implementation(x: float) -> float:
+            return x
+
+        def evaluate_test_case(self, test_case: SomeTestCase, output: str) -> Evaluation:
+            return Evaluation(
+                score=self._some_shared_implementation(test_case.x),
+            )
+
+        def evaluate_event(self, event: TracerEvent) -> Evaluation:
+            return Evaluation(
+                score=self._some_shared_implementation(event.properties["x"]),
+            )
+
+    def test_fn(test_case: SomeTestCase) -> str:
+        tracer = AutoblocksTracer("mock-ingestion-key")
+        tracer.send_event(
+            message="this is a test",
+            timestamp=timestamp,
+            properties=dict(x=test_case.x),
+            evaluators=[
+                MyCombinedEvaluator(),
+            ],
+        )
+        return "whatever"
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            SomeTestCase(
+                x=0.5,
+            ),
+        ],
+        evaluators=[
+            MyCombinedEvaluator(),
+        ],
+        fn=test_fn,
     )
