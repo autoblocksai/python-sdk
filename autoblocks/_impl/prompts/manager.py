@@ -1,6 +1,7 @@
 import abc
 import asyncio
 import contextlib
+import json
 import logging
 from concurrent.futures import Future
 from datetime import timedelta
@@ -18,7 +19,7 @@ from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
-from autoblocks._impl.context_vars import test_case_run_context_var
+from autoblocks._impl.prompts.cli.error import IncompatiblePromptSnapshotError
 from autoblocks._impl.prompts.constants import LATEST
 from autoblocks._impl.prompts.context import PromptExecutionContext
 from autoblocks._impl.prompts.models import Prompt
@@ -32,6 +33,32 @@ log = logging.getLogger(__name__)
 
 ExecutionContextType = TypeVar("ExecutionContextType", bound=PromptExecutionContext[Any, Any])
 MinorVersionEnumType = TypeVar("MinorVersionEnumType", bound=Enum)
+
+
+def is_testing_context() -> bool:
+    """
+    Note that we check for the presence of the CLI environment
+    variable and not the test case contextvars because the
+    contextvars aren't set until run_test_suite is called,
+    whereas a prompt manager might have already been imported
+    and initialized by the time run_test_suite is called.
+    """
+    return bool(AutoblocksEnvVar.CLI_SERVER_ADDRESS.get())
+
+
+def prompt_snapshots_map() -> dict[str, str]:
+    """
+    The AUTOBLOCKS_PROMPT_SNAPSHOTS environment variable is a JSON-stringified
+    map of prompt IDs to snapshot IDs. This is set in CI test runs triggered
+    from the UI.
+    """
+    if not is_testing_context():
+        return {}
+
+    prompt_snapshots_raw = AutoblocksEnvVar.PROMPT_SNAPSHOTS.get()
+    if not prompt_snapshots_raw:
+        return {}
+    return json.loads(prompt_snapshots_raw)  # type: ignore
 
 
 class AutoblocksPromptManager(
@@ -92,7 +119,7 @@ class AutoblocksPromptManager(
         self._init()
 
         if LATEST in self._minor_version.all_minor_versions:
-            if test_case_run_context_var.get():
+            if is_testing_context():
                 log.info("Prompt refreshing is disabled when in a testing context.")
                 return
 
@@ -111,6 +138,11 @@ class AutoblocksPromptManager(
         minor_version = encode_uri_component(minor_version)
         return f"{API_ENDPOINT}/prompts/{prompt_id}/major/{major_version}/minor/{minor_version}"
 
+    def _make_snapshot_override_request_url(self, snapshot_id: str) -> str:
+        prompt_id = encode_uri_component(self.__prompt_id__)
+        snapshot_id = encode_uri_component(snapshot_id)
+        return f"{API_ENDPOINT}/prompts/{prompt_id}/snapshots/{snapshot_id}/override"
+
     async def _get_prompt(
         self,
         minor_version: str,
@@ -124,40 +156,28 @@ class AutoblocksPromptManager(
         resp.raise_for_status()
         return Prompt.model_validate(resp.json())
 
-    async def _get_prompt_snapshot(self, snapshot_id: str) -> Optional[Prompt]:
+    async def _set_prompt_snapshot(self, snapshot_id: str) -> None:
         """
-        If we're running in a test context where a prompt snapshot is being used,
-        use the /override endpoint to check if the major version this prompt
-        manager is configured to use is compatible to be overridden with the snapshot.
+        If this prompt has a snapshot set, use the /override endpoint to check if the
+        major version this prompt manager is configured to use is compatible to be
+        overridden with the snapshot.
         """
         # Double check we're in a testing context
-        if not test_case_run_context_var.get():
+        if not is_testing_context():
             log.error("Can't get prompt snapshot unless in a testing context.")
             return None
 
         resp = await global_state.http_client().post(
-            f"{API_ENDPOINT}/prompts/override",
+            self._make_snapshot_override_request_url(snapshot_id),
             timeout=self._init_timeout.total_seconds(),
             headers={"Authorization": f"Bearer {self._api_key}"},
             json=dict(
-                id=self.__prompt_id__,
                 majorVersion=self.__prompt_major_version__,
-                snapshotId=snapshot_id,
             ),
         )
 
-        if resp.status_code == HTTPStatus.FORBIDDEN:
-            # We return a 403 if the snapshot's prompt ID doesn't match.
-            # This is an expected error, since the prompt snapshot is set
-            # globally by an environment variable but a codebase will be
-            # initializing many managers with different prompt IDs.
-            return None
         if resp.status_code == HTTPStatus.CONFLICT:
-            # The endpoint returns this status code when the snapshot's prompt ID
-            # matches but is not compatible with the major version selected for this prompt.
-            # In this case we should throw, because the snapshot requested for this prompt
-            # is not compatible.
-            raise RuntimeError(
+            raise IncompatiblePromptSnapshotError(
                 f"Can't override '{self._name}' with prompt snapshot '{snapshot_id}' because it is not compatible "
                 f"with major version '{self.__prompt_major_version__}'."
             )
@@ -165,17 +185,17 @@ class AutoblocksPromptManager(
         # Raise for any unexpected errors
         resp.raise_for_status()
 
-        # Return the prompt snapshot
-        return Prompt.model_validate(resp.json())
+        # Set the prompt snapshot
+        log.warning(f"Overriding '{self._name}' with prompt snapshot '{snapshot_id}'!")
+        self._prompt_snapshot = Prompt.model_validate(resp.json())
 
     async def _init_async(self) -> None:
-        # Set the snapshot prompt if we're in a testing context and a prompt snapshot ID is set.
-        if test_case_run_context_var.get() and (snapshot_id := AutoblocksEnvVar.PROMPT_SNAPSHOT_ID.get()):
-            prompt_snapshot = await self._get_prompt_snapshot(snapshot_id)
-            if prompt_snapshot:
-                log.warning(f"Overriding '{self._name}' with prompt snapshot '{snapshot_id}'!")
-                self._prompt_snapshot = prompt_snapshot
-                return
+        # Set the snapshot prompt if this manager's prompt ID is in the snapshot map
+        if is_testing_context() and (snapshot_id := prompt_snapshots_map().get(self.__prompt_id__)):
+            await self._set_prompt_snapshot(snapshot_id)
+            return
+
+        # Not in testing context or no snapshot set, proceed as configured
 
         # Convert all_minor_versions (which is a set) to a list
         # to guarantee we get the same order both when fetching

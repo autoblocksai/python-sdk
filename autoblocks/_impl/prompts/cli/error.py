@@ -1,0 +1,2 @@
+class IncompatiblePromptSnapshotError(Exception):
+    pass
