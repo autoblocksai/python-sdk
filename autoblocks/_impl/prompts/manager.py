@@ -177,6 +177,9 @@ class AutoblocksPromptManager(
         )
 
         if resp.status_code == HTTPStatus.CONFLICT:
+            # The endpoint returns this status code when the snapshot is
+            # not compatible with the major version this prompt manager
+            # is configured to use.
             raise IncompatiblePromptSnapshotError(
                 f"Can't override '{self._name}' with prompt snapshot '{snapshot_id}' because it is not compatible "
                 f"with major version '{self.__prompt_major_version__}'."
