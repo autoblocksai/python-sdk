@@ -19,9 +19,9 @@ from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
-from autoblocks._impl.prompts.cli.error import IncompatiblePromptSnapshotError
 from autoblocks._impl.prompts.constants import LATEST
 from autoblocks._impl.prompts.context import PromptExecutionContext
+from autoblocks._impl.prompts.error import IncompatiblePromptSnapshotError
 from autoblocks._impl.prompts.models import Prompt
 from autoblocks._impl.prompts.models import PromptMinorVersion
 from autoblocks._impl.prompts.models import WeightedMinorVersion

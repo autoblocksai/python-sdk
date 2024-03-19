@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 
 from autoblocks._impl.config.constants import API_ENDPOINT
-from autoblocks._impl.prompts.cli.error import IncompatiblePromptSnapshotError
+from autoblocks._impl.prompts.error import IncompatiblePromptSnapshotError
 from autoblocks.prompts.context import PromptExecutionContext
 from autoblocks.prompts.manager import AutoblocksPromptManager
 from autoblocks.prompts.renderer import TemplateRenderer
