@@ -164,7 +164,7 @@ class AutoblocksPromptManager(
         """
         # Double check we're in a testing context
         if not is_testing_context():
-            log.error("Can't get prompt snapshot unless in a testing context.")
+            log.error("Can't set prompt snapshot unless in a testing context.")
             return None
 
         resp = await global_state.http_client().post(
