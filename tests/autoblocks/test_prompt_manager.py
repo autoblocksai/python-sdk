@@ -215,9 +215,6 @@ def test_raises_if_prompt_is_incompatible(httpx_mock):
     },
 )
 def test_ignores_snapshot_id_if_not_in_test_run_context(httpx_mock):
-    """
-    Note the test case run context fixture is not present ^^^
-    """
     httpx_mock.add_response(
         url=f"{API_ENDPOINT}/prompts/my-prompt-id/major/1/minor/0",
         method="GET",
