@@ -20,6 +20,7 @@ from typing import Union
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.prompts.constants import LATEST
+from autoblocks._impl.prompts.constants import UNDEPLOYED
 from autoblocks._impl.prompts.context import PromptExecutionContext
 from autoblocks._impl.prompts.error import IncompatiblePromptSnapshotError
 from autoblocks._impl.prompts.models import Prompt
@@ -165,14 +166,20 @@ class AutoblocksPromptManager(
         # Double check we're in a testing context
         if not is_testing_context():
             log.error("Can't set prompt snapshot unless in a testing context.")
-            return None
+            return
+
+        if self.__prompt_major_version__ == UNDEPLOYED:
+            raise NotImplementedError(
+                "Prompt snapshot overrides are not yet supported for prompt managers using DANGEROUSLY_USE_UNDEPLOYED. "
+                "Reach out to support@autoblocks.ai for more details."
+            )
 
         resp = await global_state.http_client().post(
             self._make_snapshot_override_request_url(snapshot_id),
             timeout=self._init_timeout.total_seconds(),
             headers={"Authorization": f"Bearer {self._api_key}"},
             json=dict(
-                majorVersion=self.__prompt_major_version__,
+                majorVersion=int(self.__prompt_major_version__),
             ),
         )
 

@@ -75,7 +75,7 @@ def test_uses_prompt_snapshot(httpx_mock):
         match_headers={"Authorization": "Bearer mock-api-key"},
         match_content=make_expected_body(
             dict(
-                majorVersion="1",
+                majorVersion=1,
             ),
         ),
         json=dict(
@@ -114,7 +114,7 @@ def test_uses_prompt_snapshot_when_version_is_latest(httpx_mock):
         match_headers={"Authorization": "Bearer mock-api-key"},
         match_content=make_expected_body(
             dict(
-                majorVersion="1",
+                majorVersion=1,
             ),
         ),
         json=dict(
@@ -187,7 +187,7 @@ def test_raises_if_prompt_is_incompatible(httpx_mock):
         match_headers={"Authorization": "Bearer mock-api-key"},
         match_content=make_expected_body(
             dict(
-                majorVersion="1",
+                majorVersion=1,
             ),
         ),
         # If the snapshot prompt ID matches the manager's prompt ID but the snapshot is
