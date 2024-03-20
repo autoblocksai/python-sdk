@@ -70,7 +70,7 @@ class MyPromptManager(
 )
 def test_uses_prompt_snapshot(httpx_mock):
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/prompts/my-prompt-id/snapshots/mock-snapshot-id/override",
+        url=f"{API_ENDPOINT}/prompts/my-prompt-id/snapshots/mock-snapshot-id/validate",
         method="POST",
         match_headers={"Authorization": "Bearer mock-api-key"},
         match_content=make_expected_body(
@@ -109,7 +109,7 @@ def test_uses_prompt_snapshot(httpx_mock):
 )
 def test_uses_prompt_snapshot_when_version_is_latest(httpx_mock):
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/prompts/my-prompt-id/snapshots/mock-snapshot-id/override",
+        url=f"{API_ENDPOINT}/prompts/my-prompt-id/snapshots/mock-snapshot-id/validate",
         method="POST",
         match_headers={"Authorization": "Bearer mock-api-key"},
         match_content=make_expected_body(
@@ -182,7 +182,7 @@ def test_uses_configured_version_if_snapshot_is_for_different_prompt(httpx_mock)
 )
 def test_raises_if_prompt_is_incompatible(httpx_mock):
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/prompts/my-prompt-id/snapshots/mock-snapshot-id/override",
+        url=f"{API_ENDPOINT}/prompts/my-prompt-id/snapshots/mock-snapshot-id/validate",
         method="POST",
         match_headers={"Authorization": "Bearer mock-api-key"},
         match_content=make_expected_body(

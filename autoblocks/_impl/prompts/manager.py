@@ -141,7 +141,7 @@ class AutoblocksPromptManager(
     def _make_snapshot_override_request_url(self, snapshot_id: str) -> str:
         prompt_id = encode_uri_component(self.__prompt_id__)
         snapshot_id = encode_uri_component(snapshot_id)
-        return f"{API_ENDPOINT}/prompts/{prompt_id}/snapshots/{snapshot_id}/override"
+        return f"{API_ENDPOINT}/prompts/{prompt_id}/snapshots/{snapshot_id}/validate"
 
     async def _get_prompt(
         self,
@@ -158,7 +158,7 @@ class AutoblocksPromptManager(
 
     async def _set_prompt_snapshot(self, snapshot_id: str) -> None:
         """
-        If this prompt has a snapshot set, use the /override endpoint to check if the
+        If this prompt has a snapshot set, use the /validate endpoint to check if the
         major version this prompt manager is configured to use is compatible to be
         overridden with the snapshot.
         """
