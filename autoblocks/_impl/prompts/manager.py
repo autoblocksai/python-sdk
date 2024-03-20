@@ -95,7 +95,7 @@ class AutoblocksPromptManager(
         refresh_interval: timedelta = timedelta(seconds=10),
     ):
         global_state.init()
-        self._name = type(self).__name__
+        self._class_name = type(self).__name__
         self._minor_version = PromptMinorVersion.model_validate({"version": minor_version})
         self._init_timeout = init_timeout
         self._refresh_timeout = refresh_timeout
@@ -139,7 +139,7 @@ class AutoblocksPromptManager(
         minor_version = encode_uri_component(minor_version)
         return f"{API_ENDPOINT}/prompts/{prompt_id}/major/{major_version}/minor/{minor_version}"
 
-    def _make_snapshot_override_request_url(self, snapshot_id: str) -> str:
+    def _make_snapshot_validate_override_request_url(self, snapshot_id: str) -> str:
         prompt_id = encode_uri_component(self.__prompt_id__)
         snapshot_id = encode_uri_component(snapshot_id)
         return f"{API_ENDPOINT}/prompts/{prompt_id}/snapshots/{snapshot_id}/validate"
@@ -175,7 +175,7 @@ class AutoblocksPromptManager(
             )
 
         resp = await global_state.http_client().post(
-            self._make_snapshot_override_request_url(snapshot_id),
+            self._make_snapshot_validate_override_request_url(snapshot_id),
             timeout=self._init_timeout.total_seconds(),
             headers={"Authorization": f"Bearer {self._api_key}"},
             json=dict(
@@ -184,19 +184,19 @@ class AutoblocksPromptManager(
         )
 
         if resp.status_code == HTTPStatus.CONFLICT:
-            # The endpoint returns this status code when the snapshot is
+            # The /validate endpoint returns this status code when the snapshot is
             # not compatible with the major version this prompt manager
             # is configured to use.
             raise IncompatiblePromptSnapshotError(
-                f"Can't override '{self._name}' with prompt snapshot '{snapshot_id}' because it is not compatible "
-                f"with major version '{self.__prompt_major_version__}'."
+                f"Can't override '{self._class_name}' with prompt snapshot '{snapshot_id}' because it is not "
+                f"compatible with major version '{self.__prompt_major_version__}'."
             )
 
         # Raise for any unexpected errors
         resp.raise_for_status()
 
         # Set the prompt snapshot
-        log.warning(f"Overriding '{self._name}' with prompt snapshot '{snapshot_id}'!")
+        log.warning(f"Overriding '{self._class_name}' with prompt snapshot '{snapshot_id}'!")
         self._prompt_snapshot = Prompt.model_validate(resp.json())
 
     async def _init_async(self) -> None:
