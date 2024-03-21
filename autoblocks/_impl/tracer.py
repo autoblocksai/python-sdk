@@ -308,10 +308,8 @@ class AutoblocksTracer:
         evaluators: Optional[List[BaseEventEvaluator]],
     ) -> None:
         # Check if we're already in a running event loop
-        running_loop = get_running_loop()
-
         task: Union[asyncio.Task[Any], Future[Any]]
-        if running_loop:
+        if running_loop := get_running_loop():
             # If we are, execute the task on that loop
             task = running_loop.create_task(
                 self._send_event_unsafe(
