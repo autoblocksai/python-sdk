@@ -168,6 +168,14 @@ class AutoblocksPromptManager(
             log.error("Can't set prompt snapshot unless in a testing context.")
             return
 
+        # Double check the given snapshot_id belongs to this prompt manager
+        expected_snapshot_id = prompt_snapshots_map()[self.__prompt_id__]
+        if snapshot_id != expected_snapshot_id:
+            raise RuntimeError(
+                f"Snapshot ID '{snapshot_id}' does not match the snapshot ID "
+                f"for this prompt manager '{expected_snapshot_id}'."
+            )
+
         if self.__prompt_major_version__ == UNDEPLOYED:
             raise NotImplementedError(
                 "Prompt snapshot overrides are not yet supported for prompt managers using DANGEROUSLY_USE_UNDEPLOYED. "
@@ -283,7 +291,7 @@ class AutoblocksPromptManager(
 
     def _choose_execution_prompt(self) -> Prompt:
         # Always use the prompt snapshot if it is set
-        if self._prompt_snapshot:
+        if is_testing_context() and self._prompt_snapshot:
             return self._prompt_snapshot
 
         # Choose the minor version to use
