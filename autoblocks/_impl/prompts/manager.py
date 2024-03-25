@@ -3,7 +3,6 @@ import asyncio
 import contextlib
 import json
 import logging
-from concurrent.futures import Future
 from datetime import timedelta
 from enum import Enum
 from http import HTTPStatus
@@ -26,6 +25,7 @@ from autoblocks._impl.prompts.error import IncompatiblePromptSnapshotError
 from autoblocks._impl.prompts.models import Prompt
 from autoblocks._impl.prompts.models import PromptMinorVersion
 from autoblocks._impl.prompts.models import WeightedMinorVersion
+from autoblocks._impl.util import AnyTask
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import encode_uri_component
 from autoblocks._impl.util import get_running_loop
@@ -238,7 +238,7 @@ class AutoblocksPromptManager(
             log.info(f"Successfully fetched version '{prompt.version}' of prompt '{self.__prompt_id__}'")
 
     def _init(self) -> None:
-        task: Union[asyncio.Task[Any], Future[Any]]
+        task: AnyTask
         if running_loop := get_running_loop():
             # If we're already in a running loop, execute the task on that loop
             task = running_loop.create_task(

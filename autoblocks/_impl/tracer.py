@@ -1,12 +1,9 @@
 import asyncio
-import atexit
 import contextvars
 import dataclasses
 import inspect
 import logging
-import time
 import uuid
-from concurrent.futures import Future
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -14,7 +11,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Set
 from typing import Tuple
 from typing import Union
 
@@ -24,6 +20,7 @@ from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import TracerEvent
+from autoblocks._impl.util import AnyTask
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import get_running_loop
@@ -31,28 +28,6 @@ from autoblocks._impl.util import get_running_loop
 log = logging.getLogger(__name__)
 
 evaluator_semaphore_registry: dict[str, asyncio.Semaphore] = {}  # evaluator_id -> semaphore
-
-background_tasks: Set[Union[asyncio.Task[Any], Future[Any]]] = set()
-
-
-@atexit.register
-def flush() -> None:
-    if not background_tasks:
-        return
-
-    max_tries = 30
-    log.info("Waiting for %s background tasks to finish...", len(background_tasks))
-    while background_tasks and max_tries >= 0:
-        time.sleep(1)
-        max_tries -= 1
-
-    if background_tasks:
-        log.error(
-            "Timed out waiting for background tasks to flush. % tasks left unfinished.",
-            len(background_tasks),
-        )
-    else:
-        log.info("Successfully flushed all background tasks")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -103,6 +78,7 @@ class AutoblocksTracer:
         self._client_headers = {"Authorization": f"Bearer {ingestion_key}"}
         self._timeout_seconds = timeout.total_seconds()
         self._cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
+        self._throw_on_error = AutoblocksEnvVar.TRACER_THROW_ON_ERROR.get() == "1"
 
     def set_trace_id(self, trace_id: str) -> None:
         """
@@ -209,7 +185,7 @@ class AutoblocksTracer:
             if isinstance(evaluation, Evaluation)
         ]
 
-    async def _send_event_unsafe(
+    async def _async_send_event(
         self,
         payload: Payload,
         evaluators: Optional[List[BaseEventEvaluator]],
@@ -238,13 +214,31 @@ class AutoblocksTracer:
             except Exception as err:
                 log.error("Unable to evaluate events. Error: %s", err, exc_info=True)
 
-        req = await global_state.http_client().post(
-            url=INGESTION_ENDPOINT,
-            json=payload.to_json(),
-            headers=self._client_headers,
-            timeout=self._timeout_seconds,
-        )
-        req.raise_for_status()
+        try:
+            if global_state.main_thread_has_finished():
+                log.debug("Sending event with SYNC client because interpreter has shut down")
+                req = global_state.sync_http_client().post(
+                    url=INGESTION_ENDPOINT,
+                    json=payload.to_json(),
+                    headers=self._client_headers,
+                    timeout=self._timeout_seconds,
+                )
+            else:
+                log.debug("Sending event with ASYNC client")
+                req = await global_state.http_client().post(
+                    url=INGESTION_ENDPOINT,
+                    json=payload.to_json(),
+                    headers=self._client_headers,
+                    timeout=self._timeout_seconds,
+                )
+            req.raise_for_status()
+        except Exception as err:
+            # Since we don't call task.result() in the caller of this function,
+            # we need to catch and log errors here in order for them to be
+            # seen.
+            log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
+            if self._throw_on_error:
+                raise err
 
     def _sync_send_test_event_unsafe(
         self,
@@ -307,12 +301,13 @@ class AutoblocksTracer:
         payload: Payload,
         evaluators: Optional[List[BaseEventEvaluator]],
     ) -> None:
+        task: AnyTask
+
         # Check if we're already in a running event loop
-        task: Union[asyncio.Task[Any], Future[Any]]
         if running_loop := get_running_loop():
             # If we are, execute the task on that loop
             task = running_loop.create_task(
-                self._send_event_unsafe(
+                self._async_send_event(
                     payload=payload,
                     evaluators=evaluators,
                 ),
@@ -320,18 +315,23 @@ class AutoblocksTracer:
         else:
             # Otherwise, send the task to our background loop
             task = asyncio.run_coroutine_threadsafe(
-                self._send_event_unsafe(
+                self._async_send_event(
                     payload=payload,
                     evaluators=evaluators,
                 ),
                 global_state.event_loop(),
             )
 
-        # Keep a strong reference to the task so that it isn't garbage collected
-        # See https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
-        background_tasks.add(task)
-        task.add_done_callback(background_tasks.discard)
-        task.result()  # TODO: make non blocking
+        # Add the task to the set of tasks the
+        # global state will wait to complete
+        # on shutdown
+        global_state.add_background_task(task)
+
+        if self._throw_on_error:
+            # Wait for the result if AUTOBLOCKS_TRACER_THROW_ON_ERROR is set to true,
+            # since we set this environment variable in end-to-end testing contexts
+            # where we want to raise exceptions immediately.
+            task.result()
 
     def send_event(
         self,
@@ -374,5 +374,5 @@ class AutoblocksTracer:
             )
         except Exception as err:
             log.error(f"Failed to send event to Autoblocks: {err}", exc_info=True)
-            if AutoblocksEnvVar.TRACER_THROW_ON_ERROR.get() == "1":
+            if self._throw_on_error:
                 raise err

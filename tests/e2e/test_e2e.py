@@ -1,10 +1,14 @@
 import dataclasses
+import logging
 import os
+import signal
+import subprocess
 import time
 import uuid
 from datetime import timedelta
 from unittest import mock
 
+import httpx
 import pytest
 
 from autoblocks.api.client import AutoblocksAPIClient
@@ -26,6 +30,8 @@ from tests.e2e.prompts import UsedByCiDontDeleteNoParamsUndeployedPromptManager
 from tests.e2e.prompts import UsedByCiDontDeletePromptManager
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import expect_cli_post_request
+
+log = logging.getLogger(__name__)
 
 # The below are entities in our Autoblocks CI org that we use for testing.
 E2E_TESTS_DATASET_ID = "clpup7f9400075us75nin99f0"
@@ -303,3 +309,78 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
         evaluators=[],
         fn=test_fn,
     )
+
+
+def wait_for_trace_to_exist(trace_id: str) -> None:
+    num_tries = 30
+    while num_tries:
+        try:
+            client.get_trace(trace_id)
+            log.info(f"Found trace {trace_id} with {num_tries} tries remaining")
+            return
+        except httpx.HTTPStatusError:
+            pass
+
+        log.info(f"Trace {trace_id} not found... {num_tries} tries left.")
+        time.sleep(1)
+        num_tries -= 1
+
+    raise Exception(f"Trace {trace_id} was not sent.")
+
+
+def test_flask_app_flushes_on_sigterm():
+    sig = signal.SIGTERM
+
+    # Start the Flask app
+    process = subprocess.Popen(
+        ["gunicorn", "flask_app:app"],
+        cwd="tests/e2e",
+        env=dict(os.environ, **{"PYTHONPATH": os.getcwd()}),
+    )
+
+    # Give it a sec to start up
+    time.sleep(1)
+
+    # Send event
+    test_trace_id = str(uuid.uuid4())
+    sleep_seconds = 10
+    log.info(f"Sending request to Flask app with trace ID {test_trace_id}")
+    httpx.post(
+        "http://localhost:8000",
+        json=dict(
+            trace_id=test_trace_id,
+            # This is how long the evaluator is going to sleep
+            sleep_seconds=sleep_seconds,
+        ),
+        # We should get a response quickly though
+        # because the event is sent in the background
+        timeout=1,
+    )
+    log.info("Received response from Flask app")
+
+    # Shut down the Flask app
+    log.info(f"Killing process {process.pid} with signal {sig}...")
+    os.kill(process.pid, sig)
+
+    # Wait for the process to terminate
+    process.wait()
+    log.info(f"Process {process.pid} terminated with return code {process.returncode}.")
+
+    wait_for_trace_to_exist(test_trace_id)
+
+
+def test_plain_script_flushes_on_exit():
+    # Run the script
+    test_trace_id = str(uuid.uuid4())
+    sleep_seconds = 10
+    process = subprocess.Popen(
+        ["python", "plain_script.py", test_trace_id, f"{sleep_seconds}"],
+        cwd="tests/e2e",
+        env=dict(os.environ, **{"PYTHONPATH": os.getcwd()}),
+    )
+
+    # Wait for the process to terminate
+    process.wait()
+    log.info(f"Process {process.pid} terminated with return code {process.returncode}.")
+
+    wait_for_trace_to_exist(test_trace_id)

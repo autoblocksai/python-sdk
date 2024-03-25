@@ -31,6 +31,7 @@ class Evaluation:
 
 @dataclasses.dataclass
 class TestCaseConfig:
+    __test__ = False  # See https://docs.pytest.org/en/7.1.x/example/pythoncollection.html#customizing-test-collection
     repeat_num_times: Optional[int] = None
 
 

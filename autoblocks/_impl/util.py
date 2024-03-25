@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import urllib.parse
+from concurrent.futures import Future
 from enum import Enum
 from typing import Any
 from typing import Coroutine
@@ -10,6 +11,9 @@ from typing import Tuple
 from typing import Union
 
 log = logging.getLogger(__name__)
+
+
+AnyTask = Union[asyncio.Task[Any], Future[Any]]
 
 
 class StrEnum(str, Enum):
