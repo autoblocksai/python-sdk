@@ -216,6 +216,9 @@ class AutoblocksTracer:
 
         try:
             if global_state.main_thread_has_finished():
+                # If we're in a shutdown state, we need to use the sync client
+                # to avoid scheduling new futures after the interpreter has shut down.
+                # See https://github.com/boto/boto3/issues/3113
                 log.debug("Sending event with SYNC client because interpreter has shut down")
                 req = global_state.sync_http_client().post(
                     url=INGESTION_ENDPOINT,
