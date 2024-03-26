@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 _started: bool = False
 _background_thread: Optional[threading.Thread] = None
-_loop: Optional[asyncio.AbstractEventLoop] = None
+_background_event_loop: Optional[asyncio.AbstractEventLoop] = None
 _client: Optional[httpx.AsyncClient] = None
 _sync_client: Optional[httpx.Client] = None
 _background_tasks: Set[AnyTask] = set()
@@ -58,19 +58,19 @@ def _flush_and_shut_down_event_loop() -> None:
     """
     flush()
 
-    if _background_thread and _loop and _loop.is_running():
+    if _background_thread and _background_event_loop and _background_event_loop.is_running():
         # Stop the event loop (will cause run_forever to stop)
         log.debug("Stopping event loop")
-        _loop.call_soon_threadsafe(_loop.stop)
+        _background_event_loop.call_soon_threadsafe(_background_event_loop.stop)
         # Wait for the thread to finish (will happen when run_forever stops)
         log.debug("Waiting for background thread to finish")
         _background_thread.join()
         # Cancel all remaining tasks
         log.debug("Cancelling all remaining tasks")
-        _loop.run_until_complete(_loop.shutdown_asyncgens())
+        _background_event_loop.run_until_complete(_background_event_loop.shutdown_asyncgens())
         # Close the loop
         log.debug("Closing event loop")
-        _loop.close()
+        _background_event_loop.close()
         log.debug("Event loop closed")
 
 
@@ -99,7 +99,7 @@ def _main_shut_down_monitor_thread() -> None:
 
 
 def init() -> None:
-    global _started, _background_thread, _loop, _client, _sync_client
+    global _started, _background_thread, _background_event_loop, _client, _sync_client
 
     if _started:
         return
@@ -108,13 +108,13 @@ def init() -> None:
 
     _sync_client = httpx.Client()
 
-    _loop = asyncio.new_event_loop()
+    _background_event_loop = asyncio.new_event_loop()
 
     threading.Thread(target=_main_shut_down_monitor_thread).start()
 
     _background_thread = threading.Thread(
         target=_run_event_loop,
-        args=(_loop,),
+        args=(_background_event_loop,),
     )
     _background_thread.start()
 
@@ -122,9 +122,9 @@ def init() -> None:
 
 
 def event_loop() -> asyncio.AbstractEventLoop:
-    if not _loop:
+    if not _background_event_loop:
         raise Exception("Event loop not initialized")
-    return _loop
+    return _background_event_loop
 
 
 def http_client() -> httpx.AsyncClient:
