@@ -9,14 +9,14 @@ from unittest import mock
 import pydantic
 import pytest
 
-from autoblocks._impl.testing.models import BaseEvaluator
-from autoblocks._impl.testing.models import BaseTestCase
-from autoblocks._impl.testing.models import TestCaseConfig
-from autoblocks._impl.testing.models import TracerEvent
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks.testing.models import BaseEvaluator
+from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.models import BaseTestEvaluator
 from autoblocks.testing.models import Evaluation
+from autoblocks.testing.models import TestCaseConfig
 from autoblocks.testing.models import Threshold
+from autoblocks.testing.models import TracerEvent
 from autoblocks.testing.run import run_test_suite
 from autoblocks.tracer import AutoblocksTracer
 from tests.util import MOCK_CLI_SERVER_ADDRESS
