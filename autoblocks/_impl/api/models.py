@@ -47,6 +47,13 @@ class DatasetWithItems(Dataset):
 
 
 @dataclass
+class ManagedTestCase:
+    body: Dict[str, Any]
+    createdAt: str
+    updatedAt: str
+
+
+@dataclass
 class TracesResponse:
     next_cursor: Optional[str]
     traces: List[Trace]
