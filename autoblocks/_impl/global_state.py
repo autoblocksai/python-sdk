@@ -32,10 +32,10 @@ def flush(timeout: Optional[timedelta] = None) -> None:
     """
     timeout_seconds = timeout.total_seconds() if timeout else 30
 
-    log.debug("Flushing background tasks with timeout of % seconds", timeout_seconds)
+    log.debug("Flushing background tasks with timeout of % seconds.", timeout_seconds)
     if not _background_tasks:
         # Already empty
-        log.debug("No background tasks to flush")
+        log.debug("No background tasks to flush.")
         return
 
     start_time = time.time()
@@ -49,7 +49,7 @@ def flush(timeout: Optional[timedelta] = None) -> None:
             len(_background_tasks),
         )
     else:
-        log.debug("Successfully flushed all background tasks")
+        log.debug("Successfully flushed all background tasks.")
 
 
 def _flush_and_shut_down_event_loop() -> None:
