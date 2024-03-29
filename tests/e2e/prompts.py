@@ -3,7 +3,6 @@
 ############################################################################
 
 from enum import Enum
-from typing import List  # noqa: F401
 from typing import Union  # noqa: F401
 
 import pydantic
