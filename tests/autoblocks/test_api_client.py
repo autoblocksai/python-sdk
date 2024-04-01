@@ -44,9 +44,9 @@ def test_get_test_cases(httpx_mock):
     )
 
     client = AutoblocksAPIClient("mock-api-key")
-    test_cases = client.get_test_cases("suite-id")
+    test_case_response = client.get_test_cases("suite-id")
 
-    assert len(test_cases) == 1
+    assert len(test_case_response.test_cases) == 1
 
 
 def test_get_views(httpx_mock):

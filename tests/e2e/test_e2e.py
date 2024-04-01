@@ -86,8 +86,8 @@ def test_get_views():
 
 
 def test_get_test_cases():
-    test_cases = client.get_test_cases(test_suite_id=E2E_TEST_SUITE_ID)
-    if E2E_TEST_CASE_ID not in (case.id for case in test_cases):
+    test_case_response = client.get_test_cases(test_suite_id=E2E_TEST_SUITE_ID)
+    if E2E_TEST_CASE_ID not in (case.id for case in test_case_response.test_cases):
         raise Exception(f"Test case {E2E_TEST_CASE_ID} not found!")
 
 

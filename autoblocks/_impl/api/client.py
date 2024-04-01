@@ -16,6 +16,7 @@ from autoblocks._impl.api.models import DatasetItem
 from autoblocks._impl.api.models import DatasetWithItems
 from autoblocks._impl.api.models import Event
 from autoblocks._impl.api.models import ManagedTestCase
+from autoblocks._impl.api.models import ManagedTestCaseResponse
 from autoblocks._impl.api.models import RelativeTimeFilter
 from autoblocks._impl.api.models import Trace
 from autoblocks._impl.api.models import TraceFilter
@@ -128,8 +129,10 @@ class AutoblocksAPIClient:
             items=[DatasetItem(id=item["id"], input=item["input"], output=item["output"]) for item in resp["items"]],
         )
 
-    def get_test_cases(self, test_suite_id: str) -> List[ManagedTestCase]:
+    def get_test_cases(self, test_suite_id: str) -> ManagedTestCaseResponse:
         req = self._client.get(f"/test-suites/{test_suite_id}/test-cases")
         req.raise_for_status()
         resp = req.json()
-        return [ManagedTestCase(id=case["id"], body=case["body"]) for case in resp["testCases"]]
+        return ManagedTestCaseResponse(
+            test_cases=[ManagedTestCase(id=case["id"], body=case["body"]) for case in resp["testCases"]]
+        )

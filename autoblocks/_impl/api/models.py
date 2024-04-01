@@ -53,6 +53,11 @@ class ManagedTestCase:
 
 
 @dataclass
+class ManagedTestCaseResponse:
+    test_cases: List[ManagedTestCase]
+
+
+@dataclass
 class TracesResponse:
     next_cursor: Optional[str]
     traces: List[Trace]
