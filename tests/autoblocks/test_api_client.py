@@ -35,6 +35,20 @@ def test_client_init_with_env_var():
     assert client._client.headers.get("authorization") == "Bearer mock-api-key"
 
 
+def test_get_test_cases(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/test-suites/suite-id/test-cases",
+        method="GET",
+        status_code=200,
+        json={"testCases": [{"id": "some_id", "body": {"input": "test"}}]},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    test_case_response = client.get_test_cases("suite-id")
+
+    assert len(test_case_response.test_cases) == 1
+
+
 def test_get_views(httpx_mock):
     httpx_mock.add_response(
         url=f"{API_ENDPOINT}/views",

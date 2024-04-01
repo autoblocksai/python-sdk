@@ -38,6 +38,8 @@ E2E_TESTS_DATASET_ID = "clpup7f9400075us75nin99f0"
 E2E_TESTS_VIEW_ID = "cllmlk8py0003l608vd83dc03"
 E2E_TESTS_TRACE_ID = "4943bb26-3526-4e9c-bcd1-62f08baa621a"
 E2E_TESTS_EXPECTED_MESSAGE = "sdk.e2e"
+E2E_TEST_SUITE_ID = "my-test-suite"
+E2E_TEST_CASE_ID = "cluh2cwla0001d590dha70npc"
 
 client = AutoblocksAPIClient(timeout=timedelta(seconds=30))
 tracer = AutoblocksTracer()
@@ -81,6 +83,12 @@ def test_get_views():
     views = client.get_views()
     if E2E_TESTS_VIEW_ID not in (view.id for view in views):
         raise Exception(f"View {E2E_TESTS_VIEW_ID} not found!")
+
+
+def test_get_test_cases():
+    test_case_response = client.get_test_cases(test_suite_id=E2E_TEST_SUITE_ID)
+    if E2E_TEST_CASE_ID not in (case.id for case in test_case_response.test_cases):
+        raise Exception(f"Test case {E2E_TEST_CASE_ID} not found!")
 
 
 def test_send_and_retrieve_event():
