@@ -129,10 +129,7 @@ class AutoblocksAPIClient:
         )
 
     def get_test_cases(self, test_suite_id: str) -> List[ManagedTestCase]:
-        req = self._client.get(f"/testing/test-suites/{test_suite_id}/test-cases")
+        req = self._client.get(f"/test-suites/{test_suite_id}/test-cases")
         req.raise_for_status()
         resp = req.json()
-        return [
-            ManagedTestCase(body=case["body"], createdAt=case["createdAt"], updatedAt=case["updatedAt"])
-            for case in resp["testCases"]
-        ]
+        return [ManagedTestCase(id=case["id"], body=case["body"]) for case in resp["testCases"]]

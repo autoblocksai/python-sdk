@@ -48,9 +48,8 @@ class DatasetWithItems(Dataset):
 
 @dataclass
 class ManagedTestCase:
+    id: str
     body: Dict[str, Any]
-    createdAt: str
-    updatedAt: str
 
 
 @dataclass

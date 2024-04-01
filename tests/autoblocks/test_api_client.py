@@ -37,10 +37,10 @@ def test_client_init_with_env_var():
 
 def test_get_test_cases(httpx_mock):
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/testing/test-suites/suite-id/test-cases",
+        url=f"{API_ENDPOINT}/test-suites/suite-id/test-cases",
         method="GET",
         status_code=200,
-        json={"testCases": [{"body": {"input": "test"}, "createdAt": "some_date", "updatedAt": "some_date"}]},
+        json={"testCases": [{"id": "some_id", "body": {"input": "test"}}]},
     )
 
     client = AutoblocksAPIClient("mock-api-key")
