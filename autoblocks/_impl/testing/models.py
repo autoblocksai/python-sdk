@@ -90,7 +90,7 @@ class BaseTestEvaluator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def evaluate_test_case(self, test_case: BaseTestCase, output: Any) -> Evaluation:
+    def evaluate_test_case(self, test_case: BaseTestCase, output: Any) -> Optional[Evaluation]:
         pass
 
 
@@ -113,7 +113,7 @@ class BaseEventEvaluator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def evaluate_event(self, event: TracerEvent) -> Evaluation:
+    def evaluate_event(self, event: TracerEvent) -> Optional[Evaluation]:
         pass
 
 

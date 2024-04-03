@@ -85,6 +85,9 @@ async def run_evaluator_unsafe(
                 output,
             )
 
+    if evaluation is None:
+        return
+
     await global_state.http_client().post(
         f"{cli()}/evals",
         json=dict(

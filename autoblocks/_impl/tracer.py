@@ -121,7 +121,7 @@ class AutoblocksTracer:
     async def _evaluate_event_unsafe(
         event: TracerEvent,
         evaluator: BaseEventEvaluator,
-    ) -> Evaluation:
+    ) -> Optional[Evaluation]:
         """
         This function is suffixed with _unsafe because it doesn't handle exceptions.
         Its caller will catch and handle all exceptions.
@@ -132,7 +132,7 @@ class AutoblocksTracer:
         async with evaluator_semaphore_registry[evaluator.id]:
             if inspect.iscoroutinefunction(evaluator.evaluate_event):
                 # mypy error:
-                # error: Returning Any from function declared to return "Evaluation"  [no-any-return]
+                # error: Returning Any from function declared to return "Evaluation | None"  [no-any-return]
                 # Not sure what mypy wants here, evaluate_event is typed correctly
                 return await evaluator.evaluate_event(event)  # type: ignore
             else:
