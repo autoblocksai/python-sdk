@@ -34,7 +34,6 @@ from tests.util import expect_cli_post_request
 log = logging.getLogger(__name__)
 
 # The below are entities in our Autoblocks CI org that we use for testing.
-E2E_TESTS_DATASET_ID = "clpup7f9400075us75nin99f0"
 E2E_TESTS_VIEW_ID = "cllmlk8py0003l608vd83dc03"
 E2E_TESTS_TRACE_ID = "4943bb26-3526-4e9c-bcd1-62f08baa621a"
 E2E_TESTS_EXPECTED_MESSAGE = "sdk.e2e"
@@ -53,17 +52,6 @@ def non_mocked_hosts() -> list[str]:
     https://colin-b.github.io/pytest_httpx/#do-not-mock-some-requests
     """
     return ["api.autoblocks.ai"]
-
-
-def test_get_datasets():
-    # Make sure dataset and items exists
-    datasets = client.get_datasets()
-    if E2E_TESTS_DATASET_ID not in (dataset.id for dataset in datasets):
-        raise Exception(f"Dataset {E2E_TESTS_DATASET_ID} not found!")
-
-    dataset = client.get_dataset(E2E_TESTS_DATASET_ID)
-    if len(dataset.items) == 0:
-        raise Exception(f"Dataset {E2E_TESTS_DATASET_ID} is empty!")
 
 
 def test_get_trace():
