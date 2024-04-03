@@ -29,24 +29,6 @@ class View:
 
 
 @dataclass
-class Dataset:
-    id: str
-    name: str
-
-
-@dataclass
-class DatasetItem:
-    id: str
-    input: str
-    output: str
-
-
-@dataclass
-class DatasetWithItems(Dataset):
-    items: List[DatasetItem]
-
-
-@dataclass
 class ManagedTestCase:
     id: str
     body: Dict[str, Any]

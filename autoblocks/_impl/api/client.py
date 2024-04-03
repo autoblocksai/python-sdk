@@ -11,9 +11,6 @@ from typing import Union
 import httpx
 
 from autoblocks._impl.api.models import AbsoluteTimeFilter
-from autoblocks._impl.api.models import Dataset
-from autoblocks._impl.api.models import DatasetItem
-from autoblocks._impl.api.models import DatasetWithItems
 from autoblocks._impl.api.models import Event
 from autoblocks._impl.api.models import ManagedTestCase
 from autoblocks._impl.api.models import ManagedTestCaseResponse
@@ -112,22 +109,6 @@ class AutoblocksAPIClient:
         )
         req.raise_for_status()
         return make_traces_response(req.json())
-
-    def get_datasets(self) -> List[Dataset]:
-        req = self._client.get("/datasets")
-        req.raise_for_status()
-        resp = req.json()
-        return [Dataset(id=dataset["id"], name=dataset["name"]) for dataset in resp]
-
-    def get_dataset(self, dataset_id: str) -> DatasetWithItems:
-        req = self._client.get(f"/datasets/{dataset_id}")
-        req.raise_for_status()
-        resp = req.json()
-        return DatasetWithItems(
-            id=resp["id"],
-            name=resp["name"],
-            items=[DatasetItem(id=item["id"], input=item["input"], output=item["output"]) for item in resp["items"]],
-        )
 
     def get_test_cases(self, test_suite_id: str) -> ManagedTestCaseResponse:
         req = self._client.get(f"/test-suites/{test_suite_id}/test-cases")
