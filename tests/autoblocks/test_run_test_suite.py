@@ -1,3 +1,4 @@
+import abc
 import asyncio
 import dataclasses
 import datetime
@@ -9,7 +10,9 @@ from unittest import mock
 import pydantic
 import pytest
 
+from autoblocks._impl.testing.util import md5
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks._impl.util import StrEnum
 from autoblocks.testing.models import BaseEvaluator
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.models import BaseTestEvaluator
@@ -1347,6 +1350,214 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
         ],
         evaluators=[
             MyCombinedEvaluator(),
+        ],
+        fn=test_fn,
+    )
+
+
+def test_evaluators_with_optional_evaluations(httpx_mock):
+    class RuleLevel(StrEnum):
+        CRITICAL = "critical"
+        MEDIUM = "medium"
+        LOW = "low"
+
+    @dataclasses.dataclass
+    class Rule:
+        level: RuleLevel
+        rule: str
+
+    @dataclasses.dataclass
+    class TestCase(BaseTestCase):
+        input: str
+        rules: list[Rule]
+
+        def hash(self):
+            return md5(self.input)
+
+    @dataclasses.dataclass
+    class Output:
+        actions: list[str]
+
+    class RuleEvaluator(BaseTestEvaluator, abc.ABC):
+        @property
+        @abc.abstractmethod
+        def level(self) -> RuleLevel:
+            pass
+
+        @property
+        def id(self) -> str:
+            return f"rule-evaluator-{self.level.value}"
+
+        def _rule_passed(self, rule: Rule, output: Output) -> bool:
+            """
+            Use an LLM to determine if the rule was followed based on the output actions.
+            """
+            return False
+
+        def evaluate_test_case(self, test_case: TestCase, output: Output) -> Optional[Evaluation]:
+            rules = [rule for rule in test_case.rules if rule.level == self.level]
+            if not rules:
+                return None
+
+            failed_rules = []
+
+            for rule in rules:
+                if not self._rule_passed(rule, output):
+                    failed_rules.append(rule)
+
+            return Evaluation(
+                score=0 if failed_rules else 1,
+                threshold=Threshold(gte=1),
+                metadata=dict(failed_rules=[rule.rule for rule in failed_rules]) if failed_rules else None,
+            )
+
+    class CriticalLevelRuleEvaluator(RuleEvaluator):
+        level = RuleLevel.CRITICAL
+
+    class MediumLevelRuleEvaluator(RuleEvaluator):
+        level = RuleLevel.MEDIUM
+
+    class LowLevelRuleEvaluator(RuleEvaluator):
+        level = RuleLevel.LOW
+
+    def test_fn(test_case: TestCase) -> Output:
+        return Output(
+            # Some list of actions the agent took
+            actions=[test_case.input]
+        )
+
+    test_cases = [
+        TestCase(
+            input="1",
+            rules=[
+                Rule(
+                    level=RuleLevel.CRITICAL,
+                    rule="this really, really shouldn't happen",
+                ),
+                Rule(
+                    level=RuleLevel.CRITICAL,
+                    rule="this also really, really shouldn't happen",
+                ),
+                Rule(
+                    level=RuleLevel.LOW,
+                    rule="not ideal but whatever",
+                ),
+            ],
+        ),
+        TestCase(
+            input="2",
+            rules=[
+                Rule(
+                    level=RuleLevel.MEDIUM,
+                    rule="this is a bit concerning",
+                ),
+            ],
+        ),
+    ]
+
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(testExternalId="my-test-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash=md5("1"),
+            testCaseBody=dict(
+                input="1",
+                rules=[
+                    dict(
+                        level="critical",
+                        rule="this really, really shouldn't happen",
+                    ),
+                    dict(
+                        level="critical",
+                        rule="this also really, really shouldn't happen",
+                    ),
+                    dict(
+                        level="low",
+                        rule="not ideal but whatever",
+                    ),
+                ],
+            ),
+            testCaseOutput=dict(actions=["1"]),
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash=md5("2"),
+            testCaseBody=dict(
+                input="2",
+                rules=[
+                    dict(
+                        level="medium",
+                        rule="this is a bit concerning",
+                    ),
+                ],
+            ),
+            testCaseOutput=dict(actions=["2"]),
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash=md5("1"),
+            evaluatorExternalId="rule-evaluator-critical",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                failed_rules=[
+                    "this really, really shouldn't happen",
+                    "this also really, really shouldn't happen",
+                ]
+            ),
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash=md5("1"),
+            evaluatorExternalId="rule-evaluator-low",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(failed_rules=["not ideal but whatever"]),
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash=md5("2"),
+            evaluatorExternalId="rule-evaluator-medium",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(failed_rules=["this is a bit concerning"]),
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
+    )
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=test_cases,
+        evaluators=[
+            CriticalLevelRuleEvaluator(),
+            MediumLevelRuleEvaluator(),
+            LowLevelRuleEvaluator(),
         ],
         fn=test_fn,
     )
