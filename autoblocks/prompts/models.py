@@ -1,2 +1,7 @@
-from autoblocks._impl.prompts.models import FrozenModel  # noqa: F401
-from autoblocks._impl.prompts.models import WeightedMinorVersion  # noqa: F401
+from autoblocks._impl.prompts.models import FrozenModel
+from autoblocks._impl.prompts.models import WeightedMinorVersion
+
+__all__ = [
+    "FrozenModel",
+    "WeightedMinorVersion",
+]

@@ -32,7 +32,7 @@ def freeze_time():
 
 @pytest.fixture(autouse=True)
 def reset_client():
-    AutoblocksTracer._client = None
+    AutoblocksTracer._client = None  # type: ignore
 
 
 def test_client_headers_init_with_key():
@@ -57,14 +57,14 @@ def test_client_init_headers_with_env_var():
 
 
 def expect_ingestion_post_request(
-    httpx_mock,
+    httpx_mock: Any,
     *,
     message: str,
     trace_id: Optional[str] = None,
     timestamp: Optional[str] = None,
     properties: Optional[dict[str, Any]] = None,
     status_code: int = 200,
-):
+) -> None:
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
         method="POST",
@@ -82,9 +82,9 @@ def expect_ingestion_post_request(
 
 
 def expect_cli_post_request(
-    httpx_mock,
+    httpx_mock: Any,
     body: dict[str, Any],
-):
+) -> None:
     httpx_mock.add_response(
         url=INGESTION_ENDPOINT,
         method="POST",
@@ -368,7 +368,7 @@ def test_tracer_sends_async_evaluations(httpx_mock):
     class MyEvaluator1(BaseEventEvaluator):
         id = "my-evaluator-1"
 
-        async def evaluate_event(self, event: TracerEvent):
+        async def evaluate_event(self, event: TracerEvent) -> Evaluation:
             tracer.send_event(f"i am inside evaluator {self.id} with event {event.message}")
             return Evaluation(
                 score=0.9,
@@ -378,7 +378,7 @@ def test_tracer_sends_async_evaluations(httpx_mock):
     class MyEvaluator2(BaseEventEvaluator):
         id = "my-evaluator-2"
 
-        async def evaluate_event(self, event: TracerEvent):
+        async def evaluate_event(self, event: TracerEvent) -> Evaluation:
             tracer.send_event(f"i am inside evaluator {self.id} with event {event.message}")
             return Evaluation(
                 score=0.3,
@@ -531,7 +531,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
         def hash(self):
             return f"{self.x}"
 
-    class MyCombinedEvaluator(BaseEvaluator):
+    class MyCombinedEvaluator(BaseEvaluator[SomeTestCase, str]):
         id = "my-combined-evaluator"
 
         @staticmethod

@@ -75,7 +75,7 @@ def test_invalid_test_cases(httpx_mock):
 
     run_test_suite(
         id="my-test-id",
-        test_cases=[1, 2, 3],
+        test_cases=[1, 2, 3],  # type: ignore
         evaluators=[],
         fn=lambda _: None,
         max_test_case_concurrency=1,
@@ -104,7 +104,7 @@ def test_invalid_evaluators(httpx_mock):
         test_cases=[
             MyTestCase(input="a"),
         ],
-        evaluators=[1, 2, 3],
+        evaluators=[1, 2, 3],  # type: ignore
         fn=lambda _: None,
         max_test_case_concurrency=1,
     )
@@ -158,7 +158,7 @@ def test_error_in_test_fn(httpx_mock):
         ),
     )
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         if test_case.input == "a":
             return test_case.input + "!"
         raise ValueError(test_case.input + "!")
@@ -219,7 +219,7 @@ def test_error_in_async_test_fn(httpx_mock):
         ),
     )
 
-    async def test_fn(test_case: MyTestCase):
+    async def test_fn(test_case: MyTestCase) -> str:
         if test_case.input == "a":
             return test_case.input + "!"
         raise ValueError(test_case.input + "!")
@@ -314,10 +314,10 @@ def test_error_in_evaluator(httpx_mock):
         ),
     )
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
-    class MySyncEvaluator(BaseTestEvaluator):
+    class MySyncEvaluator(BaseTestEvaluator[MyTestCase, str]):
         id = "my-sync-evaluator"
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -328,7 +328,7 @@ def test_error_in_evaluator(httpx_mock):
                 )
             raise ValueError(output)
 
-    class MyAsyncEvaluator(BaseTestEvaluator):
+    class MyAsyncEvaluator(BaseTestEvaluator[MyTestCase, str]):
         id = "my-async-evaluator"
 
         async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -408,7 +408,7 @@ def test_no_evaluators(httpx_mock):
         ),
     )
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
     run_test_suite(
@@ -507,16 +507,16 @@ def test_with_evaluators(httpx_mock):
         ),
     )
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
-    class EvaluatorA(BaseTestEvaluator):
+    class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-a"
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0, metadata=dict(reason="because"))
 
-    class EvaluatorB(BaseTestEvaluator):
+    class EvaluatorB(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-b"
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -540,17 +540,17 @@ def test_with_evaluators(httpx_mock):
 def test_concurrency(httpx_mock):
     httpx_mock.add_response()
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
-    class EvaluatorA(BaseTestEvaluator):
+    class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-a"
         max_concurrency = 1
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0)
 
-    class EvaluatorB(BaseTestEvaluator):
+    class EvaluatorB(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-b"
         max_concurrency = 1
 
@@ -684,7 +684,7 @@ def test_async_test_fn(httpx_mock):
         ),
     )
 
-    async def test_fn(test_case: MyTestCase):
+    async def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
     run_test_suite(
@@ -781,16 +781,16 @@ def test_async_evaluators(httpx_mock):
         body=dict(testExternalId="my-test-id"),
     )
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
-    class EvaluatorA(BaseTestEvaluator):
+    class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-a"
 
         async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0)
 
-    class EvaluatorB(BaseTestEvaluator):
+    class EvaluatorB(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-b"
 
         async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -853,7 +853,7 @@ def test_serializes(httpx_mock):
         d: datetime.datetime
         u: uuid.UUID
 
-    def test_fn(test_case: ATestCase):
+    def test_fn(test_case: ATestCase) -> AOutput:
         return AOutput(
             d=test_case.d,
             u=test_case.u,
@@ -1066,7 +1066,7 @@ def test_sends_tracer_events(httpx_mock):
     # this ensures the context variables are being access inside send_event
     tracer = AutoblocksTracer("test")
 
-    async def test_fn(test_case: MyTestCase):
+    async def test_fn(test_case: MyTestCase) -> str:
         if test_case.input == "a":
             # simulate doing more work than b to make sure context manager is working correctly
             await asyncio.sleep(1)
@@ -1228,10 +1228,10 @@ def test_repeated_test_cases(httpx_mock):
         def hash(self) -> str:
             return self.input
 
-    class MyEvaluator(BaseTestEvaluator):
+    class MyEvaluator(BaseTestEvaluator[SomeTestCase, str]):
         id = "my-evaluator"
 
-        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
+        def evaluate_test_case(self, test_case: SomeTestCase, output: str) -> Evaluation:
             return Evaluation(score=ord(test_case.input) / 100)
 
     run_test_suite(
@@ -1312,7 +1312,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
         def hash(self):
             return f"{self.x}"
 
-    class MyCombinedEvaluator(BaseEvaluator):
+    class MyCombinedEvaluator(BaseEvaluator[SomeTestCase, str]):
         id = "my-combined-evaluator"
 
         @staticmethod
@@ -1378,7 +1378,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
     class Output:
         actions: list[str]
 
-    class RuleEvaluator(BaseTestEvaluator, abc.ABC):
+    class RuleEvaluator(BaseTestEvaluator[TestCase, Output], abc.ABC):
         @property
         @abc.abstractmethod
         def level(self) -> RuleLevel:

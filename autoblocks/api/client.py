@@ -1,1 +1,5 @@
-from autoblocks._impl.api.client import AutoblocksAPIClient  # noqa: F401
+from autoblocks._impl.api.client import AutoblocksAPIClient
+
+__all__ = [
+    "AutoblocksAPIClient",
+]
