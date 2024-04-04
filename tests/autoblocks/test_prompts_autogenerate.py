@@ -212,11 +212,12 @@ def test_write(httpx_mock):
         prompts=[
             AutogeneratePromptConfig(
                 id="prompt-a",
-                major_versions=[1],
+                major_versions=["1"],
             ),
             AutogeneratePromptConfig(
                 id="prompt-b",
-                major_versions=[1, 2],
+                # Test that it works with numbers
+                major_versions=[1, 2],  # type: ignore
             ),
             AutogeneratePromptConfig(
                 id="prompt-c",

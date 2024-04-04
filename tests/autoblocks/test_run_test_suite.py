@@ -75,7 +75,7 @@ def test_invalid_test_cases(httpx_mock):
 
     run_test_suite(
         id="my-test-id",
-        test_cases=[1, 2, 3],
+        test_cases=[1, 2, 3],  # type: ignore
         evaluators=[],
         fn=lambda _: None,
         max_test_case_concurrency=1,
@@ -104,7 +104,7 @@ def test_invalid_evaluators(httpx_mock):
         test_cases=[
             MyTestCase(input="a"),
         ],
-        evaluators=[1, 2, 3],
+        evaluators=[1, 2, 3],  # type: ignore
         fn=lambda _: None,
         max_test_case_concurrency=1,
     )
@@ -158,7 +158,7 @@ def test_error_in_test_fn(httpx_mock):
         ),
     )
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         if test_case.input == "a":
             return test_case.input + "!"
         raise ValueError(test_case.input + "!")
@@ -219,7 +219,7 @@ def test_error_in_async_test_fn(httpx_mock):
         ),
     )
 
-    async def test_fn(test_case: MyTestCase):
+    async def test_fn(test_case: MyTestCase) -> str:
         if test_case.input == "a":
             return test_case.input + "!"
         raise ValueError(test_case.input + "!")
@@ -314,7 +314,7 @@ def test_error_in_evaluator(httpx_mock):
         ),
     )
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
     class MySyncEvaluator(BaseTestEvaluator[MyTestCase, str]):
@@ -408,7 +408,7 @@ def test_no_evaluators(httpx_mock):
         ),
     )
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
     run_test_suite(
@@ -507,7 +507,7 @@ def test_with_evaluators(httpx_mock):
         ),
     )
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
     class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
@@ -540,7 +540,7 @@ def test_with_evaluators(httpx_mock):
 def test_concurrency(httpx_mock):
     httpx_mock.add_response()
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
     class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
@@ -684,7 +684,7 @@ def test_async_test_fn(httpx_mock):
         ),
     )
 
-    async def test_fn(test_case: MyTestCase):
+    async def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
     run_test_suite(
@@ -781,7 +781,7 @@ def test_async_evaluators(httpx_mock):
         body=dict(testExternalId="my-test-id"),
     )
 
-    def test_fn(test_case: MyTestCase):
+    def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
     class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
@@ -853,7 +853,7 @@ def test_serializes(httpx_mock):
         d: datetime.datetime
         u: uuid.UUID
 
-    def test_fn(test_case: ATestCase):
+    def test_fn(test_case: ATestCase) -> AOutput:
         return AOutput(
             d=test_case.d,
             u=test_case.u,
@@ -1066,7 +1066,7 @@ def test_sends_tracer_events(httpx_mock):
     # this ensures the context variables are being access inside send_event
     tracer = AutoblocksTracer("test")
 
-    async def test_fn(test_case: MyTestCase):
+    async def test_fn(test_case: MyTestCase) -> str:
         if test_case.input == "a":
             # simulate doing more work than b to make sure context manager is working correctly
             await asyncio.sleep(1)
