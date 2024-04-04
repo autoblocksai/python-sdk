@@ -990,24 +990,6 @@ def test_skips_non_serializable_test_case_attributes(httpx_mock):
     )
 
 
-def test_deprecated_max_evaluator_concurrency(httpx_mock):
-    """
-    Test that we can still pass the deprecated max_evaluator_concurrency argument
-    """
-    httpx_mock.add_response()
-
-    run_test_suite(
-        id="my-test-id",
-        test_cases=[
-            MyTestCase(input="a"),
-        ],
-        evaluators=[],
-        fn=lambda _: "hello",
-        max_test_case_concurrency=1,
-        max_evaluator_concurrency=5,
-    )
-
-
 def test_sends_tracer_events(httpx_mock):
     timestamp = datetime.datetime(2021, 1, 1, 1, 1, 1).isoformat()
 
