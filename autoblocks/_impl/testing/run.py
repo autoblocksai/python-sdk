@@ -5,10 +5,12 @@ import inspect
 import logging
 import traceback
 from typing import Any
+from typing import Awaitable
 from typing import Callable
 from typing import Optional
 from typing import Sequence
 from typing import Union
+from typing import overload
 
 from autoblocks._impl import global_state
 from autoblocks._impl.context_vars import TestCaseRunContext
@@ -28,6 +30,8 @@ log = logging.getLogger(__name__)
 
 test_case_semaphore_registry: dict[str, asyncio.Semaphore] = {}  # test_id -> semaphore
 evaluator_semaphore_registry: dict[str, dict[str, asyncio.Semaphore]] = {}  # test_id -> evaluator_id -> semaphore
+
+DEFAULT_MAX_TEST_CASE_CONCURRENCY = 10
 
 
 def cli() -> str:
@@ -129,7 +133,7 @@ async def run_evaluator(
 async def run_test_case_unsafe(
     test_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
-    fn: Callable[[TestCaseType], OutputType],
+    fn: Union[Callable[[TestCaseType], OutputType], Callable[[TestCaseType], Awaitable[OutputType]]],
 ) -> Any:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
@@ -163,7 +167,7 @@ async def run_test_case(
     test_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
     evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
-    fn: Callable[[TestCaseType], OutputType],
+    fn: Union[Callable[[TestCaseType], OutputType], Callable[[TestCaseType], Awaitable[OutputType]]],
 ) -> None:
     token = test_case_run_context_var.set(TestCaseRunContext(test_id=test_id, test_case_hash=test_case_ctx.hash()))
     try:
@@ -226,7 +230,7 @@ async def async_run_test_suite(
     test_id: str,
     test_cases: Sequence[TestCaseType],
     evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
-    fn: Callable[[TestCaseType], OutputType],
+    fn: Union[Callable[[TestCaseType], OutputType], Callable[[TestCaseType], Awaitable[OutputType]]],
     max_test_case_concurrency: int,
 ) -> None:
     try:
@@ -275,25 +279,37 @@ async def async_run_test_suite(
     await global_state.http_client().post(f"{cli()}/end", json=dict(testExternalId=test_id))
 
 
+# Sync fn
+@overload
 def run_test_suite(
     id: str,
     test_cases: Sequence[TestCaseType],
     evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
-    fn: Callable[[TestCaseType], Union[OutputType, OutputType]],
+    fn: Callable[[TestCaseType], OutputType],
+    max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
+) -> None: ...
+
+
+# Async fn
+@overload
+def run_test_suite(
+    id: str,
+    test_cases: Sequence[TestCaseType],
+    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
+    fn: Callable[[TestCaseType], Awaitable[OutputType]],
+    max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
+) -> None: ...
+
+
+def run_test_suite(
+    id: str,
+    test_cases: Sequence[TestCaseType],
+    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
+    fn: Union[Callable[[TestCaseType], OutputType], Callable[[TestCaseType], Awaitable[OutputType]]],
     # How many test cases to run concurrently
-    max_test_case_concurrency: int = 10,
-    # Deprecated arguments, but left for backwards compatibility
-    max_evaluator_concurrency: Optional[int] = None,
+    max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
 ) -> None:
     global_state.init()
-
-    if max_evaluator_concurrency is not None:
-        log.warning(
-            "`max_evaluator_concurrency` is deprecated and will be removed in a future release.\n"
-            "Its value is being ignored.\n"
-            "Set the `max_concurrency` attribute on the evaluator class instead.\n"
-            "See https://docs.autoblocks.ai/testing/sdks for more information."
-        )
 
     asyncio.run_coroutine_threadsafe(
         async_run_test_suite(
