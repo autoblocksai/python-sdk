@@ -1,1 +1,5 @@
-from autoblocks._impl.prompts.context import PromptExecutionContext  # noqa: F401
+from autoblocks._impl.prompts.context import PromptExecutionContext
+
+__all__ = [
+    "PromptExecutionContext",
+]

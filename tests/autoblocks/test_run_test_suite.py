@@ -317,7 +317,7 @@ def test_error_in_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase):
         return test_case.input + "!"
 
-    class MySyncEvaluator(BaseTestEvaluator):
+    class MySyncEvaluator(BaseTestEvaluator[MyTestCase, str]):
         id = "my-sync-evaluator"
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -328,7 +328,7 @@ def test_error_in_evaluator(httpx_mock):
                 )
             raise ValueError(output)
 
-    class MyAsyncEvaluator(BaseTestEvaluator):
+    class MyAsyncEvaluator(BaseTestEvaluator[MyTestCase, str]):
         id = "my-async-evaluator"
 
         async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -510,13 +510,13 @@ def test_with_evaluators(httpx_mock):
     def test_fn(test_case: MyTestCase):
         return test_case.input + "!"
 
-    class EvaluatorA(BaseTestEvaluator):
+    class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-a"
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0, metadata=dict(reason="because"))
 
-    class EvaluatorB(BaseTestEvaluator):
+    class EvaluatorB(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-b"
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -543,14 +543,14 @@ def test_concurrency(httpx_mock):
     def test_fn(test_case: MyTestCase):
         return test_case.input + "!"
 
-    class EvaluatorA(BaseTestEvaluator):
+    class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-a"
         max_concurrency = 1
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0)
 
-    class EvaluatorB(BaseTestEvaluator):
+    class EvaluatorB(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-b"
         max_concurrency = 1
 
@@ -784,13 +784,13 @@ def test_async_evaluators(httpx_mock):
     def test_fn(test_case: MyTestCase):
         return test_case.input + "!"
 
-    class EvaluatorA(BaseTestEvaluator):
+    class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-a"
 
         async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0)
 
-    class EvaluatorB(BaseTestEvaluator):
+    class EvaluatorB(BaseTestEvaluator[MyTestCase, str]):
         id = "evaluator-b"
 
         async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -1228,10 +1228,10 @@ def test_repeated_test_cases(httpx_mock):
         def hash(self) -> str:
             return self.input
 
-    class MyEvaluator(BaseTestEvaluator):
+    class MyEvaluator(BaseTestEvaluator[SomeTestCase, str]):
         id = "my-evaluator"
 
-        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
+        def evaluate_test_case(self, test_case: SomeTestCase, output: str) -> Evaluation:
             return Evaluation(score=ord(test_case.input) / 100)
 
     run_test_suite(
@@ -1312,7 +1312,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
         def hash(self):
             return f"{self.x}"
 
-    class MyCombinedEvaluator(BaseEvaluator):
+    class MyCombinedEvaluator(BaseEvaluator[SomeTestCase, str]):
         id = "my-combined-evaluator"
 
         @staticmethod
@@ -1378,7 +1378,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
     class Output:
         actions: list[str]
 
-    class RuleEvaluator(BaseTestEvaluator, abc.ABC):
+    class RuleEvaluator(BaseTestEvaluator[TestCase, Output], abc.ABC):
         @property
         @abc.abstractmethod
         def level(self) -> RuleLevel:

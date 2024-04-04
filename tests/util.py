@@ -1,10 +1,9 @@
 import json
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 
-def make_expected_body(data: Dict) -> bytes:
+def make_expected_body(data: dict[str, Any]) -> bytes:
     """
     For use in `match_content` in httpx_mock.add_response:
 
@@ -13,7 +12,7 @@ def make_expected_body(data: Dict) -> bytes:
     return json.dumps(data).encode()
 
 
-def decode_request_body(req) -> Dict:
+def decode_request_body(req: Any) -> dict[str, Any]:
     return json.loads(req.content.decode())
 
 

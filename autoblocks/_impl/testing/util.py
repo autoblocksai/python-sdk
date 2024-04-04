@@ -3,12 +3,14 @@ import hashlib
 from typing import Any
 from typing import Generator
 from typing import Optional
+from typing import Sequence
 
 import orjson
 
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import TestCaseConfig
 from autoblocks._impl.testing.models import TestCaseContext
+from autoblocks._impl.testing.models import TestCaseType
 
 # This attribute name might sound redundant but it is named this
 # way (as opposed to just `config`) to decrease the likelihood
@@ -54,7 +56,7 @@ def serialize_test_case(test_case: BaseTestCase) -> Any:
     return serialize(test_case)
 
 
-def config_from_test_case(test_case: BaseTestCase) -> Optional[TestCaseConfig]:
+def config_from_test_case(test_case: TestCaseType) -> Optional[TestCaseConfig]:
     config = getattr(test_case, TEST_CASE_CONFIG_ATTR, None)
     if isinstance(config, TestCaseConfig):
         return config
@@ -62,8 +64,8 @@ def config_from_test_case(test_case: BaseTestCase) -> Optional[TestCaseConfig]:
 
 
 def yield_test_case_contexts_from_test_cases(
-    test_cases: list[BaseTestCase],
-) -> Generator[TestCaseContext, None, None]:
+    test_cases: Sequence[TestCaseType],
+) -> Generator[TestCaseContext[TestCaseType], None, None]:
     for test_case in test_cases:
         config = config_from_test_case(test_case)
         if not config or config.repeat_num_times is None:

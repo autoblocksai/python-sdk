@@ -6,15 +6,18 @@ import logging
 import traceback
 from typing import Any
 from typing import Callable
-from typing import List
 from typing import Optional
+from typing import Sequence
+from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.context_vars import TestCaseRunContext
 from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
+from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import TestCaseContext
+from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.util import serialize
 from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cases
@@ -64,9 +67,9 @@ async def send_error(
 
 async def run_evaluator_unsafe(
     test_id: str,
-    test_case_ctx: TestCaseContext,
-    output: Any,
-    evaluator: BaseTestEvaluator,
+    test_case_ctx: TestCaseContext[TestCaseType],
+    output: OutputType,
+    evaluator: BaseTestEvaluator[TestCaseType, OutputType],
 ) -> None:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
@@ -103,9 +106,9 @@ async def run_evaluator_unsafe(
 
 async def run_evaluator(
     test_id: str,
-    test_case_ctx: TestCaseContext,
-    output: Any,
-    evaluator: BaseTestEvaluator,
+    test_case_ctx: TestCaseContext[TestCaseType],
+    output: OutputType,
+    evaluator: BaseTestEvaluator[TestCaseType, OutputType],
 ) -> None:
     try:
         await run_evaluator_unsafe(
@@ -125,8 +128,8 @@ async def run_evaluator(
 
 async def run_test_case_unsafe(
     test_id: str,
-    test_case_ctx: TestCaseContext,
-    fn: Callable[[BaseTestCase], Any],
+    test_case_ctx: TestCaseContext[TestCaseType],
+    fn: Callable[[TestCaseType], OutputType],
 ) -> Any:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
@@ -158,9 +161,9 @@ async def run_test_case_unsafe(
 
 async def run_test_case(
     test_id: str,
-    test_case_ctx: TestCaseContext,
-    evaluators: List[BaseTestEvaluator],
-    fn: Callable[[BaseTestCase], Any],
+    test_case_ctx: TestCaseContext[TestCaseType],
+    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
+    fn: Callable[[TestCaseType], OutputType],
 ) -> None:
     token = test_case_run_context_var.set(TestCaseRunContext(test_id=test_id, test_case_hash=test_case_ctx.hash()))
     try:
@@ -203,8 +206,8 @@ async def run_test_case(
 
 def validate_test_suite_inputs(
     test_id: str,
-    test_cases: List[BaseTestCase],
-    evaluators: List[BaseTestEvaluator],
+    test_cases: Sequence[TestCaseType],
+    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
 ) -> None:
     assert test_cases, f"[{test_id}] No test cases provided."
     for test_case in test_cases:
@@ -221,9 +224,9 @@ def validate_test_suite_inputs(
 
 async def async_run_test_suite(
     test_id: str,
-    test_cases: List[BaseTestCase],
-    evaluators: List[BaseTestEvaluator],
-    fn: Callable[[BaseTestCase], Any],
+    test_cases: Sequence[TestCaseType],
+    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
+    fn: Callable[[TestCaseType], OutputType],
     max_test_case_concurrency: int,
 ) -> None:
     try:
@@ -274,9 +277,9 @@ async def async_run_test_suite(
 
 def run_test_suite(
     id: str,
-    test_cases: List[BaseTestCase],
-    evaluators: List[BaseTestEvaluator],
-    fn: Callable[[BaseTestCase], Any],
+    test_cases: Sequence[TestCaseType],
+    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
+    fn: Callable[[TestCaseType], Union[OutputType, OutputType]],
     # How many test cases to run concurrently
     max_test_case_concurrency: int = 10,
     # Deprecated arguments, but left for backwards compatibility

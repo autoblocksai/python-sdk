@@ -4,6 +4,7 @@ from enum import Enum
 from http import HTTPStatus
 from unittest import mock
 
+import pydantic
 import pytest
 
 from autoblocks._impl.config.constants import API_ENDPOINT
@@ -13,6 +14,10 @@ from autoblocks.prompts.manager import AutoblocksPromptManager
 from autoblocks.prompts.renderer import TemplateRenderer
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import make_expected_body
+
+
+class MyClassParams(pydantic.BaseModel):
+    pass
 
 
 class MyTemplateRenderer(TemplateRenderer):
@@ -36,11 +41,11 @@ class MyTemplateRenderer(TemplateRenderer):
 
 class MyExecutionContext(
     PromptExecutionContext[
-        None,
+        MyClassParams,
         MyTemplateRenderer,
     ],
 ):
-    __params_class__ = None
+    __params_class__ = MyClassParams
     __template_renderer_class__ = MyTemplateRenderer
 
 

@@ -378,7 +378,7 @@ def test_tracer_sends_async_evaluations(httpx_mock):
     class MyEvaluator2(BaseEventEvaluator):
         id = "my-evaluator-2"
 
-        async def evaluate_event(self, event: TracerEvent):
+        async def evaluate_event(self, event: TracerEvent) -> Evaluation:
             tracer.send_event(f"i am inside evaluator {self.id} with event {event.message}")
             return Evaluation(
                 score=0.3,
@@ -531,7 +531,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
         def hash(self):
             return f"{self.x}"
 
-    class MyCombinedEvaluator(BaseEvaluator):
+    class MyCombinedEvaluator(BaseEvaluator[SomeTestCase, str]):
         id = "my-combined-evaluator"
 
         @staticmethod

@@ -1,1 +1,5 @@
-from autoblocks._impl.prompts.renderer import TemplateRenderer  # noqa: F401
+from autoblocks._impl.prompts.renderer import TemplateRenderer
+
+__all__ = [
+    "TemplateRenderer",
+]

@@ -2,8 +2,12 @@ import abc
 import dataclasses
 import functools
 from typing import Any
+from typing import Awaitable
 from typing import Dict
+from typing import Generic
 from typing import Optional
+from typing import TypeVar
+from typing import Union
 
 
 @dataclasses.dataclass
@@ -44,15 +48,19 @@ class BaseTestCase(abc.ABC):
         pass
 
 
+TestCaseType = TypeVar("TestCaseType", bound=BaseTestCase)
+OutputType = TypeVar("OutputType")
+
+
 @dataclasses.dataclass
-class TestCaseContext:
+class TestCaseContext(Generic[TestCaseType]):
     """
     This class serves as a container for the user's test case +
     utilities around that test case.
     """
 
     # The user's test case
-    test_case: BaseTestCase
+    test_case: TestCaseType
 
     # Defined if the user has configured their test case to repeat
     repetition_idx: Optional[int]
@@ -71,7 +79,7 @@ class TestCaseContext:
         return self._cached_hash
 
 
-class BaseTestEvaluator(abc.ABC):
+class BaseTestEvaluator(abc.ABC, Generic[TestCaseType, OutputType]):
     """
     An ABC for users that are implementing an evaluator that will only be run against test cases.
     """
@@ -90,7 +98,11 @@ class BaseTestEvaluator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def evaluate_test_case(self, test_case: BaseTestCase, output: Any) -> Optional[Evaluation]:
+    def evaluate_test_case(
+        self,
+        test_case: TestCaseType,
+        output: OutputType,
+    ) -> Union[Optional[Evaluation], Awaitable[Optional[Evaluation]]]:
         pass
 
 
@@ -113,11 +125,16 @@ class BaseEventEvaluator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def evaluate_event(self, event: TracerEvent) -> Optional[Evaluation]:
+    def evaluate_event(self, event: TracerEvent) -> Union[Optional[Evaluation], Awaitable[Optional[Evaluation]]]:
         pass
 
 
-class BaseEvaluator(BaseTestEvaluator, BaseEventEvaluator, abc.ABC):
+class BaseEvaluator(
+    Generic[TestCaseType, OutputType],
+    BaseTestEvaluator[TestCaseType, OutputType],
+    BaseEventEvaluator,
+    abc.ABC,
+):
     """
     An ABC for users that are implementing an evaluator that will be run against both test cases and production events.
     """

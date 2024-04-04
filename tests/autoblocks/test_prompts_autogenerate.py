@@ -409,6 +409,10 @@ class PromptB1PromptManager(
     __execution_context_class__ = PromptB1ExecutionContext
 
 
+class PromptB2Params(FrozenModel):
+    pass
+
+
 class PromptB2TemplateRenderer(TemplateRenderer):
     __name_mapper__ = {
         "name": "name",
@@ -451,16 +455,12 @@ class PromptB2TemplateRenderer(TemplateRenderer):
 
 class PromptB2ExecutionContext(
     PromptExecutionContext[
-        None,
+        PromptB2Params,
         PromptB2TemplateRenderer,
     ],
 ):
-    __params_class__ = None
+    __params_class__ = PromptB2Params
     __template_renderer_class__ = PromptB2TemplateRenderer
-
-    @property
-    def params(self) -> None:
-        return None
 
 
 class PromptB2MinorVersion(Enum):

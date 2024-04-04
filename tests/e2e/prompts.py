@@ -90,6 +90,10 @@ class UsedByCiDontDeletePromptManager(
     __execution_context_class__ = UsedByCiDontDeleteExecutionContext
 
 
+class UsedByCiDontDeleteNoParamsParams(FrozenModel):
+    pass
+
+
 class UsedByCiDontDeleteNoParamsTemplateRenderer(TemplateRenderer):
     __name_mapper__ = {
         "name": "name",
@@ -108,16 +112,12 @@ class UsedByCiDontDeleteNoParamsTemplateRenderer(TemplateRenderer):
 
 class UsedByCiDontDeleteNoParamsExecutionContext(
     PromptExecutionContext[
-        None,
+        UsedByCiDontDeleteNoParamsParams,
         UsedByCiDontDeleteNoParamsTemplateRenderer,
     ],
 ):
-    __params_class__ = None
+    __params_class__ = UsedByCiDontDeleteNoParamsParams
     __template_renderer_class__ = UsedByCiDontDeleteNoParamsTemplateRenderer
-
-    @property
-    def params(self) -> None:
-        return None
 
 
 class UsedByCiDontDeleteNoParamsMinorVersion(Enum):
@@ -134,6 +134,10 @@ class UsedByCiDontDeleteNoParamsPromptManager(
     __prompt_id__ = "used-by-ci-dont-delete-no-params"
     __prompt_major_version__ = "1"
     __execution_context_class__ = UsedByCiDontDeleteNoParamsExecutionContext
+
+
+class UsedByCiDontDeleteNoParamsUndeployedParams(FrozenModel):
+    pass
 
 
 class UsedByCiDontDeleteNoParamsUndeployedTemplateRenderer(TemplateRenderer):
@@ -157,16 +161,12 @@ class UsedByCiDontDeleteNoParamsUndeployedTemplateRenderer(TemplateRenderer):
 
 class UsedByCiDontDeleteNoParamsUndeployedExecutionContext(
     PromptExecutionContext[
-        None,
+        UsedByCiDontDeleteNoParamsUndeployedParams,
         UsedByCiDontDeleteNoParamsUndeployedTemplateRenderer,
     ],
 ):
-    __params_class__ = None
+    __params_class__ = UsedByCiDontDeleteNoParamsUndeployedParams
     __template_renderer_class__ = UsedByCiDontDeleteNoParamsUndeployedTemplateRenderer
-
-    @property
-    def params(self) -> None:
-        return None
 
 
 class UsedByCiDontDeleteNoParamsUndeployedMinorVersion(Enum):

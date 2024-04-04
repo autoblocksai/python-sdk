@@ -11,6 +11,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -139,7 +140,7 @@ class AutoblocksTracer:
                 ctx = contextvars.copy_context()
                 return await global_state.event_loop().run_in_executor(
                     None,
-                    ctx.run,
+                    ctx.run,  # type: ignore
                     evaluator.evaluate_event,
                     event,
                 )
@@ -160,7 +161,7 @@ class AutoblocksTracer:
     async def _run_evaluators_unsafe(
         self,
         event: TracerEvent,
-        evaluators: List[BaseEventEvaluator],
+        evaluators: Sequence[BaseEventEvaluator],
     ) -> List[Dict[str, Any]]:
         """
         Run a list of evaluators on an event and return the evaluations as a list of dictionaries.
@@ -188,7 +189,7 @@ class AutoblocksTracer:
     async def _async_send_event(
         self,
         payload: Payload,
-        evaluators: Optional[List[BaseEventEvaluator]],
+        evaluators: Optional[Sequence[BaseEventEvaluator]],
     ) -> None:
         # If there are evaluators, run them and compute the evaluations property
         if evaluators:
@@ -302,7 +303,7 @@ class AutoblocksTracer:
     def _dispatch_event_unsafe(
         self,
         payload: Payload,
-        evaluators: Optional[List[BaseEventEvaluator]],
+        evaluators: Optional[Sequence[BaseEventEvaluator]],
     ) -> None:
         task: AnyTask
 
@@ -346,7 +347,7 @@ class AutoblocksTracer:
         parent_span_id: Optional[str] = None,
         timestamp: Optional[str] = None,
         properties: Optional[Dict[str, Any]] = None,
-        evaluators: Optional[List[BaseEventEvaluator]] = None,
+        evaluators: Optional[Sequence[BaseEventEvaluator]] = None,
         prompt_tracking: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
