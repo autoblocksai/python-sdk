@@ -3,7 +3,6 @@ import contextvars
 import dataclasses
 import inspect
 import logging
-import os
 import traceback
 from typing import Any
 from typing import Awaitable
@@ -230,6 +229,7 @@ def validate_test_suite_inputs(
 async def send_info_for_alignment_mode(
     test_id: str,
     test_cases: Sequence[TestCaseType],
+    caller_filepath: Optional[str],
 ) -> None:
     """
     Notifies the CLI with metadata about this test suite when running in "alignment mode",
@@ -239,10 +239,10 @@ async def send_info_for_alignment_mode(
     if align_test_external_id and align_test_external_id == test_id:
         # Tells the CLI what it needs to know about this test suite
         await global_state.http_client().post(
-            "/info",
+            f"{cli()}/info",
             json=dict(
                 language="python",
-                testSuiteDirectory=os.path.abspath(os.path.dirname(__file__)),
+                testSuiteDirectory=caller_filepath,
                 testCaseHashes=[test_case.hash() for test_case in test_cases],
             ),
         )
@@ -286,6 +286,7 @@ async def async_run_test_suite(
     evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
     fn: Union[Callable[[TestCaseType], OutputType], Callable[[TestCaseType], Awaitable[OutputType]]],
     max_test_case_concurrency: int,
+    caller_filepath: Optional[str],
 ) -> None:
     try:
         validate_test_suite_inputs(
@@ -302,14 +303,18 @@ async def async_run_test_suite(
         )
         return
 
+    # Handle alignment mode
     await send_info_for_alignment_mode(
         test_id=test_id,
         test_cases=test_cases,
+        caller_filepath=caller_filepath,
     )
     test_cases = filter_test_cases_for_alignment_mode(
         test_id=test_id,
         test_cases=test_cases,
     )
+    if not test_cases:
+        return
 
     # Initialize the semaphore registries
     test_case_semaphore_registry[test_id] = asyncio.Semaphore(max_test_case_concurrency)
@@ -374,6 +379,12 @@ def run_test_suite(
 ) -> None:
     global_state.init()
 
+    # Get the caller's filepath. Used in alignment mode to know where the test suite is located.
+    try:
+        caller_filepath = inspect.stack()[1].filename
+    except Exception:
+        caller_filepath = None
+
     asyncio.run_coroutine_threadsafe(
         async_run_test_suite(
             test_id=id,
@@ -381,6 +392,7 @@ def run_test_suite(
             evaluators=evaluators,
             fn=fn,
             max_test_case_concurrency=max_test_case_concurrency,
+            caller_filepath=caller_filepath,
         ),
         global_state.event_loop(),
     ).result()
