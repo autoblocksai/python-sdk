@@ -235,17 +235,18 @@ async def send_info_for_alignment_mode(
     Notifies the CLI with metadata about this test suite when running in "alignment mode",
     i.e. npx autoblocks testing align -- <cmd>
     """
-    align_test_external_id = AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get()
-    if align_test_external_id and align_test_external_id == test_id:
-        # Tells the CLI what it needs to know about this test suite
-        await global_state.http_client().post(
-            f"{cli()}/info",
-            json=dict(
-                language="python",
-                testSuiteDirectory=caller_filepath,
-                testCaseHashes=[test_case.hash() for test_case in test_cases],
-            ),
-        )
+    # Double check this is the correct test suite
+    assert AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get() == test_id
+
+    # Tells the CLI what it needs to know about this test suite
+    await global_state.http_client().post(
+        f"{cli()}/info",
+        json=dict(
+            language="python",
+            testSuiteDirectory=caller_filepath,
+            testCaseHashes=[test_case.hash() for test_case in test_cases],
+        ),
+    )
 
 
 def filter_test_cases_for_alignment_mode(
@@ -261,14 +262,8 @@ def filter_test_cases_for_alignment_mode(
     and the user then provides feedback on the output. This function checks for the environment
     variables that the CLI sets during an alignment session and filters the test cases accordingly.
     """
-    align_test_external_id = AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get()
-    if not align_test_external_id:
-        # Not in alignment mode, return all test cases
-        return test_cases
-
-    if align_test_external_id != test_id:
-        # In alignment mode but not for this test suite
-        return []
+    # Double check this is the correct test suite
+    assert AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get() == test_id
 
     align_test_case_hash = AutoblocksEnvVar.ALIGN_TEST_CASE_HASH.get()
     if not align_test_case_hash:
@@ -276,7 +271,7 @@ def filter_test_cases_for_alignment_mode(
             f"Expected {AutoblocksEnvVar.ALIGN_TEST_CASE_HASH} to be set while in alignment mode.",
         )
 
-    # In alignment mode and filtering for a specific test case
+    # Only run the selected test case
     return [test_case for test_case in test_cases if test_case.hash() == align_test_case_hash]
 
 
@@ -288,6 +283,23 @@ async def async_run_test_suite(
     max_test_case_concurrency: int,
     caller_filepath: Optional[str],
 ) -> None:
+    # Handle alignment mode
+    align_test_id = AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get()
+    if align_test_id:
+        if align_test_id != test_id:
+            # Not the test suite in alignment mode
+            return
+
+        await send_info_for_alignment_mode(
+            test_id=test_id,
+            test_cases=test_cases,
+            caller_filepath=caller_filepath,
+        )
+        test_cases = filter_test_cases_for_alignment_mode(
+            test_id=test_id,
+            test_cases=test_cases,
+        )
+
     try:
         validate_test_suite_inputs(
             test_id=test_id,
@@ -301,19 +313,6 @@ async def async_run_test_suite(
             evaluator_id=None,
             error=err,
         )
-        return
-
-    # Handle alignment mode
-    await send_info_for_alignment_mode(
-        test_id=test_id,
-        test_cases=test_cases,
-        caller_filepath=caller_filepath,
-    )
-    test_cases = filter_test_cases_for_alignment_mode(
-        test_id=test_id,
-        test_cases=test_cases,
-    )
-    if not test_cases:
         return
 
     # Initialize the semaphore registries
