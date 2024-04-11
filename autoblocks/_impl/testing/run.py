@@ -267,9 +267,10 @@ def filter_test_cases_for_alignment_mode(
 
     align_test_case_hash = AutoblocksEnvVar.ALIGN_TEST_CASE_HASH.get()
     if not align_test_case_hash:
-        raise RuntimeError(
-            f"Expected {AutoblocksEnvVar.ALIGN_TEST_CASE_HASH} to be set while in alignment mode.",
-        )
+        # The first time a test suite is run in alignment mode, the CLI will not provide a test case hash,
+        # so we run the first one. On subsequent runs, the CLI will provide a test case hash since it
+        # will have then received the /info request with the list of test case hashes.
+        return [test_cases[0]]
 
     # Only run the selected test case
     return [test_case for test_case in test_cases if test_case.hash() == align_test_case_hash]
