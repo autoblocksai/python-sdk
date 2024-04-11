@@ -1604,7 +1604,7 @@ def test_alignment_mode(httpx_mock):
             path="/info",
             body=dict(
                 language="python",
-                testSuiteDirectory=__file__,
+                runTestSuiteCalledFromFilepath=__file__,
                 testCaseHashes=[test_case_a.hash(), test_case_b.hash()],
             ),
         ),
@@ -1628,4 +1628,6 @@ def test_alignment_mode(httpx_mock):
         ),
     ]
 
-    assert requests[0]["body"]["testSuiteDirectory"].endswith("/python-sdk/tests/autoblocks/test_run_test_suite.py")
+    assert requests[0]["body"]["runTestSuiteCalledFromFilepath"].endswith(
+        "/python-sdk/tests/autoblocks/test_run_test_suite.py",
+    )

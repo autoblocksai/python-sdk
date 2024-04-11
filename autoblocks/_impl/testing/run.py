@@ -243,7 +243,7 @@ async def send_info_for_alignment_mode(
         f"{cli()}/info",
         json=dict(
             language="python",
-            testSuiteDirectory=caller_filepath,
+            runTestSuiteCalledFromFilepath=caller_filepath,
             testCaseHashes=[test_case.hash() for test_case in test_cases],
         ),
     )
