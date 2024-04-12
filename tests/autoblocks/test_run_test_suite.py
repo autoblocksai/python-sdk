@@ -1543,3 +1543,152 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
         ],
         fn=test_fn,
     )
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.value: "another-test-id",
+    },
+)
+def test_alignment_mode_skips_test_suite(httpx_mock):
+    def test_fn(test_case: MyTestCase) -> str:
+        return test_case.input + "!"
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+            MyTestCase(input="b"),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+    # Nothing should have happened because this test suite
+    # should have been skipped
+    assert len(httpx_mock.get_requests()) == 0
+
+
+def test_alignment_mode_without_test_case_hash(httpx_mock):
+    httpx_mock.add_response()
+
+    test_id = "my-test-id"
+
+    test_case_a = MyTestCase(input="a")
+    test_case_b = MyTestCase(input="b")
+
+    def test_fn(test_case: MyTestCase) -> str:
+        return test_case.input + "!"
+
+    with mock.patch.dict(
+        os.environ,
+        {
+            AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.value: test_id,
+        },
+    ):
+        run_test_suite(
+            id=test_id,
+            test_cases=[test_case_a, test_case_b],
+            evaluators=[],
+            fn=test_fn,
+            max_test_case_concurrency=1,
+        )
+
+    requests = [dict(path=req.url.path, body=decode_request_body(req)) for req in httpx_mock.get_requests()]
+
+    assert requests == [
+        dict(
+            path="/info",
+            body=dict(
+                language="python",
+                runTestSuiteCalledFromFilepath=__file__,
+                testCaseHashes=[test_case_a.hash(), test_case_b.hash()],
+            ),
+        ),
+        dict(
+            path="/start",
+            body=dict(testExternalId=test_id),
+        ),
+        # It should have run the first test case since no hash was specified
+        dict(
+            path="/results",
+            body=dict(
+                testExternalId=test_id,
+                testCaseHash=test_case_a.hash(),
+                testCaseBody=dict(input="a"),
+                testCaseOutput="a!",
+            ),
+        ),
+        dict(
+            path="/end",
+            body=dict(testExternalId=test_id),
+        ),
+    ]
+
+    assert requests[0]["body"]["runTestSuiteCalledFromFilepath"].endswith(
+        "/python-sdk/tests/autoblocks/test_run_test_suite.py",
+    )
+
+
+def test_alignment_mode_with_test_case_hash(httpx_mock):
+    httpx_mock.add_response()
+
+    test_id = "my-test-id"
+
+    test_case_a = MyTestCase(input="a")
+    test_case_b = MyTestCase(input="b")
+
+    def test_fn(test_case: MyTestCase) -> str:
+        return test_case.input + "!"
+
+    with mock.patch.dict(
+        os.environ,
+        {
+            AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.value: test_id,
+            AutoblocksEnvVar.ALIGN_TEST_CASE_HASH.value: test_case_b.hash(),
+        },
+    ):
+        run_test_suite(
+            id=test_id,
+            test_cases=[test_case_a, test_case_b],
+            evaluators=[],
+            fn=test_fn,
+            max_test_case_concurrency=1,
+        )
+
+    requests = [dict(path=req.url.path, body=decode_request_body(req)) for req in httpx_mock.get_requests()]
+
+    assert requests == [
+        dict(
+            path="/info",
+            body=dict(
+                language="python",
+                runTestSuiteCalledFromFilepath=__file__,
+                testCaseHashes=[test_case_a.hash(), test_case_b.hash()],
+            ),
+        ),
+        dict(
+            path="/start",
+            body=dict(testExternalId=test_id),
+        ),
+        # Test case a should have been skipped
+        dict(
+            path="/results",
+            body=dict(
+                testExternalId=test_id,
+                testCaseHash=test_case_b.hash(),
+                testCaseBody=dict(input="b"),
+                testCaseOutput="b!",
+            ),
+        ),
+        dict(
+            path="/end",
+            body=dict(testExternalId=test_id),
+        ),
+    ]
+
+    assert requests[0]["body"]["runTestSuiteCalledFromFilepath"].endswith(
+        "/python-sdk/tests/autoblocks/test_run_test_suite.py",
+    )

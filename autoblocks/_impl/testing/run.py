@@ -226,13 +226,81 @@ def validate_test_suite_inputs(
         ), f"[{test_id}] Evaluator {evaluator} does not implement {BaseTestEvaluator.__name__}."
 
 
+async def send_info_for_alignment_mode(
+    test_id: str,
+    test_cases: Sequence[TestCaseType],
+    caller_filepath: Optional[str],
+) -> None:
+    """
+    Notifies the CLI with metadata about this test suite when running in "alignment mode",
+    i.e. npx autoblocks testing align -- <cmd>
+    """
+    # Double check this is the correct test suite
+    assert AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get() == test_id
+
+    # Tells the CLI what it needs to know about this test suite
+    await global_state.http_client().post(
+        f"{cli()}/info",
+        json=dict(
+            language="python",
+            runTestSuiteCalledFromFilepath=caller_filepath,
+            testCaseHashes=[test_case.hash() for test_case in test_cases],
+        ),
+    )
+
+
+def filter_test_cases_for_alignment_mode(
+    test_id: str,
+    test_cases: Sequence[TestCaseType],
+) -> Sequence[TestCaseType]:
+    """
+    A test suite is in "alignment mode" if the user has started an "alignment session" via the CLI:
+
+    $ npx autoblocks testing align --test-suite-id <test-suite-id> -- <cmd>
+
+    This starts an interactive CLI where single test cases from the suite are run through `fn`,
+    and the user then provides feedback on the output. This function checks for the environment
+    variables that the CLI sets during an alignment session and filters the test cases accordingly.
+    """
+    # Double check this is the correct test suite
+    assert AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get() == test_id
+
+    align_test_case_hash = AutoblocksEnvVar.ALIGN_TEST_CASE_HASH.get()
+    if not align_test_case_hash:
+        # The first time a test suite is run in alignment mode, the CLI will not provide a test case hash,
+        # so we run the first one. On subsequent runs, the CLI will provide a test case hash since it
+        # will have then received the /info request with the list of test case hashes.
+        return [test_cases[0]]
+
+    # Only run the selected test case
+    return [test_case for test_case in test_cases if test_case.hash() == align_test_case_hash]
+
+
 async def async_run_test_suite(
     test_id: str,
     test_cases: Sequence[TestCaseType],
     evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
     fn: Union[Callable[[TestCaseType], OutputType], Callable[[TestCaseType], Awaitable[OutputType]]],
     max_test_case_concurrency: int,
+    caller_filepath: Optional[str],
 ) -> None:
+    # Handle alignment mode
+    align_test_id = AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get()
+    if align_test_id:
+        if align_test_id != test_id:
+            # Not the test suite in alignment mode
+            return
+
+        await send_info_for_alignment_mode(
+            test_id=test_id,
+            test_cases=test_cases,
+            caller_filepath=caller_filepath,
+        )
+        test_cases = filter_test_cases_for_alignment_mode(
+            test_id=test_id,
+            test_cases=test_cases,
+        )
+
     try:
         validate_test_suite_inputs(
             test_id=test_id,
@@ -311,6 +379,12 @@ def run_test_suite(
 ) -> None:
     global_state.init()
 
+    # Get the caller's filepath. Used in alignment mode to know where the test suite is located.
+    try:
+        caller_filepath = inspect.stack()[1].filename
+    except Exception:
+        caller_filepath = None
+
     asyncio.run_coroutine_threadsafe(
         async_run_test_suite(
             test_id=id,
@@ -318,6 +392,7 @@ def run_test_suite(
             evaluators=evaluators,
             fn=fn,
             max_test_case_concurrency=max_test_case_concurrency,
+            caller_filepath=caller_filepath,
         ),
         global_state.event_loop(),
     ).result()
