@@ -1692,3 +1692,26 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
     assert requests[0]["body"]["runTestSuiteCalledFromFilepath"].endswith(
         "/python-sdk/tests/autoblocks/test_run_test_suite.py",
     )
+
+
+def test_run_stops_if_start_fails(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(testExternalId="my-test-id"),
+        status_code=403,
+    )
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(
+                input="a",
+            ),
+        ],
+        evaluators=[],
+        fn=lambda test_case: test_case.input + "!",
+        max_test_case_concurrency=1,
+    )
+
+    assert len(httpx_mock.get_requests()) == 1

@@ -12,6 +12,8 @@ from typing import Sequence
 from typing import Union
 from typing import overload
 
+from httpx import HTTPStatusError
+
 from autoblocks._impl import global_state
 from autoblocks._impl.context_vars import TestCaseRunContext
 from autoblocks._impl.context_vars import test_case_run_context_var
@@ -322,7 +324,15 @@ async def async_run_test_suite(
         evaluator.id: asyncio.Semaphore(evaluator.max_concurrency) for evaluator in evaluators
     }
 
-    await global_state.http_client().post(f"{cli()}/start", json=dict(testExternalId=test_id))
+    start_resp = await global_state.http_client().post(f"{cli()}/start", json=dict(testExternalId=test_id))
+    try:
+        start_resp.raise_for_status()
+    except HTTPStatusError:
+        # Don't allow the run to continue if /start failed, since all subsequent
+        # requests will fail if the CLI was not able to start the run.
+        # Also note we don't need to send_error here, since the CLI will
+        # have reported the HTTP error itself.
+        return
 
     try:
         await all_settled(
