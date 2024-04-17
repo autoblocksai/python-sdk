@@ -23,10 +23,11 @@ def expect_cli_post_request(
     httpx_mock: Any,
     path: str,
     body: Optional[dict[str, Any]],
+    status_code: int = 200,
 ) -> None:
     httpx_mock.add_response(
         url=f"{MOCK_CLI_SERVER_ADDRESS}{path}",
         method="POST",
-        status_code=200,
+        status_code=status_code,
         match_content=make_expected_body(body) if body is not None else None,
     )
