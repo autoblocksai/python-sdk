@@ -3,6 +3,7 @@ import contextvars
 import dataclasses
 import inspect
 import logging
+import os
 import traceback
 from typing import Any
 from typing import Awaitable
@@ -245,7 +246,7 @@ async def send_info_for_alignment_mode(
         f"{cli()}/info",
         json=dict(
             language="python",
-            runTestSuiteCalledFromFilepath=caller_filepath,
+            runTestSuiteCalledFromDirectory=os.path.dirname(caller_filepath) if caller_filepath else None,
             testCaseHashes=[test_case.hash() for test_case in test_cases],
         ),
     )

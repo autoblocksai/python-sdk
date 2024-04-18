@@ -1603,7 +1603,7 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
             path="/info",
             body=dict(
                 language="python",
-                runTestSuiteCalledFromFilepath=__file__,
+                runTestSuiteCalledFromDirectory=os.path.dirname(__file__),
                 testCaseHashes=[test_case_a.hash(), test_case_b.hash()],
             ),
         ),
@@ -1627,8 +1627,8 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
         ),
     ]
 
-    assert requests[0]["body"]["runTestSuiteCalledFromFilepath"].endswith(
-        "/python-sdk/tests/autoblocks/test_run_test_suite.py",
+    assert requests[0]["body"]["runTestSuiteCalledFromDirectory"].endswith(
+        "/python-sdk/tests/autoblocks",
     )
 
 
@@ -1665,7 +1665,7 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
             path="/info",
             body=dict(
                 language="python",
-                runTestSuiteCalledFromFilepath=__file__,
+                runTestSuiteCalledFromDirectory=os.path.dirname(__file__),
                 testCaseHashes=[test_case_a.hash(), test_case_b.hash()],
             ),
         ),
@@ -1689,8 +1689,8 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
         ),
     ]
 
-    assert requests[0]["body"]["runTestSuiteCalledFromFilepath"].endswith(
-        "/python-sdk/tests/autoblocks/test_run_test_suite.py",
+    assert requests[0]["body"]["runTestSuiteCalledFromDirectory"].endswith(
+        "/python-sdk/tests/autoblocks",
     )
 
 
