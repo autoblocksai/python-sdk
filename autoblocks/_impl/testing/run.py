@@ -391,7 +391,7 @@ def run_test_suite(
 
     # Get the caller's filepath. Used in alignment mode to know where the test suite is located.
     try:
-        caller_filepath = inspect.stack()[1].filename
+        caller_filepath = inspect.stack()[1].filename.replace("/__init__.py", "")
     except Exception:
         caller_filepath = None
 
