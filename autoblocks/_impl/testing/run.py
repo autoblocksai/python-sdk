@@ -14,6 +14,7 @@ from typing import Union
 from typing import overload
 
 from httpx import HTTPStatusError
+from httpx import Response
 
 from autoblocks._impl import global_state
 from autoblocks._impl.context_vars import TestCaseRunContext
@@ -51,14 +52,25 @@ def cli() -> str:
     return cli_server_address
 
 
+async def post_to_cli(
+    path: str,
+    json: dict[str, Any],
+) -> Response:
+    return await global_state.http_client().post(
+        f"{cli()}{path}",
+        json=json,
+        timeout=15,  # seconds
+    )
+
+
 async def send_error(
     test_id: str,
     test_case_hash: Optional[str],
     evaluator_id: Optional[str],
     error: Exception,
 ) -> None:
-    await global_state.http_client().post(
-        f"{cli()}/errors",
+    await post_to_cli(
+        "/errors",
         json=dict(
             testExternalId=test_id,
             testCaseHash=test_case_hash,
@@ -98,8 +110,8 @@ async def run_evaluator_unsafe(
     if evaluation is None:
         return
 
-    await global_state.http_client().post(
-        f"{cli()}/evals",
+    await post_to_cli(
+        "/evals",
         json=dict(
             testExternalId=test_id,
             testCaseHash=test_case_ctx.hash(),
@@ -154,8 +166,8 @@ async def run_test_case_unsafe(
                 test_case_ctx.test_case,
             )
 
-    await global_state.http_client().post(
-        f"{cli()}/results",
+    await post_to_cli(
+        "/results",
         json=dict(
             testExternalId=test_id,
             testCaseHash=test_case_ctx.hash(),
@@ -242,8 +254,8 @@ async def send_info_for_alignment_mode(
     assert AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get() == test_id
 
     # Tells the CLI what it needs to know about this test suite
-    await global_state.http_client().post(
-        f"{cli()}/info",
+    await post_to_cli(
+        "/info",
         json=dict(
             language="python",
             runTestSuiteCalledFromDirectory=os.path.dirname(caller_filepath) if caller_filepath else None,
@@ -325,7 +337,10 @@ async def async_run_test_suite(
         evaluator.id: asyncio.Semaphore(evaluator.max_concurrency) for evaluator in evaluators
     }
 
-    start_resp = await global_state.http_client().post(f"{cli()}/start", json=dict(testExternalId=test_id))
+    start_resp = await post_to_cli(
+        "/start",
+        json=dict(testExternalId=test_id),
+    )
     try:
         start_resp.raise_for_status()
     except HTTPStatusError:
@@ -355,7 +370,10 @@ async def async_run_test_suite(
             error=err,
         )
 
-    await global_state.http_client().post(f"{cli()}/end", json=dict(testExternalId=test_id))
+    await post_to_cli(
+        "/end",
+        json=dict(testExternalId=test_id),
+    )
 
 
 # Sync fn
