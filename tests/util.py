@@ -29,5 +29,5 @@ def expect_cli_post_request(
         url=f"{MOCK_CLI_SERVER_ADDRESS}{path}",
         method="POST",
         status_code=status_code,
-        match_content=make_expected_body(body) if body is not None else None,
+        match_json=body,
     )

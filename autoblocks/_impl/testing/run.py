@@ -4,6 +4,7 @@ import dataclasses
 import inspect
 import logging
 import os
+import time
 import traceback
 from typing import Any
 from typing import Awaitable
@@ -155,6 +156,8 @@ async def run_test_case_unsafe(
     Its caller will catch and handle all exceptions.
     """
     async with test_case_semaphore_registry[test_id]:
+        start_time = time.perf_counter()
+
         if inspect.iscoroutinefunction(fn):
             output = await fn(test_case_ctx.test_case)
         else:
@@ -173,6 +176,7 @@ async def run_test_case_unsafe(
             testCaseHash=test_case_ctx.hash(),
             testCaseBody=serialize_test_case(test_case_ctx.test_case),
             testCaseOutput=serialize(output),
+            testCaseDurationMs=(time.perf_counter() - start_time) * 1000,
         ),
     )
     return output
