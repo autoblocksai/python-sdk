@@ -175,30 +175,6 @@ MOCK_PROMPTS_API_RESPONSE = [
     },
 ]
 
-PROMPT_C_UNDEPLOYED_RESPONSE = {
-    "id": "prompt-c",
-    "params": {
-        "params": {
-            "frequencyPenalty": 0,
-            "maxTokens": 256,
-            "model": "gpt-4",
-            "presencePenalty": 0.3,
-            "stopSequences": [],
-            "temperature": 0.7,
-            "topP": 1,
-        },
-        "version": "1.0",
-    },
-    "templates": [
-        {
-            "id": "template",
-            "template": "Hello !!!",
-            "version": "1.0",
-        },
-    ],
-    "version": "undeployed",
-}
-
 
 @mock.patch.dict(
     os.environ,
@@ -219,10 +195,6 @@ def test_write(httpx_mock):
                 # Test that it works with numbers
                 major_versions=[1, 2],  # type: ignore
             ),
-            AutogeneratePromptConfig(
-                id="prompt-c",
-                major_versions=["dangerously-use-undeployed"],
-            ),
         ],
     )
 
@@ -231,25 +203,6 @@ def test_write(httpx_mock):
         method="GET",
         status_code=200,
         json=MOCK_PROMPTS_API_RESPONSE,
-        match_headers={"Authorization": "Bearer mock-api-key"},
-    )
-    httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/prompts/prompt-a/major/undeployed/minor/undeployed",
-        method="GET",
-        status_code=404,
-        match_headers={"Authorization": "Bearer mock-api-key"},
-    )
-    httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/prompts/prompt-b/major/undeployed/minor/undeployed",
-        method="GET",
-        status_code=404,
-        match_headers={"Authorization": "Bearer mock-api-key"},
-    )
-    httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/prompts/prompt-c/major/undeployed/minor/undeployed",
-        method="GET",
-        status_code=200,
-        json=PROMPT_C_UNDEPLOYED_RESPONSE,
         match_headers={"Authorization": "Bearer mock-api-key"},
     )
 
@@ -478,51 +431,6 @@ class PromptB2PromptManager(
     __prompt_id__ = "prompt-b"
     __prompt_major_version__ = "2"
     __execution_context_class__ = PromptB2ExecutionContext
-
-
-class PromptCUndeployedParams(FrozenModel):
-    frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
-    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
-    model: str = pydantic.Field(..., alias="model")
-    presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
-    top_p: Union[float, int] = pydantic.Field(..., alias="topP")
-
-
-class PromptCUndeployedTemplateRenderer(TemplateRenderer):
-    __name_mapper__ = {}
-
-    def template(
-        self,
-    ) -> str:
-        return self._render(
-            "template",
-        )
-
-
-class PromptCUndeployedExecutionContext(
-    PromptExecutionContext[
-        PromptCUndeployedParams,
-        PromptCUndeployedTemplateRenderer,
-    ],
-):
-    __params_class__ = PromptCUndeployedParams
-    __template_renderer_class__ = PromptCUndeployedTemplateRenderer
-
-
-class PromptCUndeployedMinorVersion(Enum):
-    DANGEROUSLY_USE_UNDEPLOYED = "undeployed"
-
-
-class PromptCUndeployedPromptManager(
-    AutoblocksPromptManager[
-        PromptCUndeployedExecutionContext,
-        PromptCUndeployedMinorVersion,
-    ],
-):
-    __prompt_id__ = "prompt-c"
-    __prompt_major_version__ = "undeployed"
-    __execution_context_class__ = PromptCUndeployedExecutionContext
 """
 
     m.assert_called_once_with("test.py", "w")

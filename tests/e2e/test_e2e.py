@@ -28,7 +28,6 @@ from autoblocks.tracer import AutoblocksTracer
 from tests.e2e.prompts import UsedByCiDontDeleteMinorVersion
 from tests.e2e.prompts import UsedByCiDontDeleteNoParamsMinorVersion
 from tests.e2e.prompts import UsedByCiDontDeleteNoParamsPromptManager
-from tests.e2e.prompts import UsedByCiDontDeleteNoParamsUndeployedPromptManager
 from tests.e2e.prompts import UsedByCiDontDeletePromptManager
 from tests.util import ANY_NUMBER
 from tests.util import MOCK_CLI_SERVER_ADDRESS
@@ -329,46 +328,6 @@ def test_prompt_manager_no_model_params():
             templates=[
                 dict(id="my-template-id", template="Hello, {{ name }}!"),
             ],
-        )
-
-
-def test_prompt_manager_undeployed_latest_revision():
-    mgr = UsedByCiDontDeleteNoParamsUndeployedPromptManager(
-        # Need to use a user-scoped API key to access undeployed prompts
-        api_key=os.environ["AUTOBLOCKS_API_KEY_USER"],
-        # Request the latest revision
-        minor_version="latest",
-    )
-
-    with mgr.exec() as prompt:
-        assert prompt.track()["id"] == "used-by-ci-dont-delete-no-params"
-        assert prompt.track()["version"].startswith("revision:")
-
-
-def test_prompt_manager_undeployed_specific_revision():
-    """
-    This test uses a revision created in our CI org:
-
-    https://app.autoblocks.ai/prompts/used-by-ci-dont-delete-no-params/revisions/clvifur81000336hksycpw4av/edit
-    """
-    mgr = UsedByCiDontDeleteNoParamsUndeployedPromptManager(
-        # Need to use a user-scoped API key to access undeployed prompts
-        api_key=os.environ["AUTOBLOCKS_API_KEY_USER"],
-        # Request a specific revision
-        minor_version="clvifur81000336hksycpw4av",
-    )
-
-    with mgr.exec() as prompt:
-        assert prompt.track() == dict(
-            id="used-by-ci-dont-delete-no-params",
-            version="revision:clvifur81000336hksycpw4av",
-            templates=[
-                dict(
-                    id="my-template-id",
-                    template="Hello, {{ name }}!!!",
-                ),
-            ],
-            params=None,
         )
 
 
