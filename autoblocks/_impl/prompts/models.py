@@ -31,7 +31,6 @@ class FrozenModel(pydantic.BaseModel):
 class PromptParams(FrozenModel):
     """LLM model parameters for a prompt."""
 
-    version: str
     params: Optional[Dict[str, Any]]
 
 
@@ -39,7 +38,6 @@ class PromptTemplate(FrozenModel):
     """An individual template for a prompt."""
 
     id: str
-    version: str
     template: str
 
 

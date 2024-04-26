@@ -21,7 +21,7 @@ from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.prompts.constants import LATEST
 from autoblocks._impl.prompts.constants import UNDEPLOYED
 from autoblocks._impl.prompts.context import PromptExecutionContext
-from autoblocks._impl.prompts.error import IncompatiblePromptSnapshotError
+from autoblocks._impl.prompts.error import IncompatiblePromptRevisionError
 from autoblocks._impl.prompts.models import Prompt
 from autoblocks._impl.prompts.models import PromptMinorVersion
 from autoblocks._impl.prompts.models import WeightedMinorVersion
@@ -47,19 +47,19 @@ def is_testing_context() -> bool:
     return bool(AutoblocksEnvVar.CLI_SERVER_ADDRESS.get())
 
 
-def prompt_snapshots_map() -> dict[str, str]:
+def prompt_revisions_map() -> dict[str, str]:
     """
-    The AUTOBLOCKS_PROMPT_SNAPSHOTS environment variable is a JSON-stringified
-    map of prompt IDs to snapshot IDs. This is set in CI test runs triggered
+    The AUTOBLOCKS_PROMPT_REVISIONS environment variable is a JSON-stringified
+    map of prompt IDs to revision IDs. This is set in CI test runs triggered
     from the UI.
     """
     if not is_testing_context():
         return {}
 
-    prompt_snapshots_raw = AutoblocksEnvVar.PROMPT_SNAPSHOTS.get()
-    if not prompt_snapshots_raw:
+    prompt_revisions_raw = AutoblocksEnvVar.PROMPT_REVISIONS.get()
+    if not prompt_revisions_raw:
         return {}
-    return json.loads(prompt_snapshots_raw)  # type: ignore
+    return json.loads(prompt_revisions_raw)  # type: ignore
 
 
 class AutoblocksPromptManager(
@@ -111,7 +111,7 @@ class AutoblocksPromptManager(
 
         self._api_key = api_key
 
-        self._prompt_snapshot: Optional[Prompt] = None
+        self._prompt_revision_override: Optional[Prompt] = None
 
         refresh_seconds = refresh_interval.total_seconds()
         if refresh_seconds < 1:
@@ -139,10 +139,10 @@ class AutoblocksPromptManager(
         minor_version = encode_uri_component(minor_version)
         return f"{API_ENDPOINT}/prompts/{prompt_id}/major/{major_version}/minor/{minor_version}"
 
-    def _make_snapshot_validate_override_request_url(self, snapshot_id: str) -> str:
+    def _make_revision_validate_override_request_url(self, revision_id: str) -> str:
         prompt_id = encode_uri_component(self.__prompt_id__)
-        snapshot_id = encode_uri_component(snapshot_id)
-        return f"{API_ENDPOINT}/prompts/{prompt_id}/snapshots/{snapshot_id}/validate"
+        revision_id = encode_uri_component(revision_id)
+        return f"{API_ENDPOINT}/prompts/{prompt_id}/revisions/{revision_id}/validate"
 
     async def _get_prompt(
         self,
@@ -157,33 +157,33 @@ class AutoblocksPromptManager(
         resp.raise_for_status()
         return Prompt.model_validate(resp.json())
 
-    async def _set_prompt_snapshot(self, snapshot_id: str) -> None:
+    async def _set_prompt_revision(self, revision_id: str) -> None:
         """
-        If this prompt has a snapshot set, use the /validate endpoint to check if the
-        major version this prompt manager is configured to use is compatible to be
-        overridden with the snapshot.
+        If this prompt has a revision override set, use the /validate endpoint to
+        check if the major version this prompt manager is configured to use is compatible
+        to be overridden with the revision.
         """
         # Double check we're in a testing context
         if not is_testing_context():
-            log.error("Can't set prompt snapshot unless in a testing context.")
+            log.error("Can't set prompt revision unless in a testing context.")
             return
 
-        # Double check the given snapshot_id belongs to this prompt manager
-        expected_snapshot_id = prompt_snapshots_map()[self.__prompt_id__]
-        if snapshot_id != expected_snapshot_id:
+        # Double check the given revision_id belongs to this prompt manager
+        expected_revision_id = prompt_revisions_map()[self.__prompt_id__]
+        if revision_id != expected_revision_id:
             raise RuntimeError(
-                f"Snapshot ID '{snapshot_id}' does not match the snapshot ID "
-                f"for this prompt manager '{expected_snapshot_id}'."
+                f"Revision ID '{revision_id}' does not match the revision ID "
+                f"for this prompt manager '{expected_revision_id}'."
             )
 
         if self.__prompt_major_version__ == UNDEPLOYED:
             raise NotImplementedError(
-                "Prompt snapshot overrides are not yet supported for prompt managers using DANGEROUSLY_USE_UNDEPLOYED. "
+                "Prompt revision overrides are not yet supported for prompt managers using DANGEROUSLY_USE_UNDEPLOYED. "
                 "Reach out to support@autoblocks.ai for more details."
             )
 
         resp = await global_state.http_client().post(
-            self._make_snapshot_validate_override_request_url(snapshot_id),
+            self._make_revision_validate_override_request_url(revision_id),
             timeout=self._init_timeout.total_seconds(),
             headers={"Authorization": f"Bearer {self._api_key}"},
             json=dict(
@@ -192,28 +192,28 @@ class AutoblocksPromptManager(
         )
 
         if resp.status_code == HTTPStatus.CONFLICT:
-            # The /validate endpoint returns this status code when the snapshot is
+            # The /validate endpoint returns this status code when the revision is
             # not compatible with the major version this prompt manager
             # is configured to use.
-            raise IncompatiblePromptSnapshotError(
-                f"Can't override '{self._class_name}' with prompt snapshot '{snapshot_id}' because it is not "
+            raise IncompatiblePromptRevisionError(
+                f"Can't override prompt '{self._class_name}' with revision '{revision_id}' because it is not "
                 f"compatible with major version '{self.__prompt_major_version__}'."
             )
 
         # Raise for any unexpected errors
         resp.raise_for_status()
 
-        # Set the prompt snapshot
-        log.warning(f"Overriding '{self._class_name}' with prompt snapshot '{snapshot_id}'!")
-        self._prompt_snapshot = Prompt.model_validate(resp.json())
+        # Set the prompt revision override
+        log.warning(f"Overriding prompt '{self._class_name}' with revision '{revision_id}'!")
+        self._prompt_revision_override = Prompt.model_validate(resp.json())
 
     async def _init_async(self) -> None:
-        # Set the snapshot prompt if this manager's prompt ID is in the snapshot map
-        if is_testing_context() and (snapshot_id := prompt_snapshots_map().get(self.__prompt_id__)):
-            await self._set_prompt_snapshot(snapshot_id)
+        # Set the revision override if this manager's prompt ID is in the revision map
+        if is_testing_context() and (revision_id := prompt_revisions_map().get(self.__prompt_id__)):
+            await self._set_prompt_revision(revision_id)
             return
 
-        # Not in testing context or no snapshot set, proceed as configured
+        # Not in testing context or no revision override set, proceed as configured
 
         # Convert all_minor_versions (which is a set) to a list
         # to guarantee we get the same order both when fetching
@@ -290,9 +290,9 @@ class AutoblocksPromptManager(
             log.info(f"Updated latest prompt from v{old_latest.version} to v{new_latest.version}")
 
     def _choose_execution_prompt(self) -> Prompt:
-        # Always use the prompt snapshot if it is set
-        if is_testing_context() and self._prompt_snapshot:
-            return self._prompt_snapshot
+        # Always use the prompt revision override if it is set
+        if is_testing_context() and self._prompt_revision_override:
+            return self._prompt_revision_override
 
         # Choose the minor version to use
         chosen_minor_version = self._minor_version.choose_version()

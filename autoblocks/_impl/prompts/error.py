@@ -1,2 +1,2 @@
-class IncompatiblePromptSnapshotError(Exception):
+class IncompatiblePromptRevisionError(Exception):
     pass

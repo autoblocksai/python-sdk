@@ -164,7 +164,6 @@ def test_prompt_manager():
             "id": "used-by-ci-dont-delete",
             "version": "2.1",
             "params": {
-                "version": "1.1",
                 "params": {
                     "frequencyPenalty": 0,
                     "maxTokens": 256,
@@ -178,17 +177,14 @@ def test_prompt_manager():
             "templates": [
                 {
                     "id": "template-a",
-                    "version": "1.0",
                     "template": "Hello, {{ name }}! The weather is {{ weather }} today.",
                 },
                 {
                     "id": "template-b",
-                    "version": "1.1",
                     "template": "Hello {{ optional? }}! My name is {{ name }}.",
                 },
                 {
                     "id": "template-c",
-                    "version": "1.0",
                     "template": "I am template c and I have no params",
                 },
             ],
@@ -239,7 +235,7 @@ def test_prompt_manager_no_model_params():
             version="1.0",
             params=None,
             templates=[
-                dict(id="my-template-id", version="1.0", template="Hello, {{ name }}!"),
+                dict(id="my-template-id", template="Hello, {{ name }}!"),
             ],
         )
 
