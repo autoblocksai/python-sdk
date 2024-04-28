@@ -86,6 +86,7 @@ class AutoblocksPromptManager(
     def __init__(
         self,
         minor_version: Union[
+            str,
             MinorVersionEnumType,
             List[WeightedMinorVersion[MinorVersionEnumType]],
         ],

@@ -75,13 +75,15 @@ class WeightedMinorVersion(
 class PromptMinorVersion(FrozenModel):
     # need to do more research here, WeightedMinorVersion requires generics but we don't care what it is in this case,
     # just that it's an instance of WeightedMinorVersion.
-    version: Union[Enum, List[WeightedMinorVersion]]  # type: ignore
+    version: Union[str, Enum, List[WeightedMinorVersion]]  # type: ignore
 
     @property
     def str_version(self) -> Optional[str]:
         if isinstance(self.version, list):
             return None
-        return str(self.version.value)
+        if isinstance(self.version, Enum):
+            return str(self.version.value)
+        return self.version
 
     @property
     def weighted_versions(self) -> Optional[List[WeightedMinorVersion]]:  # type: ignore
