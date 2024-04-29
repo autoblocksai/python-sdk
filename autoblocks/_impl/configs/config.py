@@ -12,13 +12,9 @@ from typing import TypeVar
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
-from autoblocks._impl.configs.models import DangerouslyUseUndeployedRemoteConfig
-from autoblocks._impl.configs.models import DangerouslyUseUndeployedWithRevision
-from autoblocks._impl.configs.models import LatestDangerouslyUseUndeployed
-from autoblocks._impl.configs.models import LatestRemoteConfig
+from autoblocks._impl.config.constants import REVISION_LATEST
 from autoblocks._impl.configs.models import RemoteConfig
 from autoblocks._impl.configs.models import RemoteConfigResponse
-from autoblocks._impl.configs.models import RemoteConfigWithVersion
 from autoblocks._impl.util import AnyTask
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import get_running_loop
@@ -57,19 +53,26 @@ def config_revisions_map() -> dict[str, str]:
 def make_request_url(config: RemoteConfig) -> str:
     config_id = config.id
     base = f"{API_ENDPOINT}/configs/{config_id}"
+    if (
+        not isinstance(config, RemoteConfig)
+        and config.version is None
+        and config.dangerously_use_undeployed_revision is None
+    ):
+        raise ValueError(f"Invalid config type: {config}")
+
     if is_testing_context() and (revision_id := config_revisions_map().get(config_id)):
         return f"{base}/revisions/{revision_id}"
-    if isinstance(config, LatestRemoteConfig):
-        return f"{base}/versions/latest"
-    elif isinstance(config, RemoteConfigWithVersion):
-        return f"{base}/versions/{config.version}"
-    elif isinstance(config, DangerouslyUseUndeployedRemoteConfig):
-        if isinstance(config.dangerously_use_undeployed, DangerouslyUseUndeployedWithRevision):
-            return f"{base}/revisions/{config.dangerously_use_undeployed.revision_id}"
-        else:
-            return f"{base}/revisions/latest"
 
-    raise ValueError(f"Invalid config type: {config}")
+    if config.dangerously_use_undeployed_revision is not None:
+        if config.dangerously_use_undeployed_revision == REVISION_LATEST:
+            return f"{base}/revisions/{REVISION_LATEST}"
+        else:
+            return f"{base}/revisions/{config.dangerously_use_undeployed_revision}"
+
+    if config.version == REVISION_LATEST:
+        return f"{base}/versions/{REVISION_LATEST}"
+
+    return f"{base}/versions/{config.version}"
 
 
 def is_remote_config_refreshable(config: RemoteConfig) -> bool:
@@ -77,10 +80,7 @@ def is_remote_config_refreshable(config: RemoteConfig) -> bool:
     A config is refreshable if the user has specified that they want the latest deployed config
     or the latest undeployed config.
     """
-    return isinstance(config, LatestRemoteConfig) or (
-        isinstance(config, DangerouslyUseUndeployedRemoteConfig)
-        and isinstance(config.dangerously_use_undeployed, LatestDangerouslyUseUndeployed)
-    )
+    return config.version == REVISION_LATEST or config.dangerously_use_undeployed_revision == REVISION_LATEST
 
 
 async def get_remote_config(config: RemoteConfig, timeout: timedelta, api_key: str) -> RemoteConfigResponse:

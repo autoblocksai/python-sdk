@@ -6,11 +6,7 @@ import pydantic
 
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks.configs.config import AutoblocksConfig
-from autoblocks.configs.models import DangerouslyUseUndeployedRemoteConfig
-from autoblocks.configs.models import DangerouslyUseUndeployedWithRevision
-from autoblocks.configs.models import LatestDangerouslyUseUndeployed
-from autoblocks.configs.models import LatestRemoteConfig
-from autoblocks.configs.models import RemoteConfigWithVersion
+from autoblocks.configs.models import RemoteConfig
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 
 
@@ -45,7 +41,24 @@ def test_gracefully_handles_parser_error(httpx_mock):
     config = MyConfig(
         value=MyConfigValue(my_val="initial-val"),
     )
-    config.activate_from_remote(config=LatestRemoteConfig(id="my-config-id"), parser=MyConfigValue.model_validate)
+    config.activate_from_remote(
+        config=RemoteConfig(id="my-config-id", version="latest"), parser=MyConfigValue.model_validate
+    )
+
+    assert config.value == MyConfigValue(my_val="initial-val")
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "AUTOBLOCKS_API_KEY": "mock-api-key",
+    },
+)
+def test_gracefully_handles_invalid_remote_config():
+    config = MyConfig(
+        value=MyConfigValue(my_val="initial-val"),
+    )
+    config.activate_from_remote(config=RemoteConfig(id="my-config-id"), parser=MyConfigValue.model_validate)
 
     assert config.value == MyConfigValue(my_val="initial-val")
 
@@ -73,7 +86,9 @@ def test_activates_latest(httpx_mock):
     config = MyConfig(
         value=MyConfigValue(my_val="initial-val"),
     )
-    config.activate_from_remote(config=LatestRemoteConfig(id="my-config-id"), parser=MyConfigValue.model_validate)
+    config.activate_from_remote(
+        config=RemoteConfig(id="my-config-id", version="latest"), parser=MyConfigValue.model_validate
+    )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
 
@@ -102,7 +117,7 @@ def test_activates_specific_version(httpx_mock):
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=RemoteConfigWithVersion(id="my-config-id", version="1"), parser=MyConfigValue.model_validate
+        config=RemoteConfig(id="my-config-id", version="1"), parser=MyConfigValue.model_validate
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
@@ -132,9 +147,7 @@ def test_activates_undeployed_latest(httpx_mock):
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=DangerouslyUseUndeployedRemoteConfig(
-            id="my-config-id", dangerously_use_undeployed=LatestDangerouslyUseUndeployed(latest=True)
-        ),
+        config=RemoteConfig(id="my-config-id", dangerously_use_undeployed_revision="latest"),
         parser=MyConfigValue.model_validate,
     )
 
@@ -165,9 +178,9 @@ def test_activates_undeployed_revision_id(httpx_mock):
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=DangerouslyUseUndeployedRemoteConfig(
+        config=RemoteConfig(
             id="my-config-id",
-            dangerously_use_undeployed=DangerouslyUseUndeployedWithRevision(revision_id="my-revision-id"),
+            dangerously_use_undeployed_revision="my-revision-id",
         ),
         parser=MyConfigValue.model_validate,
     )
@@ -201,9 +214,9 @@ def test_activates_revision_id_override(httpx_mock):
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=DangerouslyUseUndeployedRemoteConfig(
+        config=RemoteConfig(
             id="my-config-id",
-            dangerously_use_undeployed=DangerouslyUseUndeployedWithRevision(revision_id="my-revision-id"),
+            dangerously_use_undeployed_revision="my-revision-id",
         ),
         parser=MyConfigValue.model_validate,
     )
@@ -236,7 +249,9 @@ def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
     config = MyConfig(
         value=MyConfigValue(my_val="initial-val"),
     )
-    config.activate_from_remote(config=LatestRemoteConfig(id="my-config-id"), parser=MyConfigValue.model_validate)
+    config.activate_from_remote(
+        config=RemoteConfig(id="my-config-id", version="latest"), parser=MyConfigValue.model_validate
+    )
 
     assert config.value == MyConfigValue(my_val="val-from-remote-latest")
     # ensure we only made one call to get latest

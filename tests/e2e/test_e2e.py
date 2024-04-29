@@ -20,11 +20,7 @@ from autoblocks.api.models import SystemEventFilterKey
 from autoblocks.api.models import TraceFilter
 from autoblocks.api.models import TraceFilterOperator
 from autoblocks.configs.config import AutoblocksConfig
-from autoblocks.configs.models import DangerouslyUseUndeployedRemoteConfig
-from autoblocks.configs.models import DangerouslyUseUndeployedWithRevision
-from autoblocks.configs.models import LatestDangerouslyUseUndeployed
-from autoblocks.configs.models import LatestRemoteConfig
-from autoblocks.configs.models import RemoteConfigWithVersion
+from autoblocks.configs.models import RemoteConfig
 from autoblocks.prompts.models import WeightedMinorVersion
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.run import run_test_suite
@@ -145,7 +141,7 @@ def test_config_latest():
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=LatestRemoteConfig(id="used-by-ci-dont-delete"), parser=MyConfigValue.model_validate
+        config=RemoteConfig(id="used-by-ci-dont-delete", version="latest"), parser=MyConfigValue.model_validate
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
@@ -165,7 +161,7 @@ def test_config_specific_version():
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=RemoteConfigWithVersion(id="used-by-ci-dont-delete", version="1"), parser=MyConfigValue.model_validate
+        config=RemoteConfig(id="used-by-ci-dont-delete", version="1"), parser=MyConfigValue.model_validate
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
@@ -185,9 +181,7 @@ def test_config_undeployed_latest():
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=DangerouslyUseUndeployedRemoteConfig(
-            id="used-by-ci-dont-delete", dangerously_use_undeployed=LatestDangerouslyUseUndeployed(latest=True)
-        ),
+        config=RemoteConfig(id="used-by-ci-dont-delete", dangerously_use_undeployed_revision="latest"),
         parser=MyConfigValue.model_validate,
         # Need to use a user-scoped API key to access undeployed configs
         api_key=os.environ["AUTOBLOCKS_API_KEY_USER"],
@@ -210,9 +204,9 @@ def test_config_undeployed_revision():
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=DangerouslyUseUndeployedRemoteConfig(
+        config=RemoteConfig(
             id="used-by-ci-dont-delete",
-            dangerously_use_undeployed=DangerouslyUseUndeployedWithRevision(revision_id="clvlcgpiq0003qtvsbz5vt7e0"),
+            dangerously_use_undeployed_revision="clvlcgpiq0003qtvsbz5vt7e0",
         ),
         parser=MyConfigValue.model_validate,
         # Need to use a user-scoped API key to access undeployed configs

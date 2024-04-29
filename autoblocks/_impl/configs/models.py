@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 from typing import Dict
-from typing import Literal
-from typing import Union
+from typing import Optional
 
 
 @dataclass
@@ -13,31 +12,8 @@ class RemoteConfigResponse:
 
 
 @dataclass
-class LatestRemoteConfig:
+class RemoteConfig:
     id: str
-    latest: Literal[True] = True
-
-
-@dataclass
-class RemoteConfigWithVersion:
-    id: str
-    version: str
-
-
-@dataclass
-class LatestDangerouslyUseUndeployed:
-    latest: Literal[True]
-
-
-@dataclass
-class DangerouslyUseUndeployedWithRevision:
-    revision_id: str
-
-
-@dataclass
-class DangerouslyUseUndeployedRemoteConfig:
-    id: str
-    dangerously_use_undeployed: Union[LatestDangerouslyUseUndeployed, DangerouslyUseUndeployedWithRevision]
-
-
-RemoteConfig = Union[LatestRemoteConfig, RemoteConfigWithVersion, DangerouslyUseUndeployedRemoteConfig]
+    # only one of these should be specified
+    version: Optional[str] = None  # can be a version like "1" or "latest"
+    dangerously_use_undeployed_revision: Optional[str] = None  # can be a specific revision id or "latest"
