@@ -64,9 +64,7 @@ def make_request_url(config: RemoteConfig) -> str:
         return f"{base}/versions/latest"
     elif isinstance(config, RemoteConfigWithVersion):
         return f"{base}/versions/{config.version}"
-    elif isinstance(config, DangerouslyUseUndeployedRemoteConfig) and isinstance(
-        config.dangerously_use_undeployed, DangerouslyUseUndeployedWithRevision
-    ):
+    elif isinstance(config, DangerouslyUseUndeployedRemoteConfig):
         if isinstance(config.dangerously_use_undeployed, DangerouslyUseUndeployedWithRevision):
             return f"{base}/revisions/{config.dangerously_use_undeployed.revision_id}"
         else:
