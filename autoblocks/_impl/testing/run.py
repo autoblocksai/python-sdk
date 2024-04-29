@@ -4,6 +4,7 @@ import dataclasses
 import inspect
 import logging
 import os
+import time
 import traceback
 from typing import Any
 from typing import Awaitable
@@ -29,6 +30,7 @@ from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cases
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
+from autoblocks.tracer import flush
 
 log = logging.getLogger(__name__)
 
@@ -155,6 +157,10 @@ async def run_test_case_unsafe(
     Its caller will catch and handle all exceptions.
     """
     async with test_case_semaphore_registry[test_id]:
+        # NOTE: This should be _inside_ the `async with` block to ensure we don't start the
+        # timer until the semaphore is acquired.
+        start_time = time.perf_counter()
+
         if inspect.iscoroutinefunction(fn):
             output = await fn(test_case_ctx.test_case)
         else:
@@ -166,6 +172,11 @@ async def run_test_case_unsafe(
                 test_case_ctx.test_case,
             )
 
+    # Flush the logs before we send the result, since the CLI
+    # accumulates the events and sends them as a batch along
+    # with the result.
+    flush()
+
     await post_to_cli(
         "/results",
         json=dict(
@@ -173,6 +184,7 @@ async def run_test_case_unsafe(
             testCaseHash=test_case_ctx.hash(),
             testCaseBody=serialize_test_case(test_case_ctx.test_case),
             testCaseOutput=serialize(output),
+            testCaseDurationMs=(time.perf_counter() - start_time) * 1000,
         ),
     )
     return output

@@ -22,6 +22,7 @@ from autoblocks.testing.models import Threshold
 from autoblocks.testing.models import TracerEvent
 from autoblocks.testing.run import run_test_suite
 from autoblocks.tracer import AutoblocksTracer
+from tests.util import ANY_NUMBER
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import decode_request_body
 from tests.util import expect_cli_post_request
@@ -141,6 +142,7 @@ def test_error_in_test_fn(httpx_mock):
             testCaseHash="a",
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -202,6 +204,7 @@ def test_error_in_async_test_fn(httpx_mock):
             testCaseHash="a",
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -263,6 +266,7 @@ def test_error_in_evaluator(httpx_mock):
             testCaseHash="a",
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -297,6 +301,7 @@ def test_error_in_evaluator(httpx_mock):
             testCaseHash="b",
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -388,6 +393,7 @@ def test_no_evaluators(httpx_mock):
             testCaseHash="a",
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -398,6 +404,7 @@ def test_no_evaluators(httpx_mock):
             testCaseHash="b",
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -439,6 +446,7 @@ def test_with_evaluators(httpx_mock):
             testCaseHash="a",
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -473,6 +481,7 @@ def test_with_evaluators(httpx_mock):
             testCaseHash="b",
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -586,6 +595,7 @@ def test_concurrency(httpx_mock):
                 testCaseHash="a",
                 testCaseBody=dict(input="a"),
                 testCaseOutput="a!",
+                testCaseDurationMs=ANY_NUMBER,
             ),
         ),
         (
@@ -595,6 +605,7 @@ def test_concurrency(httpx_mock):
                 testCaseHash="b",
                 testCaseBody=dict(input="b"),
                 testCaseOutput="b!",
+                testCaseDurationMs=ANY_NUMBER,
             ),
         ),
         (
@@ -664,6 +675,7 @@ def test_async_test_fn(httpx_mock):
             testCaseHash="a",
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -674,6 +686,7 @@ def test_async_test_fn(httpx_mock):
             testCaseHash="b",
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -715,6 +728,7 @@ def test_async_evaluators(httpx_mock):
             testCaseHash="a",
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -749,6 +763,7 @@ def test_async_evaluators(httpx_mock):
             testCaseHash="b",
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -833,6 +848,7 @@ def test_serializes(httpx_mock):
                 d="2021-01-01T01:01:01",
                 u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
             ),
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -949,6 +965,7 @@ def test_skips_non_serializable_test_case_attributes(httpx_mock):
                 u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
             ),
             testCaseOutput="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -1017,6 +1034,7 @@ def test_sends_tracer_events(httpx_mock):
             testCaseHash="a",
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -1036,6 +1054,7 @@ def test_sends_tracer_events(httpx_mock):
             testCaseHash="b",
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -1086,6 +1105,7 @@ def test_repeated_test_cases(httpx_mock):
             # test_case_config should not be in the serialized body
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -1097,6 +1117,7 @@ def test_repeated_test_cases(httpx_mock):
             # test_case_config should not be in the serialized body
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -1108,6 +1129,7 @@ def test_repeated_test_cases(httpx_mock):
             # test_case_config should not be in the serialized body
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
 
@@ -1120,6 +1142,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseHash="b",
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
 
@@ -1267,6 +1290,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
             testCaseHash="0.5",
             testCaseBody=dict(x=0.5),
             testCaseOutput="whatever",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -1466,6 +1490,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
                 ],
             ),
             testCaseOutput=dict(actions=["1"]),
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -1484,6 +1509,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
                 ],
             ),
             testCaseOutput=dict(actions=["2"]),
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(
@@ -1619,6 +1645,7 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
                 testCaseHash=test_case_a.hash(),
                 testCaseBody=dict(input="a"),
                 testCaseOutput="a!",
+                testCaseDurationMs=ANY_NUMBER,
             ),
         ),
         dict(
@@ -1681,6 +1708,7 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
                 testCaseHash=test_case_b.hash(),
                 testCaseBody=dict(input="b"),
                 testCaseOutput="b!",
+                testCaseDurationMs=ANY_NUMBER,
             ),
         ),
         dict(
