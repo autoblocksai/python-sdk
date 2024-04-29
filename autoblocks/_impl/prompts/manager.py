@@ -18,7 +18,7 @@ from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
-from autoblocks._impl.prompts.constants import LATEST
+from autoblocks._impl.config.constants import REVISION_LATEST
 from autoblocks._impl.prompts.constants import UNDEPLOYED
 from autoblocks._impl.prompts.context import PromptExecutionContext
 from autoblocks._impl.prompts.error import IncompatiblePromptRevisionError
@@ -120,7 +120,7 @@ class AutoblocksPromptManager(
 
         self._init()
 
-        if LATEST in self._minor_version.all_minor_versions:
+        if REVISION_LATEST in self._minor_version.all_minor_versions:
             if is_testing_context():
                 log.info("Prompt refreshing is disabled when in a testing context.")
                 return
@@ -276,15 +276,15 @@ class AutoblocksPromptManager(
     async def _refresh_latest(self) -> None:
         # Get the latest minor version within this prompt's major version
         new_latest = await self._get_prompt(
-            minor_version=LATEST,
+            minor_version=REVISION_LATEST,
             timeout=self._refresh_timeout,
         )
 
         # Get the prompt we're replacing
-        old_latest = self._minor_version_to_prompt.get(LATEST)
+        old_latest = self._minor_version_to_prompt.get(REVISION_LATEST)
 
         # Update the prompt
-        self._minor_version_to_prompt[LATEST] = new_latest
+        self._minor_version_to_prompt[REVISION_LATEST] = new_latest
 
         # Log if we're replacing an older version of the prompt
         if old_latest and old_latest.version != new_latest.version:

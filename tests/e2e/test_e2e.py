@@ -9,6 +9,7 @@ from datetime import timedelta
 from unittest import mock
 
 import httpx
+import pydantic
 import pytest
 
 from autoblocks.api.client import AutoblocksAPIClient
@@ -18,6 +19,8 @@ from autoblocks.api.models import RelativeTimeFilter
 from autoblocks.api.models import SystemEventFilterKey
 from autoblocks.api.models import TraceFilter
 from autoblocks.api.models import TraceFilterOperator
+from autoblocks.configs.config import AutoblocksConfig
+from autoblocks.configs.models import RemoteConfig
 from autoblocks.prompts.models import WeightedMinorVersion
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.run import run_test_suite
@@ -122,6 +125,95 @@ def test_send_and_retrieve_event():
         sleep_seconds = 5
         print(f"Couldn't find trace {test_trace_id} yet, waiting {sleep_seconds} seconds. {retries} tries left.")
         time.sleep(sleep_seconds)
+
+
+def test_config_latest():
+    # This test uses a revision created in our CI org:
+    # https://app.autoblocks.ai/configs/used-by-ci-dont-delete/revisions/clvlc9qv50003urfi9h9nc6z5/edit
+
+    class MyConfigValue(pydantic.BaseModel):
+        my_val: str
+
+    class MyConfig(AutoblocksConfig[MyConfigValue]):
+        pass
+
+    config = MyConfig(
+        value=MyConfigValue(my_val="initial-val"),
+    )
+    config.activate_from_remote(
+        config=RemoteConfig(id="used-by-ci-dont-delete", version="latest"), parser=MyConfigValue.model_validate
+    )
+
+    assert config.value == MyConfigValue(my_val="val-from-remote")
+
+
+def test_config_specific_version():
+    # This test uses a revision created in our CI org:
+    # https://app.autoblocks.ai/configs/used-by-ci-dont-delete/revisions/clvlc9qv50003urfi9h9nc6z5/edit
+
+    class MyConfigValue(pydantic.BaseModel):
+        my_val: str
+
+    class MyConfig(AutoblocksConfig[MyConfigValue]):
+        pass
+
+    config = MyConfig(
+        value=MyConfigValue(my_val="initial-val"),
+    )
+    config.activate_from_remote(
+        config=RemoteConfig(id="used-by-ci-dont-delete", version="1"), parser=MyConfigValue.model_validate
+    )
+
+    assert config.value == MyConfigValue(my_val="val-from-remote")
+
+
+def test_config_undeployed_latest():
+    # This test uses a revision created in our CI org:
+    # https://app.autoblocks.ai/configs/used-by-ci-dont-delete/revisions/clvlcgpiq0003qtvsbz5vt7e0/edit
+
+    class MyConfigValue(pydantic.BaseModel):
+        my_val: str
+
+    class MyConfig(AutoblocksConfig[MyConfigValue]):
+        pass
+
+    config = MyConfig(
+        value=MyConfigValue(my_val="initial-val"),
+    )
+    config.activate_from_remote(
+        config=RemoteConfig(id="used-by-ci-dont-delete", dangerously_use_undeployed_revision="latest"),
+        parser=MyConfigValue.model_validate,
+        # Need to use a user-scoped API key to access undeployed configs
+        api_key=os.environ["AUTOBLOCKS_API_KEY_USER"],
+    )
+
+    assert config.value == MyConfigValue(my_val="val-from-remote-undeployed")
+
+
+def test_config_undeployed_revision():
+    # This test uses a revision created in our CI org:
+    # https://app.autoblocks.ai/configs/used-by-ci-dont-delete/revisions/clvlcgpiq0003qtvsbz5vt7e0/edit
+
+    class MyConfigValue(pydantic.BaseModel):
+        my_val: str
+
+    class MyConfig(AutoblocksConfig[MyConfigValue]):
+        pass
+
+    config = MyConfig(
+        value=MyConfigValue(my_val="initial-val"),
+    )
+    config.activate_from_remote(
+        config=RemoteConfig(
+            id="used-by-ci-dont-delete",
+            dangerously_use_undeployed_revision="clvlcgpiq0003qtvsbz5vt7e0",
+        ),
+        parser=MyConfigValue.model_validate,
+        # Need to use a user-scoped API key to access undeployed configs
+        api_key=os.environ["AUTOBLOCKS_API_KEY_USER"],
+    )
+
+    assert config.value == MyConfigValue(my_val="val-from-remote-undeployed")
 
 
 def test_prompt_manager():

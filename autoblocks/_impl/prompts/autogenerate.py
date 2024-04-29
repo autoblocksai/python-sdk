@@ -9,8 +9,8 @@ from typing import Tuple
 import httpx
 
 from autoblocks._impl.config.constants import API_ENDPOINT
+from autoblocks._impl.config.constants import REVISION_LATEST
 from autoblocks._impl.prompts.constants import DANGEROUSLY_USE_UNDEPLOYED_ENUM_VALUE_NAME
-from autoblocks._impl.prompts.constants import LATEST
 from autoblocks._impl.prompts.constants import UNDEPLOYED
 from autoblocks._impl.prompts.models import AutogeneratePromptsConfig
 from autoblocks._impl.prompts.models import FrozenModel
@@ -237,7 +237,7 @@ def generate_minor_versions_enum_code(prompt: Prompt) -> str:
         for version in prompt.minor_versions:
             auto += f'{indent()}v{version} = "{version}"\n'
 
-        auto += f'{indent()}LATEST = "{LATEST}"\n'
+        auto += f'{indent()}LATEST = "{REVISION_LATEST}"\n'
 
     return auto
 
