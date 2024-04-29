@@ -39,7 +39,7 @@ class AnyNumber(float):
     """
 
     def __eq__(self, other: Any) -> bool:
-        return isinstance(self, (int, float)) and not isinstance(self, bool)
+        return isinstance(other, (int, float)) and not isinstance(other, bool)
 
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
