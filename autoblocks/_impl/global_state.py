@@ -67,6 +67,8 @@ def _flush_and_shut_down_event_loop() -> None:
         _background_thread.join()
         # Cancel all remaining tasks
         log.debug("Cancelling all remaining tasks")
+        for task in asyncio.all_tasks(_background_event_loop):
+            task.cancel()
         _background_event_loop.run_until_complete(_background_event_loop.shutdown_asyncgens())
         # Close the loop
         log.debug("Closing event loop")
