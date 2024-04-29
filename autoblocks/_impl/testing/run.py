@@ -156,6 +156,8 @@ async def run_test_case_unsafe(
     Its caller will catch and handle all exceptions.
     """
     async with test_case_semaphore_registry[test_id]:
+        # NOTE: This should be _inside_ the `async with` block to ensure we don't start the
+        # timer until the semaphore is acquired.
         start_time = time.perf_counter()
 
         if inspect.iscoroutinefunction(fn):
