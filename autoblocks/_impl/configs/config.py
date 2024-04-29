@@ -92,9 +92,9 @@ async def get_remote_config(config: RemoteConfig, timeout: timedelta, api_key: s
     resp.raise_for_status()
     resp_json = resp.json()
     return RemoteConfigResponse(
-        id=resp_json.get("id"),
-        version=resp_json.get("version"),
-        value=resp_json.get("value"),
+        id=resp_json["id"],
+        version=resp_json["version"],
+        value=resp_json["value"],
     )
 
 
