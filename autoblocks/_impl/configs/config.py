@@ -57,8 +57,7 @@ def config_revisions_map() -> dict[str, str]:
 def make_request_url(config: RemoteConfig) -> str:
     config_id = config.id
     base = f"{API_ENDPOINT}/configs/{config_id}"
-    revision_id = config_revisions_map().get(config_id)
-    if revision_id and is_testing_context():
+    if is_testing_context() and (revision_id := config_revisions_map().get(config_id)):
         return f"{base}/revisions/{revision_id}"
     if isinstance(config, LatestRemoteConfig):
         return f"{base}/versions/latest"
