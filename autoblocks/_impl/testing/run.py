@@ -30,6 +30,7 @@ from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cases
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
+from autoblocks.tracer import flush
 
 log = logging.getLogger(__name__)
 
@@ -170,6 +171,11 @@ async def run_test_case_unsafe(
                 fn,
                 test_case_ctx.test_case,
             )
+
+    # Flush the logs before we send the result, since the CLI
+    # accumulates the events and sends them as a batch along
+    # with the result.
+    flush()
 
     await post_to_cli(
         "/results",
