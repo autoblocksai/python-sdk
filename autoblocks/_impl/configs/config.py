@@ -25,7 +25,7 @@ from autoblocks._impl.util import get_running_loop
 
 log = logging.getLogger(__name__)
 
-AutoblocksConfigValue = TypeVar("AutoblocksConfigValue")
+AutoblocksConfigValueType = TypeVar("AutoblocksConfigValueType")
 
 
 def is_testing_context() -> bool:
@@ -65,10 +65,10 @@ def make_request_url(config: RemoteConfig) -> str:
     elif isinstance(config, RemoteConfigWithVersion):
         return f"{base}/versions/{config.version}"
     elif isinstance(config, DangerouslyUseUndeployedRemoteConfig) and isinstance(
-        config.dangerouslyUseUndeployed, DangerouslyUseUndeployedWithRevision
+        config.dangerously_use_undeployed, DangerouslyUseUndeployedWithRevision
     ):
-        if isinstance(config.dangerouslyUseUndeployed, DangerouslyUseUndeployedWithRevision):
-            return f"{base}/revisions/{config.dangerouslyUseUndeployed.revisionId}"
+        if isinstance(config.dangerously_use_undeployed, DangerouslyUseUndeployedWithRevision):
+            return f"{base}/revisions/{config.dangerously_use_undeployed.revision_id}"
         else:
             return f"{base}/revisions/latest"
 
@@ -82,7 +82,7 @@ def is_remote_config_refreshable(config: RemoteConfig) -> bool:
     """
     return isinstance(config, LatestRemoteConfig) or (
         isinstance(config, DangerouslyUseUndeployedRemoteConfig)
-        and isinstance(config.dangerouslyUseUndeployed, LatestDangerouslyUseUndeployed)
+        and isinstance(config.dangerously_use_undeployed, LatestDangerouslyUseUndeployed)
     )
 
 
@@ -93,20 +93,21 @@ async def get_remote_config(config: RemoteConfig, timeout: timedelta, api_key: s
         headers={"Authorization": f"Bearer {api_key}"},
     )
     resp.raise_for_status()
+    resp_json = resp.json()
     return RemoteConfigResponse(
-        id=resp.json().get("id"),
-        version=resp.json().get("version"),
-        value=resp.json().get("value"),
+        id=resp_json.get("id"),
+        version=resp_json.get("version"),
+        value=resp_json.get("value"),
     )
 
 
 class AutoblocksConfig(
     abc.ABC,
-    Generic[AutoblocksConfigValue],
+    Generic[AutoblocksConfigValueType],
 ):
-    _value: AutoblocksConfigValue
+    _value: AutoblocksConfigValueType
 
-    def __init__(self, value: AutoblocksConfigValue) -> None:
+    def __init__(self, value: AutoblocksConfigValueType) -> None:
         self._value = value
 
     async def _refresh_loop(
@@ -115,7 +116,7 @@ class AutoblocksConfig(
         refresh_interval: timedelta,
         refresh_timeout: timedelta,
         api_key: str,
-        parser: Callable[[Dict[str, Any]], AutoblocksConfigValue],
+        parser: Callable[[Dict[str, Any]], AutoblocksConfigValueType],
     ) -> None:
         """
         Refreshes the latest version of the config every `refresh_interval` seconds.
@@ -139,7 +140,7 @@ class AutoblocksConfig(
         config: RemoteConfig,
         api_key: str,
         timeout: timedelta,
-        parser: Callable[[Dict[str, Any]], AutoblocksConfigValue],
+        parser: Callable[[Dict[str, Any]], AutoblocksConfigValueType],
     ) -> None:
         """
         Loads the remote config from Autoblocks and sets the value of this config
@@ -152,8 +153,9 @@ class AutoblocksConfig(
             parsed = parser(remote_config.value)
             if parsed is not None:
                 self._value = parsed
-        except Exception as e:
-            raise Exception(f"Failed to parse config '{config.id}': {e}")
+        except Exception as err:
+            log.error(f"Failed to parse config '{config.id}': {err}", exc_info=True)
+            raise err
 
     def _activate_from_remote_unsafe(
         self,
@@ -161,7 +163,7 @@ class AutoblocksConfig(
         refresh_interval: timedelta,
         refresh_timeout: timedelta,
         activate_timeout: timedelta,
-        parser: Callable[[Dict[str, Any]], AutoblocksConfigValue],
+        parser: Callable[[Dict[str, Any]], AutoblocksConfigValueType],
         api_key: Optional[str] = None,
     ) -> None:
         api_key = api_key or AutoblocksEnvVar.API_KEY.get()
@@ -219,7 +221,7 @@ class AutoblocksConfig(
     def activate_from_remote(
         self,
         config: RemoteConfig,
-        parser: Callable[[Dict[str, Any]], AutoblocksConfigValue],
+        parser: Callable[[Dict[str, Any]], AutoblocksConfigValueType],
         api_key: Optional[str] = None,
         refresh_interval: timedelta = timedelta(seconds=10),
         refresh_timeout: timedelta = timedelta(seconds=30),
@@ -242,5 +244,5 @@ class AutoblocksConfig(
             log.error(f"Failed to activate remote config '{config.id}': {err}")
 
     @property
-    def value(self) -> AutoblocksConfigValue:
+    def value(self) -> AutoblocksConfigValueType:
         return self._value

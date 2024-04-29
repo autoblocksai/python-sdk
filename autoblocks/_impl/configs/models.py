@@ -31,13 +31,13 @@ class LatestDangerouslyUseUndeployed:
 
 @dataclass
 class DangerouslyUseUndeployedWithRevision:
-    revisionId: str
+    revision_id: str
 
 
 @dataclass
 class DangerouslyUseUndeployedRemoteConfig:
     id: str
-    dangerouslyUseUndeployed: Union[LatestDangerouslyUseUndeployed, DangerouslyUseUndeployedWithRevision]
+    dangerously_use_undeployed: Union[LatestDangerouslyUseUndeployed, DangerouslyUseUndeployedWithRevision]
 
 
 RemoteConfig = Union[LatestRemoteConfig, RemoteConfigWithVersion, DangerouslyUseUndeployedRemoteConfig]
