@@ -8,7 +8,6 @@ from typing import Callable
 from typing import Dict
 from typing import Generic
 from typing import Optional
-from typing import Type
 from typing import TypeVar
 
 from autoblocks._impl import global_state
@@ -105,9 +104,9 @@ class AutoblocksConfig(
     abc.ABC,
     Generic[AutoblocksConfigValue],
 ):
-    _value: Type[AutoblocksConfigValue]
+    _value: AutoblocksConfigValue
 
-    def __init__(self, value: Type[AutoblocksConfigValue]) -> None:
+    def __init__(self, value: AutoblocksConfigValue) -> None:
         self._value = value
 
     async def _refresh_loop(
@@ -116,7 +115,7 @@ class AutoblocksConfig(
         refresh_interval: timedelta,
         refresh_timeout: timedelta,
         api_key: str,
-        parser: Optional[Callable[[Dict[str, Any]], Type[AutoblocksConfigValue]]],
+        parser: Callable[[Dict[str, Any]], AutoblocksConfigValue],
     ) -> None:
         """
         Refreshes the latest version of the config every `refresh_interval` seconds.
@@ -140,7 +139,7 @@ class AutoblocksConfig(
         config: RemoteConfig,
         api_key: str,
         timeout: timedelta,
-        parser: Optional[Callable[[Dict[str, Any]], Type[AutoblocksConfigValue]]],
+        parser: Callable[[Dict[str, Any]], AutoblocksConfigValue],
     ) -> None:
         """
         Loads the remote config from Autoblocks and sets the value of this config
@@ -149,16 +148,12 @@ class AutoblocksConfig(
         If the parser is specified, the value will be parsed using the parser.
         """
         remote_config = await get_remote_config(config, timeout=timeout, api_key=api_key)
-        if parser:
-            try:
-                parsed = parser(remote_config.value)
-                if parsed is not None:
-                    self._value = parsed
-            except Exception as e:
-                raise Exception(f"Failed to parse config '{config.id}': {e}")
-        else:
-            # if no parser is specified we assume the value is already in the correct type
-            self._value = remote_config.value  # type: ignore
+        try:
+            parsed = parser(remote_config.value)
+            if parsed is not None:
+                self._value = parsed
+        except Exception as e:
+            raise Exception(f"Failed to parse config '{config.id}': {e}")
 
     def _activate_from_remote_unsafe(
         self,
@@ -166,7 +161,7 @@ class AutoblocksConfig(
         refresh_interval: timedelta,
         refresh_timeout: timedelta,
         activate_timeout: timedelta,
-        parser: Optional[Callable[[Dict[str, Any]], Type[AutoblocksConfigValue]]],
+        parser: Callable[[Dict[str, Any]], AutoblocksConfigValue],
         api_key: Optional[str] = None,
     ) -> None:
         api_key = api_key or AutoblocksEnvVar.API_KEY.get()
@@ -221,10 +216,10 @@ class AutoblocksConfig(
                     global_state.event_loop(),
                 )
 
-    async def activate_from_remote(
+    def activate_from_remote(
         self,
         config: RemoteConfig,
-        parser: Optional[Callable[[Dict[str, Any]], Type[AutoblocksConfigValue]]],
+        parser: Callable[[Dict[str, Any]], AutoblocksConfigValue],
         api_key: Optional[str] = None,
         refresh_interval: timedelta = timedelta(seconds=10),
         refresh_timeout: timedelta = timedelta(seconds=30),
@@ -234,6 +229,7 @@ class AutoblocksConfig(
         Activate a remote config from Autoblocks and optionally refresh it every `refresh_interval` seconds.
         """
         try:
+            log.info("Activating remote config...")
             self._activate_from_remote_unsafe(
                 config=config,
                 api_key=api_key,
@@ -246,5 +242,5 @@ class AutoblocksConfig(
             log.error(f"Failed to activate remote config '{config.id}': {err}")
 
     @property
-    def value(self) -> Type[AutoblocksConfigValue]:
+    def value(self) -> AutoblocksConfigValue:
         return self._value
