@@ -144,7 +144,7 @@ def test_config_latest():
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=LatestRemoteConfig(id="my-config-id", latest=True), parser=MyConfigValue.model_validate
+        config=LatestRemoteConfig(id="used-by-ci-dont-delete", latest=True), parser=MyConfigValue.model_validate
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
@@ -164,7 +164,7 @@ def test_config_specific_version():
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=RemoteConfigWithVersion(id="my-config-id", version="1"), parser=MyConfigValue.model_validate
+        config=RemoteConfigWithVersion(id="used-by-ci-dont-delete", version="1"), parser=MyConfigValue.model_validate
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
@@ -185,7 +185,7 @@ def test_config_undeployed_latest():
     )
     config.activate_from_remote(
         config=DangerouslyUseUndeployedRemoteConfig(
-            id="my-config-id", dangerously_use_undeployed=LatestDangerouslyUseUndeployed(latest=True)
+            id="used-by-ci-dont-delete", dangerously_use_undeployed=LatestDangerouslyUseUndeployed(latest=True)
         ),
         parser=MyConfigValue.model_validate,
         # Need to use a user-scoped API key to access undeployed configs
@@ -210,7 +210,7 @@ def test_config_undeployed_revision():
     )
     config.activate_from_remote(
         config=DangerouslyUseUndeployedRemoteConfig(
-            id="my-config-id",
+            id="used-by-ci-dont-delete",
             dangerously_use_undeployed=DangerouslyUseUndeployedWithRevision(revision_id="clvlcgpiq0003qtvsbz5vt7e0"),
         ),
         parser=MyConfigValue.model_validate,
