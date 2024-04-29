@@ -27,6 +27,7 @@ from tests.e2e.prompts import UsedByCiDontDeleteNoParamsMinorVersion
 from tests.e2e.prompts import UsedByCiDontDeleteNoParamsPromptManager
 from tests.e2e.prompts import UsedByCiDontDeleteNoParamsUndeployedPromptManager
 from tests.e2e.prompts import UsedByCiDontDeletePromptManager
+from tests.util import ANY_NUMBER
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import expect_cli_post_request
 
@@ -299,6 +300,7 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
             testCaseHash="hash",
             testCaseBody={"x": 1},
             testCaseOutput="gpt-4",
+            testCaseDurationMs=ANY_NUMBER,
         ),
     )
     expect_cli_post_request(

@@ -29,5 +29,23 @@ def expect_cli_post_request(
         url=f"{MOCK_CLI_SERVER_ADDRESS}{path}",
         method="POST",
         status_code=status_code,
-        match_content=make_expected_body(body) if body is not None else None,
+        match_json=body,
     )
+
+
+class AnyNumber(float):
+    """
+    Like mock.ANY but checks if the value is any number.
+    """
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, (int, float)) and not isinstance(other, bool)
+
+    def __ne__(self, other: Any) -> bool:
+        return not self.__eq__(other)
+
+    def __repr__(self) -> str:
+        return "<AnyNumber>"
+
+
+ANY_NUMBER = AnyNumber()

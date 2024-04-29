@@ -38,9 +38,9 @@ def flush(timeout: Optional[timedelta] = None) -> None:
         log.debug("No background tasks to flush.")
         return
 
-    start_time = time.time()
+    start_time = time.perf_counter()
     log.debug("Waiting for %s background tasks to finish...", len(_background_tasks))
-    while _background_tasks and (time.time() - start_time) < timeout_seconds:
+    while _background_tasks and (time.perf_counter() - start_time) < timeout_seconds:
         time.sleep(0.1)
 
     if _background_tasks:
