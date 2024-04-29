@@ -45,9 +45,7 @@ def test_gracefully_handles_parser_error(httpx_mock):
     config = MyConfig(
         value=MyConfigValue(my_val="initial-val"),
     )
-    config.activate_from_remote(
-        config=LatestRemoteConfig(id="my-config-id", latest=True), parser=MyConfigValue.model_validate
-    )
+    config.activate_from_remote(config=LatestRemoteConfig(id="my-config-id"), parser=MyConfigValue.model_validate)
 
     assert config.value == MyConfigValue(my_val="initial-val")
 
@@ -75,9 +73,7 @@ def test_activates_latest(httpx_mock):
     config = MyConfig(
         value=MyConfigValue(my_val="initial-val"),
     )
-    config.activate_from_remote(
-        config=LatestRemoteConfig(id="my-config-id", latest=True), parser=MyConfigValue.model_validate
-    )
+    config.activate_from_remote(config=LatestRemoteConfig(id="my-config-id"), parser=MyConfigValue.model_validate)
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
 
@@ -240,9 +236,7 @@ def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
     config = MyConfig(
         value=MyConfigValue(my_val="initial-val"),
     )
-    config.activate_from_remote(
-        config=LatestRemoteConfig(id="my-config-id", latest=True), parser=MyConfigValue.model_validate
-    )
+    config.activate_from_remote(config=LatestRemoteConfig(id="my-config-id"), parser=MyConfigValue.model_validate)
 
     assert config.value == MyConfigValue(my_val="val-from-remote-latest")
     # ensure we only made one call to get latest

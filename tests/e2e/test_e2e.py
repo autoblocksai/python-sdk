@@ -145,7 +145,7 @@ def test_config_latest():
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=LatestRemoteConfig(id="used-by-ci-dont-delete", latest=True), parser=MyConfigValue.model_validate
+        config=LatestRemoteConfig(id="used-by-ci-dont-delete"), parser=MyConfigValue.model_validate
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")

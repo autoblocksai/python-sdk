@@ -15,7 +15,7 @@ class RemoteConfigResponse:
 @dataclass
 class LatestRemoteConfig:
     id: str
-    latest: Literal[True]
+    latest: Literal[True] = True
 
 
 @dataclass
