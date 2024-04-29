@@ -31,3 +31,21 @@ def expect_cli_post_request(
         status_code=status_code,
         match_json=body,
     )
+
+
+class AnyNumber(float):
+    """
+    Like mock.ANY but checks if the value is any number.
+    """
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(self, (int, float)) and not isinstance(self, bool)
+
+    def __ne__(self, other: Any) -> bool:
+        return not self.__eq__(other)
+
+    def __repr__(self) -> str:
+        return "<AnyNumber>"
+
+
+ANY_NUMBER = AnyNumber()

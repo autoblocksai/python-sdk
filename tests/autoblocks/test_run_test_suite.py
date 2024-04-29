@@ -4,7 +4,6 @@ import dataclasses
 import datetime
 import os
 import uuid
-from typing import Any
 from typing import Optional
 from unittest import mock
 
@@ -23,27 +22,10 @@ from autoblocks.testing.models import Threshold
 from autoblocks.testing.models import TracerEvent
 from autoblocks.testing.run import run_test_suite
 from autoblocks.tracer import AutoblocksTracer
+from tests.util import ANY_NUMBER
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import decode_request_body
 from tests.util import expect_cli_post_request
-
-
-class AnyNumber(float):
-    """
-    Like mock.ANY but checks if the value is any number.
-    """
-
-    def __eq__(self, other: Any) -> bool:
-        return isinstance(self, (int, float)) and not isinstance(self, bool)
-
-    def __ne__(self, other: Any) -> bool:
-        return not self.__eq__(other)
-
-    def __repr__(self) -> str:
-        return "<AnyNumber>"
-
-
-ANY_NUMBER = AnyNumber()
 
 
 @pytest.fixture(autouse=True)
