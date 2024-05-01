@@ -3,6 +3,8 @@ import logging
 import os
 import urllib.parse
 from concurrent.futures import Future
+from datetime import datetime
+from datetime import timezone
 from enum import Enum
 from typing import Any
 from typing import Coroutine
@@ -64,3 +66,7 @@ def get_running_loop() -> Optional[asyncio.AbstractEventLoop]:
         return asyncio.get_running_loop()
     except RuntimeError:
         return None
+
+
+def now_iso_8601() -> str:
+    return datetime.now(timezone.utc).isoformat()
