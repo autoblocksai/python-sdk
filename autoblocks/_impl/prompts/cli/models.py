@@ -1,10 +1,5 @@
-import pydantic
-
 from autoblocks._impl.prompts.models import AutogeneratePromptsConfig
-
-
-class FrozenModel(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(frozen=True)
+from autoblocks._impl.prompts.models import FrozenModel
 
 
 class AutogenerateConfig(FrozenModel):

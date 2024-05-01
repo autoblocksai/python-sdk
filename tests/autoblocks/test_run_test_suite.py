@@ -4,7 +4,6 @@ import dataclasses
 import datetime
 import os
 import uuid
-from enum import Enum
 from typing import Optional
 from unittest import mock
 
@@ -1800,25 +1799,15 @@ def test_prompt_manager_revision_usage(httpx_mock):
         __params_class__ = MyPromptParams
         __template_renderer_class__ = MyTemplateRenderer
 
-    class MyMinorVersion(Enum):
-        v0 = "0"
-        LATEST = "latest"
-
     class PromptManagerA(
-        AutoblocksPromptManager[
-            MyExecutionContext,
-            MyMinorVersion,
-        ],
+        AutoblocksPromptManager[MyExecutionContext,],
     ):
         __prompt_id__ = "prompt-a"
         __prompt_major_version__ = "1"
         __execution_context_class__ = MyExecutionContext
 
     class PromptManagerB(
-        AutoblocksPromptManager[
-            MyExecutionContext,
-            MyMinorVersion,
-        ],
+        AutoblocksPromptManager[MyExecutionContext,],
     ):
         __prompt_id__ = "prompt-b"
         __prompt_major_version__ = "undeployed"
@@ -1848,8 +1837,8 @@ def test_prompt_manager_revision_usage(httpx_mock):
         ),
     )
 
-    mgr_a = PromptManagerA(MyMinorVersion.LATEST)
-    mgr_b = PromptManagerB(MyMinorVersion.v0)
+    mgr_a = PromptManagerA(minor_version="latest")
+    mgr_b = PromptManagerB(minor_version="0")
 
     async def test_fn(test_case: MyTestCase) -> str:
         """
