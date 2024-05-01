@@ -43,6 +43,7 @@ class Prompt(FrozenModel):
 
     id: str
     version: str
+    revision_id: str = pydantic.Field(..., alias="revisionId")
     params: Optional[PromptParams] = None
     templates: List[PromptTemplate]
 
@@ -51,7 +52,7 @@ class Prompt(FrozenModel):
         """
         Returns the schema expected by our ingestion endpoint's prompt tracking property.
         """
-        return self.model_dump()
+        return self.model_dump(by_alias=True)
 
 
 MinorVersionEnumType = TypeVar("MinorVersionEnumType", bound=Enum)

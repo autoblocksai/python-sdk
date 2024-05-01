@@ -19,6 +19,8 @@ from typing import Union
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.config.constants import REVISION_LATEST
+from autoblocks._impl.context_vars import RevisionType
+from autoblocks._impl.context_vars import register_test_case_revision_usage
 from autoblocks._impl.prompts.context import PromptExecutionContext
 from autoblocks._impl.prompts.error import IncompatiblePromptRevisionError
 from autoblocks._impl.prompts.models import Prompt
@@ -319,6 +321,12 @@ class AutoblocksPromptManager(
         @contextlib.contextmanager
         def gen():  # type: ignore
             prompt = self._choose_execution_prompt()
+            if is_testing_context():
+                register_test_case_revision_usage(
+                    entity_id=prompt.id,
+                    entity_type=RevisionType.PROMPT,
+                    revision_id=prompt.revision_id,
+                )
             yield self.__execution_context_class__(prompt=prompt)
 
         return gen()

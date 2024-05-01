@@ -254,6 +254,7 @@ def test_prompt_manager():
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
             "version": "2.1",
+            "revisionId": "clvgwh7oq003ukasycf9rmwdo",
             "params": {
                 "params": {
                     "frequencyPenalty": 0,
@@ -324,6 +325,7 @@ def test_prompt_manager_no_model_params():
         assert prompt.track() == dict(
             id="used-by-ci-dont-delete-no-params",
             version="1.0",
+            revisionId="clvgwh7on003kkasy8cltjobg",
             params=None,
             templates=[
                 dict(id="my-template-id", template="Hello, {{ name }}!"),
@@ -352,6 +354,14 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
             testCaseBody={"x": 1},
             testCaseOutput="gpt-4",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=[
+                dict(
+                    entityExternalId="used-by-ci-dont-delete",
+                    entityType="prompt",
+                    revisionId="clvgwh7oq003ukasycf9rmwdo",
+                    usedAt=mock.ANY,
+                ),
+            ],
         ),
     )
     expect_cli_post_request(
