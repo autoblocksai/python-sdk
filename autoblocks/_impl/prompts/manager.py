@@ -21,7 +21,6 @@ from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.config.constants import REVISION_LATEST
 from autoblocks._impl.context_vars import RevisionType
 from autoblocks._impl.context_vars import register_test_case_revision_usage
-from autoblocks._impl.prompts.constants import UNDEPLOYED
 from autoblocks._impl.prompts.context import PromptExecutionContext
 from autoblocks._impl.prompts.error import IncompatiblePromptRevisionError
 from autoblocks._impl.prompts.models import Prompt
@@ -179,12 +178,6 @@ class AutoblocksPromptManager(
                 f"for this prompt manager '{expected_revision_id}'."
             )
 
-        if self.__prompt_major_version__ == UNDEPLOYED:
-            raise NotImplementedError(
-                "Prompt revision overrides are not yet supported for prompt managers using DANGEROUSLY_USE_UNDEPLOYED. "
-                "Reach out to support@autoblocks.ai for more details."
-            )
-
         resp = await global_state.http_client().post(
             self._make_revision_validate_override_request_url(revision_id),
             timeout=self._init_timeout.total_seconds(),
@@ -236,7 +229,7 @@ class AutoblocksPromptManager(
             # tuple, not `prompt.minor_version`. This is because the
             # latter will contain the actual version number, which may be
             # different from the minor version we requested (in the case
-            # where we requested LATEST or UNDEPLOYED).
+            # where we requested LATEST).
             self._minor_version_to_prompt[minor_version] = prompt
             log.info(f"Successfully fetched version '{prompt.version}' of prompt '{self.__prompt_id__}'")
 

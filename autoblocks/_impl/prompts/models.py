@@ -10,9 +10,6 @@ from typing import Set
 from typing import TypeVar
 from typing import Union
 
-from autoblocks._impl.prompts.constants import DANGEROUSLY_USE_UNDEPLOYED
-from autoblocks._impl.prompts.constants import UNDEPLOYED
-
 try:
     import pydantic
 
@@ -127,8 +124,7 @@ class AutogeneratePromptConfig(FrozenModel):
     @classmethod
     def validate_and_transform_versions(cls, raw: List[Any]) -> List[str]:
         assert isinstance(raw, list), "major_versions must be a list"
-        as_strings = [str(v) for v in raw]
-        return [UNDEPLOYED if v == DANGEROUSLY_USE_UNDEPLOYED else v for v in as_strings]
+        return [str(v) for v in raw]
 
 
 class AutogeneratePromptsConfig(FrozenModel):

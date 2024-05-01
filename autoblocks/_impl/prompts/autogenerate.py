@@ -10,8 +10,6 @@ import httpx
 
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.config.constants import REVISION_LATEST
-from autoblocks._impl.prompts.constants import DANGEROUSLY_USE_UNDEPLOYED_ENUM_VALUE_NAME
-from autoblocks._impl.prompts.constants import UNDEPLOYED
 from autoblocks._impl.prompts.models import AutogeneratePromptsConfig
 from autoblocks._impl.prompts.models import FrozenModel
 from autoblocks._impl.util import AutoblocksEnvVar
@@ -44,13 +42,9 @@ class Prompt(FrozenModel):
 
     @property
     def title_case_id(self) -> str:
-        if self.major_version == UNDEPLOYED:
-            return to_title_case(self.id) + to_title_case(UNDEPLOYED)
-
         # Add the major version to the class name if the user has configured
         # multiple copies of the same prompt with different major versions.
-        num_numbered_versions = len([v for v in self.all_major_versions if v != UNDEPLOYED])
-        if num_numbered_versions > 1:
+        if len(self.all_major_versions) > 1:
             return to_title_case(self.id) + str(self.major_version)
 
         # Otherwise just use the title cased prompt ID
@@ -231,13 +225,10 @@ def generate_execution_context_class_code(prompt: Prompt) -> str:
 def generate_minor_versions_enum_code(prompt: Prompt) -> str:
     auto = f"class {prompt.minor_version_enum_class_name}(Enum):\n"
 
-    if prompt.major_version == UNDEPLOYED:
-        auto += f'{indent()}{DANGEROUSLY_USE_UNDEPLOYED_ENUM_VALUE_NAME} = "{UNDEPLOYED}"\n'
-    else:
-        for version in prompt.minor_versions:
-            auto += f'{indent()}v{version} = "{version}"\n'
+    for version in prompt.minor_versions:
+        auto += f'{indent()}v{version} = "{version}"\n'
 
-        auto += f'{indent()}LATEST = "{REVISION_LATEST}"\n'
+    auto += f'{indent()}LATEST = "{REVISION_LATEST}"\n'
 
     return auto
 
@@ -290,11 +281,7 @@ def make_prompts_from_api_response_and_config(
 
         prompt_version = row["version"]
 
-        if prompt_version == UNDEPLOYED:
-            major_version = UNDEPLOYED
-            minor_version = UNDEPLOYED
-        else:
-            major_version, minor_version = prompt_version.split(".")
+        major_version, minor_version = prompt_version.split(".")
 
         if major_version not in generate_for[prompt_id]:
             continue
@@ -345,17 +332,6 @@ def generate_code_for_config(config: AutogeneratePromptsConfig) -> str:
     )
     resp.raise_for_status()
     data = resp.json()
-
-    # Get undeployed prompts as well
-    for prompt_id in set(p.id for p in config.prompts):
-        resp = httpx.get(
-            f"{API_ENDPOINT}/prompts/{prompt_id}/major/{UNDEPLOYED}/minor/{UNDEPLOYED}",
-            headers={"Authorization": f"Bearer {AutoblocksEnvVar.API_KEY.get()}"},
-        )
-        if resp.status_code == 404:
-            continue
-        resp.raise_for_status()
-        data.append(resp.json())
 
     prompts = make_prompts_from_api_response_and_config(data, config)
 
