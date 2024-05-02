@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import Any
 from typing import Dict
@@ -12,6 +13,8 @@ from autoblocks._impl.config.constants import REVISION_UNDEPLOYED
 from autoblocks._impl.prompts.models import AutogeneratePromptsConfig
 from autoblocks._impl.prompts.models import FrozenModel
 from autoblocks._impl.util import AutoblocksEnvVar
+
+log = logging.getLogger(__name__)
 
 
 class TemplateParam(FrozenModel):
@@ -250,10 +253,12 @@ def make_prompts_from_config(
             major = REVISION_UNDEPLOYED
             minor = prompt.dangerously_use_undeployed_revision
         else:
-            raise ValueError(
+            log.error(
                 f"Error in {prompt.id} config: "
-                f"Either `major_version` or `dangerously_use_undeployed_revision` must be specified"
+                f"Either `major_version` or `dangerously_use_undeployed_revision` must be specified."
+                f"Skipping prompt."
             )
+            continue
 
         resp = httpx.get(
             url=f"{API_ENDPOINT}/prompts/{prompt.id}/major/{major}/minor/{minor}",
