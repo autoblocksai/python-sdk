@@ -4,7 +4,6 @@ import contextlib
 import json
 import logging
 from datetime import timedelta
-from enum import Enum
 from http import HTTPStatus
 from typing import Any
 from typing import ContextManager
@@ -34,7 +33,6 @@ from autoblocks._impl.util import get_running_loop
 log = logging.getLogger(__name__)
 
 ExecutionContextType = TypeVar("ExecutionContextType", bound=PromptExecutionContext[Any, Any])
-MinorVersionEnumType = TypeVar("MinorVersionEnumType", bound=Enum)
 
 
 def is_testing_context() -> bool:
@@ -65,10 +63,7 @@ def prompt_revisions_map() -> dict[str, str]:
 
 class AutoblocksPromptManager(
     abc.ABC,
-    Generic[
-        ExecutionContextType,
-        MinorVersionEnumType,
-    ],
+    Generic[ExecutionContextType],
 ):
     __prompt_id__: str
     __prompt_major_version__: str
@@ -88,8 +83,7 @@ class AutoblocksPromptManager(
         self,
         minor_version: Union[
             str,
-            MinorVersionEnumType,
-            List[WeightedMinorVersion[MinorVersionEnumType]],
+            List[WeightedMinorVersion],
         ],
         api_key: Optional[str] = None,
         init_timeout: timedelta = timedelta(seconds=30),

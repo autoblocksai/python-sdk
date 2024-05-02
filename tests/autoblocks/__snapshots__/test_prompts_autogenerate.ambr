@@ -1,0 +1,206 @@
+# serializer version: 1
+# name: test_write
+  '''
+  ############################################################################
+  # This file was generated automatically by Autoblocks. Do not edit directly.
+  ############################################################################
+  
+  from typing import Union  # noqa: F401
+  
+  import pydantic  # noqa: F401
+  
+  from autoblocks.prompts.context import PromptExecutionContext
+  from autoblocks.prompts.manager import AutoblocksPromptManager
+  from autoblocks.prompts.models import FrozenModel
+  from autoblocks.prompts.renderer import TemplateRenderer
+  
+  
+  class PromptAParams(FrozenModel):
+      frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
+      max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
+      model: str = pydantic.Field(..., alias="model")
+      presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
+      temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
+      top_p: Union[float, int] = pydantic.Field(..., alias="topP")
+  
+  
+  class PromptATemplateRenderer(TemplateRenderer):
+      __name_mapper__ = {
+          "name": "name",
+          "name-1": "name_1",
+          "name-2": "name_2",
+          "weather": "weather",
+      }
+  
+      def template_a(
+          self,
+          *,
+          name: str,
+          weather: str,
+      ) -> str:
+          return self._render(
+              "template-a",
+              name=name,
+              weather=weather,
+          )
+  
+      def template_b(
+          self,
+          *,
+          name_1: str,
+          name_2: str,
+      ) -> str:
+          return self._render(
+              "template-b",
+              name_1=name_1,
+              name_2=name_2,
+          )
+  
+  
+  class PromptAExecutionContext(
+      PromptExecutionContext[
+          PromptAParams,
+          PromptATemplateRenderer,
+      ],
+  ):
+      __params_class__ = PromptAParams
+      __template_renderer_class__ = PromptATemplateRenderer
+  
+  
+  class PromptAPromptManager(
+      AutoblocksPromptManager[PromptAExecutionContext],
+  ):
+      __prompt_id__ = "prompt-a"
+      __prompt_major_version__ = "1"
+      __execution_context_class__ = PromptAExecutionContext
+  
+  
+  class PromptBParams(FrozenModel):
+      frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
+      max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
+      model: str = pydantic.Field(..., alias="model")
+      presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
+      temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
+      top_p: Union[float, int] = pydantic.Field(..., alias="topP")
+  
+  
+  class PromptBTemplateRenderer(TemplateRenderer):
+      __name_mapper__ = {
+          "name": "name",
+          "weather": "weather",
+      }
+  
+      def template_a(
+          self,
+          *,
+          name: str,
+          weather: str,
+      ) -> str:
+          return self._render(
+              "template-a",
+              name=name,
+              weather=weather,
+          )
+  
+  
+  class PromptBExecutionContext(
+      PromptExecutionContext[
+          PromptBParams,
+          PromptBTemplateRenderer,
+      ],
+  ):
+      __params_class__ = PromptBParams
+      __template_renderer_class__ = PromptBTemplateRenderer
+  
+  
+  class PromptBPromptManager(
+      AutoblocksPromptManager[PromptBExecutionContext],
+  ):
+      __prompt_id__ = "prompt-b"
+      __prompt_major_version__ = "1"
+      __execution_context_class__ = PromptBExecutionContext
+  
+  
+  class PromptCParams(FrozenModel):
+      pass
+  
+  
+  class PromptCTemplateRenderer(TemplateRenderer):
+      __name_mapper__ = {
+          "name": "name",
+          "weather": "weather",
+      }
+  
+      def template_a(
+          self,
+          *,
+          name: str,
+          weather: str,
+      ) -> str:
+          return self._render(
+              "template-a",
+              name=name,
+              weather=weather,
+          )
+  
+  
+  class PromptCExecutionContext(
+      PromptExecutionContext[
+          PromptCParams,
+          PromptCTemplateRenderer,
+      ],
+  ):
+      __params_class__ = PromptCParams
+      __template_renderer_class__ = PromptCTemplateRenderer
+  
+  
+  class PromptCPromptManager(
+      AutoblocksPromptManager[PromptCExecutionContext],
+  ):
+      __prompt_id__ = "prompt-c"
+      __prompt_major_version__ = "undeployed"
+      __execution_context_class__ = PromptCExecutionContext
+  
+  
+  class PromptDParams(FrozenModel):
+      pass
+  
+  
+  class PromptDTemplateRenderer(TemplateRenderer):
+      __name_mapper__ = {
+          "name": "name",
+          "weather": "weather",
+      }
+  
+      def template_a(
+          self,
+          *,
+          name: str,
+          weather: str,
+      ) -> str:
+          return self._render(
+              "template-a",
+              name=name,
+              weather=weather,
+          )
+  
+  
+  class PromptDExecutionContext(
+      PromptExecutionContext[
+          PromptDParams,
+          PromptDTemplateRenderer,
+      ],
+  ):
+      __params_class__ = PromptDParams
+      __template_renderer_class__ = PromptDTemplateRenderer
+  
+  
+  class PromptDPromptManager(
+      AutoblocksPromptManager[PromptDExecutionContext],
+  ):
+      __prompt_id__ = "prompt-d"
+      __prompt_major_version__ = "undeployed"
+      __execution_context_class__ = PromptDExecutionContext
+  
+  '''
+# ---

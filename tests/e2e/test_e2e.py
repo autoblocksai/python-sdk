@@ -25,8 +25,8 @@ from autoblocks.prompts.models import WeightedMinorVersion
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.run import run_test_suite
 from autoblocks.tracer import AutoblocksTracer
-from tests.e2e.prompts import UsedByCiDontDeleteMinorVersion
-from tests.e2e.prompts import UsedByCiDontDeleteNoParamsMinorVersion
+from tests.e2e.prompts import QuestionAnswererPromptManager
+from tests.e2e.prompts import TextSummarizationPromptManager
 from tests.e2e.prompts import UsedByCiDontDeleteNoParamsPromptManager
 from tests.e2e.prompts import UsedByCiDontDeletePromptManager
 from tests.util import ANY_NUMBER
@@ -217,7 +217,7 @@ def test_config_undeployed_revision():
 
 def test_prompt_manager():
     mgr = UsedByCiDontDeletePromptManager(
-        UsedByCiDontDeleteMinorVersion.v1,
+        minor_version="1",
     )
 
     with mgr.exec() as ctx:
@@ -285,7 +285,7 @@ def test_prompt_manager():
 
 def test_prompt_manager_latest():
     mgr = UsedByCiDontDeletePromptManager(
-        UsedByCiDontDeleteMinorVersion.LATEST,
+        minor_version="latest",
     )
 
     with mgr.exec() as ctx:
@@ -297,11 +297,11 @@ def test_prompt_manager_weighted():
     mgr = UsedByCiDontDeletePromptManager(
         [
             WeightedMinorVersion(
-                version=UsedByCiDontDeleteMinorVersion.LATEST,
+                version="latest",
                 weight=1,
             ),
             WeightedMinorVersion(
-                version=UsedByCiDontDeleteMinorVersion.v0,
+                version="0",
                 weight=1,
             ),
         ]
@@ -314,7 +314,7 @@ def test_prompt_manager_weighted():
 
 def test_prompt_manager_no_model_params():
     mgr = UsedByCiDontDeleteNoParamsPromptManager(
-        UsedByCiDontDeleteNoParamsMinorVersion.v0,
+        minor_version="0",
     )
 
     with mgr.exec() as prompt:
@@ -331,6 +331,39 @@ def test_prompt_manager_no_model_params():
                 dict(id="my-template-id", template="Hello, {{ name }}!"),
             ],
         )
+
+
+def test_prompt_manager_undeployed_latest_revision():
+    mgr = TextSummarizationPromptManager(
+        # Need to use a user-scoped API key to access undeployed prompts
+        api_key=os.environ["AUTOBLOCKS_API_KEY_USER"],
+        # Request the latest revision
+        minor_version="latest",
+    )
+
+    with mgr.exec() as prompt:
+        assert prompt.track()["id"] == "text-summarization"
+        assert prompt.track()["version"] == f"revision:{prompt.track()['revisionId']}"
+
+
+def test_prompt_manager_undeployed_specific_revision():
+    """
+    This test uses a revision created in our CI org:
+
+    https://app.autoblocks.ai/prompts/question-answerer/revisions/clvodtv700003a2z02fumceby/edit
+    """
+    mgr = QuestionAnswererPromptManager(
+        # Need to use a user-scoped API key to access undeployed prompts
+        # TODO: allow org-wide keys to retrieve shared prompts
+        api_key=os.environ["AUTOBLOCKS_API_KEY_USER"],
+        # Request a specific revision
+        minor_version="clvodtv700003a2z02fumceby",
+    )
+
+    with mgr.exec() as prompt:
+        assert prompt.track()["id"] == "question-answerer"
+        assert prompt.track()["version"] == "revision:clvodtv700003a2z02fumceby"
+        assert prompt.track()["revisionId"] == "clvodtv700003a2z02fumceby"
 
 
 @mock.patch.dict(
@@ -379,7 +412,7 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
 
     def test_fn(test_case: MyTestCase) -> str:
         mgr = UsedByCiDontDeletePromptManager(
-            UsedByCiDontDeleteMinorVersion.v1,
+            minor_version="1",
         )
         with mgr.exec() as prompt:
             return prompt.params.model

@@ -839,6 +839,20 @@ files = [
 ]
 
 [[package]]
+name = "syrupy"
+version = "4.6.1"
+description = "Pytest Snapshot Test Utility"
+optional = false
+python-versions = ">=3.8.1,<4"
+files = [
+    {file = "syrupy-4.6.1-py3-none-any.whl", hash = "sha256:203e52f9cb9fa749cf683f29bd68f02c16c3bc7e7e5fe8f2fc59bdfe488ce133"},
+    {file = "syrupy-4.6.1.tar.gz", hash = "sha256:37a835c9ce7857eeef86d62145885e10b3cb9615bc6abeb4ce404b3f18e1bb36"},
+]
+
+[package.dependencies]
+pytest = ">=7.0.0,<9.0.0"
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -948,4 +962,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9.0"
-content-hash = "bc0b81615aac810fbea57defc2a7fe00b8059d1825bdbabf541cbf75c1ac66ba"
+content-hash = "76f20b1f5e2ccdc4526b3ba3166e16852fbce028310b405a0c60673b1f94bc19"
