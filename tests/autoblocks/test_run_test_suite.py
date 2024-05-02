@@ -1800,14 +1800,14 @@ def test_prompt_manager_revision_usage(httpx_mock):
         __template_renderer_class__ = MyTemplateRenderer
 
     class PromptManagerA(
-        AutoblocksPromptManager[MyExecutionContext,],
+        AutoblocksPromptManager[MyExecutionContext],
     ):
         __prompt_id__ = "prompt-a"
         __prompt_major_version__ = "1"
         __execution_context_class__ = MyExecutionContext
 
     class PromptManagerB(
-        AutoblocksPromptManager[MyExecutionContext,],
+        AutoblocksPromptManager[MyExecutionContext],
     ):
         __prompt_id__ = "prompt-b"
         __prompt_major_version__ = "undeployed"

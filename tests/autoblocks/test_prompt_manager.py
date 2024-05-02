@@ -49,7 +49,7 @@ class MyExecutionContext(
 
 
 class MyPromptManager(
-    AutoblocksPromptManager[MyExecutionContext,],
+    AutoblocksPromptManager[MyExecutionContext],
 ):
     __prompt_id__ = "my-prompt-id"
     __prompt_major_version__ = "1"
