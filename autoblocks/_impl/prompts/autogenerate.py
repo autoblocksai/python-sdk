@@ -250,7 +250,10 @@ def make_prompts_from_config(
             major = REVISION_UNDEPLOYED
             minor = prompt.dangerously_use_undeployed_revision
         else:
-            raise ValueError("Either major_version or dangerously_use_undeployed_revision must be specified")
+            raise ValueError(
+                f"Error in {prompt.id} config: "
+                f"Either `major_version` or `dangerously_use_undeployed_revision` must be specified"
+            )
 
         resp = httpx.get(
             url=f"{API_ENDPOINT}/prompts/{prompt.id}/major/{major}/minor/{minor}",
