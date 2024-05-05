@@ -26,14 +26,17 @@ class MyConfig(AutoblocksConfig[MyConfigValue]):
 )
 def test_gracefully_handles_parser_error(httpx_mock):
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/configs/my-config-id/versions/latest",
+        url=f"{API_ENDPOINT}/configs/my-config-id/major/1/latest",
         method="GET",
         match_headers={"Authorization": "Bearer mock-api-key"},
         json=dict(
             id="my-config-id",
             version="1",
-            value=dict(
-                random_val="val-from-remote",
+            properties=dict(
+                {
+                    "name": "not_my_val",
+                    "value": "val-from-remote",
+                }
             ),
         ),
     )
@@ -42,7 +45,7 @@ def test_gracefully_handles_parser_error(httpx_mock):
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=RemoteConfig(id="my-config-id", version="latest"), parser=MyConfigValue.model_validate
+        config=RemoteConfig(id="my-config-id", major_version=1), parser=MyConfigValue.model_validate
     )
 
     assert config.value == MyConfigValue(my_val="initial-val")
@@ -71,15 +74,18 @@ def test_gracefully_handles_invalid_remote_config():
 )
 def test_activates_latest(httpx_mock):
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/configs/my-config-id/versions/latest",
+        url=f"{API_ENDPOINT}/configs/my-config-id/major/1/minor/latest",
         method="GET",
         match_headers={"Authorization": "Bearer mock-api-key"},
         json=dict(
             id="my-config-id",
             version="1",
-            value=dict(
-                my_val="val-from-remote",
-            ),
+            properties=[
+                {
+                    "name": "my_val",
+                    "value": "val-from-remote",
+                }
+            ],
         ),
     )
 
@@ -87,7 +93,7 @@ def test_activates_latest(httpx_mock):
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=RemoteConfig(id="my-config-id", version="latest"), parser=MyConfigValue.model_validate
+        config=RemoteConfig(id="my-config-id", major_version=1), parser=MyConfigValue.model_validate
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
@@ -101,15 +107,18 @@ def test_activates_latest(httpx_mock):
 )
 def test_activates_specific_version(httpx_mock):
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/configs/my-config-id/versions/1",
+        url=f"{API_ENDPOINT}/configs/my-config-id/major/1/minor/1",
         method="GET",
         match_headers={"Authorization": "Bearer mock-api-key"},
         json=dict(
             id="my-config-id",
             version="1",
-            value=dict(
-                my_val="val-from-remote",
-            ),
+            properties=[
+                {
+                    "name": "my_val",
+                    "value": "val-from-remote",
+                }
+            ],
         ),
     )
 
@@ -117,7 +126,7 @@ def test_activates_specific_version(httpx_mock):
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=RemoteConfig(id="my-config-id", version="1"), parser=MyConfigValue.model_validate
+        config=RemoteConfig(id="my-config-id", major_version=1, minor_version=1), parser=MyConfigValue.model_validate
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
@@ -137,9 +146,12 @@ def test_activates_undeployed_latest(httpx_mock):
         json=dict(
             id="my-config-id",
             version="1",
-            value=dict(
-                my_val="val-from-remote",
-            ),
+            properties=[
+                {
+                    "name": "my_val",
+                    "value": "val-from-remote",
+                }
+            ],
         ),
     )
 
@@ -168,9 +180,12 @@ def test_activates_undeployed_revision_id(httpx_mock):
         json=dict(
             id="my-config-id",
             version="1",
-            value=dict(
-                my_val="val-from-remote",
-            ),
+            properties=[
+                {
+                    "name": "my_val",
+                    "value": "val-from-remote",
+                }
+            ],
         ),
     )
 
@@ -204,9 +219,12 @@ def test_activates_revision_id_override(httpx_mock):
         json=dict(
             id="my-config-id",
             version="1",
-            value=dict(
-                my_val="val-from-remote",
-            ),
+            properties=[
+                {
+                    "name": "my_val",
+                    "value": "val-from-remote",
+                }
+            ],
         ),
     )
 
@@ -234,15 +252,18 @@ def test_activates_revision_id_override(httpx_mock):
 )
 def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/configs/my-config-id/versions/latest",
+        url=f"{API_ENDPOINT}/configs/my-config-id/major/1/minor/latest",
         method="GET",
         match_headers={"Authorization": "Bearer mock-api-key"},
         json=dict(
             id="my-config-id",
             version="1",
-            value=dict(
-                my_val="val-from-remote-latest",
-            ),
+            properties=[
+                {
+                    "name": "my_val",
+                    "value": "val-from-remote-latest",
+                }
+            ],
         ),
     )
 
@@ -250,7 +271,7 @@ def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=RemoteConfig(id="my-config-id", version="latest"), parser=MyConfigValue.model_validate
+        config=RemoteConfig(id="my-config-id", major_version=1), parser=MyConfigValue.model_validate
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote-latest")
