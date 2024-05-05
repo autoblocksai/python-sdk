@@ -26,7 +26,7 @@ class MyConfig(AutoblocksConfig[MyConfigValue]):
 )
 def test_gracefully_handles_parser_error(httpx_mock):
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/configs/my-config-id/major/1/latest",
+        url=f"{API_ENDPOINT}/configs/my-config-id/major/1/minor/latest",
         method="GET",
         match_headers={"Authorization": "Bearer mock-api-key"},
         json=dict(
