@@ -143,13 +143,11 @@ class AutoblocksConfig(
         If the parser is specified, the value will be parsed using the parser.
         """
         remote_config = await get_remote_config(config, timeout=timeout, api_key=api_key)
-        log.info("loading....")
         try:
             obj = {}
             for prop in remote_config.properties:
                 obj[prop.name] = prop.value
             parsed = parser(obj)
-            log.info(f"Loaded remote config '{parsed}'")
             if parsed is not None:
                 self._value = parsed
         except Exception as err:
