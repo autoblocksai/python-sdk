@@ -1,6 +1,7 @@
 import asyncio
 import contextvars
 import dataclasses
+import functools
 import inspect
 import logging
 import os
@@ -11,6 +12,7 @@ from typing import Awaitable
 from typing import Callable
 from typing import Optional
 from typing import Sequence
+from typing import Tuple
 from typing import Union
 from typing import overload
 
@@ -22,7 +24,6 @@ from autoblocks._impl.context_vars import TestCaseRunContext
 from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
-from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.util import serialize
@@ -89,24 +90,33 @@ async def send_error(
 async def run_evaluator_unsafe(
     test_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
-    output: OutputType,
-    evaluator: BaseTestEvaluator[TestCaseType, OutputType],
+    output: Any,
+    hook_results: Any,
+    evaluator: BaseTestEvaluator,
 ) -> None:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
     """
     async with evaluator_semaphore_registry[test_id][evaluator.id]:
+        if hook_results is not None:
+            kwargs = dict(hook_results=hook_results)
+        else:
+            kwargs = dict()
+
         if inspect.iscoroutinefunction(evaluator.evaluate_test_case):
-            evaluation = await evaluator.evaluate_test_case(test_case_ctx.test_case, output)
+            evaluation = await evaluator.evaluate_test_case(test_case_ctx.test_case, output, **kwargs)
         else:
             ctx = contextvars.copy_context()
             evaluation = await global_state.event_loop().run_in_executor(
                 None,
                 ctx.run,
-                evaluator.evaluate_test_case,
-                test_case_ctx.test_case,
-                output,
+                functools.partial(
+                    evaluator.evaluate_test_case,
+                    test_case_ctx.test_case,
+                    output,
+                    **kwargs,
+                ),
             )
 
     if evaluation is None:
@@ -128,14 +138,16 @@ async def run_evaluator_unsafe(
 async def run_evaluator(
     test_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
-    output: OutputType,
-    evaluator: BaseTestEvaluator[TestCaseType, OutputType],
+    output: Any,
+    hook_results: Any,
+    evaluator: BaseTestEvaluator,
 ) -> None:
     try:
         await run_evaluator_unsafe(
             test_id=test_id,
             test_case_ctx=test_case_ctx,
             output=output,
+            hook_results=hook_results,
             evaluator=evaluator,
         )
     except Exception as err:
@@ -150,8 +162,9 @@ async def run_evaluator(
 async def run_test_case_unsafe(
     test_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
-    fn: Union[Callable[[TestCaseType], OutputType], Callable[[TestCaseType], Awaitable[OutputType]]],
-) -> Any:
+    fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
+    before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
+) -> Tuple[Any, Any]:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
@@ -172,6 +185,26 @@ async def run_test_case_unsafe(
                 test_case_ctx.test_case,
             )
 
+        # Run the before-evaluators hook if provided.
+        # Note we run this within the test case semaphore so that
+        # max_test_case_concurrency applies to both fn + before_evaluators_hook.
+        hook_results = None
+        if before_evaluators_hook:
+            if inspect.iscoroutinefunction(before_evaluators_hook):
+                hook_results = await before_evaluators_hook(
+                    test_case_ctx.test_case,
+                    output,
+                )
+            else:
+                ctx = contextvars.copy_context()
+                hook_results = await global_state.event_loop().run_in_executor(
+                    None,
+                    ctx.run,
+                    before_evaluators_hook,
+                    test_case_ctx.test_case,
+                    output,
+                )
+
     # Flush the logs before we send the result, since the CLI
     # accumulates the events and sends them as a batch along
     # with the result.
@@ -187,21 +220,23 @@ async def run_test_case_unsafe(
             testCaseDurationMs=(time.perf_counter() - start_time) * 1000,
         ),
     )
-    return output
+    return output, hook_results
 
 
 async def run_test_case(
     test_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
-    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
-    fn: Union[Callable[[TestCaseType], OutputType], Callable[[TestCaseType], Awaitable[OutputType]]],
+    evaluators: Sequence[BaseTestEvaluator],
+    fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
+    before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
 ) -> None:
     token = test_case_run_context_var.set(TestCaseRunContext(test_id=test_id, test_case_hash=test_case_ctx.hash()))
     try:
-        output = await run_test_case_unsafe(
+        output, hook_results = await run_test_case_unsafe(
             test_id=test_id,
             test_case_ctx=test_case_ctx,
             fn=fn,
+            before_evaluators_hook=before_evaluators_hook,
         )
     except Exception as err:
         await send_error(
@@ -221,6 +256,7 @@ async def run_test_case(
                     test_id=test_id,
                     test_case_ctx=test_case_ctx,
                     output=output,
+                    hook_results=hook_results,
                     evaluator=evaluator,
                 )
                 for evaluator in evaluators
@@ -238,7 +274,7 @@ async def run_test_case(
 def validate_test_suite_inputs(
     test_id: str,
     test_cases: Sequence[TestCaseType],
-    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
+    evaluators: Sequence[BaseTestEvaluator],
 ) -> None:
     assert test_cases, f"[{test_id}] No test cases provided."
     for test_case in test_cases:
@@ -306,8 +342,9 @@ def filter_test_cases_for_alignment_mode(
 async def async_run_test_suite(
     test_id: str,
     test_cases: Sequence[TestCaseType],
-    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
-    fn: Union[Callable[[TestCaseType], OutputType], Callable[[TestCaseType], Awaitable[OutputType]]],
+    evaluators: Sequence[BaseTestEvaluator],
+    fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
+    before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
     max_test_case_concurrency: int,
     caller_filepath: Optional[str],
 ) -> None:
@@ -370,6 +407,7 @@ async def async_run_test_suite(
                     test_case_ctx=test_case_ctx,
                     evaluators=evaluators,
                     fn=fn,
+                    before_evaluators_hook=before_evaluators_hook,
                 )
                 for test_case_ctx in yield_test_case_contexts_from_test_cases(test_cases)
             ],
@@ -393,9 +431,10 @@ async def async_run_test_suite(
 def run_test_suite(
     id: str,
     test_cases: Sequence[TestCaseType],
-    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
-    fn: Callable[[TestCaseType], OutputType],
+    evaluators: Sequence[BaseTestEvaluator],
+    fn: Callable[[TestCaseType], Any],
     max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
+    before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
 ) -> None: ...
 
 
@@ -404,19 +443,21 @@ def run_test_suite(
 def run_test_suite(
     id: str,
     test_cases: Sequence[TestCaseType],
-    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
-    fn: Callable[[TestCaseType], Awaitable[OutputType]],
+    evaluators: Sequence[BaseTestEvaluator],
+    fn: Callable[[TestCaseType], Awaitable[Any]],
     max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
+    before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
 ) -> None: ...
 
 
 def run_test_suite(
     id: str,
     test_cases: Sequence[TestCaseType],
-    evaluators: Sequence[BaseTestEvaluator[TestCaseType, OutputType]],
-    fn: Union[Callable[[TestCaseType], OutputType], Callable[[TestCaseType], Awaitable[OutputType]]],
+    evaluators: Sequence[BaseTestEvaluator],
+    fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     # How many test cases to run concurrently
     max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
+    before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
 ) -> None:
     global_state.init()
 
@@ -432,6 +473,7 @@ def run_test_suite(
             test_cases=test_cases,
             evaluators=evaluators,
             fn=fn,
+            before_evaluators_hook=before_evaluators_hook,
             max_test_case_concurrency=max_test_case_concurrency,
             caller_filepath=caller_filepath,
         ),

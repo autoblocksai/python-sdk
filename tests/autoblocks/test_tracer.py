@@ -531,7 +531,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
         def hash(self):
             return f"{self.x}"
 
-    class MyCombinedEvaluator(BaseEvaluator[SomeTestCase, str]):
+    class MyCombinedEvaluator(BaseEvaluator):
         id = "my-combined-evaluator"
 
         @staticmethod

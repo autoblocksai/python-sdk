@@ -49,7 +49,6 @@ class BaseTestCase(abc.ABC):
 
 
 TestCaseType = TypeVar("TestCaseType", bound=BaseTestCase)
-OutputType = TypeVar("OutputType")
 
 
 @dataclasses.dataclass
@@ -79,7 +78,7 @@ class TestCaseContext(Generic[TestCaseType]):
         return self._cached_hash
 
 
-class BaseTestEvaluator(abc.ABC, Generic[TestCaseType, OutputType]):
+class BaseTestEvaluator(abc.ABC):
     """
     An ABC for users that are implementing an evaluator that will only be run against test cases.
     """
@@ -100,8 +99,8 @@ class BaseTestEvaluator(abc.ABC, Generic[TestCaseType, OutputType]):
     @abc.abstractmethod
     def evaluate_test_case(
         self,
-        test_case: TestCaseType,
-        output: OutputType,
+        *args: Any,
+        **kwargs: Any,
     ) -> Union[Optional[Evaluation], Awaitable[Optional[Evaluation]]]:
         pass
 
@@ -130,8 +129,7 @@ class BaseEventEvaluator(abc.ABC):
 
 
 class BaseEvaluator(
-    Generic[TestCaseType, OutputType],
-    BaseTestEvaluator[TestCaseType, OutputType],
+    BaseTestEvaluator,
     BaseEventEvaluator,
     abc.ABC,
 ):

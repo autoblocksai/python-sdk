@@ -10,7 +10,6 @@ from unittest import mock
 import pydantic
 import pytest
 
-from autoblocks._impl.testing.util import md5
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import StrEnum
 from autoblocks.testing.models import BaseEvaluator
@@ -21,6 +20,7 @@ from autoblocks.testing.models import TestCaseConfig
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.models import TracerEvent
 from autoblocks.testing.run import run_test_suite
+from autoblocks.testing.util import md5
 from autoblocks.tracer import AutoblocksTracer
 from tests.util import ANY_NUMBER
 from tests.util import MOCK_CLI_SERVER_ADDRESS
@@ -322,7 +322,7 @@ def test_error_in_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
-    class MySyncEvaluator(BaseTestEvaluator[MyTestCase, str]):
+    class MySyncEvaluator(BaseTestEvaluator):
         id = "my-sync-evaluator"
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -333,7 +333,7 @@ def test_error_in_evaluator(httpx_mock):
                 )
             raise ValueError(output)
 
-    class MyAsyncEvaluator(BaseTestEvaluator[MyTestCase, str]):
+    class MyAsyncEvaluator(BaseTestEvaluator):
         id = "my-async-evaluator"
 
         async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -519,13 +519,13 @@ def test_with_evaluators(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
-    class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
+    class EvaluatorA(BaseTestEvaluator):
         id = "evaluator-a"
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0, metadata=dict(reason="because"))
 
-    class EvaluatorB(BaseTestEvaluator[MyTestCase, str]):
+    class EvaluatorB(BaseTestEvaluator):
         id = "evaluator-b"
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -552,14 +552,14 @@ def test_concurrency(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
-    class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
+    class EvaluatorA(BaseTestEvaluator):
         id = "evaluator-a"
         max_concurrency = 1
 
         def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0)
 
-    class EvaluatorB(BaseTestEvaluator[MyTestCase, str]):
+    class EvaluatorB(BaseTestEvaluator):
         id = "evaluator-b"
         max_concurrency = 1
 
@@ -799,13 +799,13 @@ def test_async_evaluators(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
 
-    class EvaluatorA(BaseTestEvaluator[MyTestCase, str]):
+    class EvaluatorA(BaseTestEvaluator):
         id = "evaluator-a"
 
         async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0)
 
-    class EvaluatorB(BaseTestEvaluator[MyTestCase, str]):
+    class EvaluatorB(BaseTestEvaluator):
         id = "evaluator-b"
 
         async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
@@ -1233,7 +1233,7 @@ def test_repeated_test_cases(httpx_mock):
         def hash(self) -> str:
             return self.input
 
-    class MyEvaluator(BaseTestEvaluator[SomeTestCase, str]):
+    class MyEvaluator(BaseTestEvaluator):
         id = "my-evaluator"
 
         def evaluate_test_case(self, test_case: SomeTestCase, output: str) -> Evaluation:
@@ -1318,7 +1318,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
         def hash(self):
             return f"{self.x}"
 
-    class MyCombinedEvaluator(BaseEvaluator[SomeTestCase, str]):
+    class MyCombinedEvaluator(BaseEvaluator):
         id = "my-combined-evaluator"
 
         @staticmethod
@@ -1384,7 +1384,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
     class Output:
         actions: list[str]
 
-    class RuleEvaluator(BaseTestEvaluator[TestCase, Output], abc.ABC):
+    class RuleEvaluator(BaseTestEvaluator, abc.ABC):
         @property
         @abc.abstractmethod
         def level(self) -> RuleLevel:
@@ -1743,3 +1743,228 @@ def test_run_stops_if_start_fails(httpx_mock):
     )
 
     assert len(httpx_mock.get_requests()) == 1
+
+
+def test_sync_before_evaluators_hook(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(testExternalId="my-test-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            evaluatorExternalId="evaluator-1",
+            score=0.1,
+            threshold=None,
+            metadata=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            evaluatorExternalId="evaluator-2",
+            score=0.2,
+            threshold=None,
+            metadata=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
+    )
+
+    @dataclasses.dataclass
+    class BeforeEvaluatorOutput1:
+        x: float
+
+    @dataclasses.dataclass
+    class BeforeEvaluatorOutput2:
+        y: float
+
+    @dataclasses.dataclass
+    class HookResults:
+        hook1: BeforeEvaluatorOutput1
+        hook2: BeforeEvaluatorOutput2
+
+    class Evaluator1(BaseTestEvaluator):
+        id = "evaluator-1"
+
+        def evaluate_test_case(
+            self,
+            test_case: MyTestCase,
+            output: str,
+            hook_results: HookResults,
+        ) -> Evaluation:
+            return Evaluation(score=hook_results.hook1.x)
+
+    class Evaluator2(BaseTestEvaluator):
+        id = "evaluator-2"
+
+        async def evaluate_test_case(
+            self,
+            test_case: MyTestCase,
+            output: str,
+            hook_results: HookResults,
+        ) -> Evaluation:
+            await asyncio.sleep(0.1)
+            return Evaluation(score=hook_results.hook2.y)
+
+    num_times_hook_called = 0
+
+    def before_evaluators_hook(
+        test_case: MyTestCase,
+        output: str,
+    ) -> HookResults:
+        nonlocal num_times_hook_called
+        num_times_hook_called += 1
+        return HookResults(
+            hook1=BeforeEvaluatorOutput1(x=0.1),
+            hook2=BeforeEvaluatorOutput2(y=0.2),
+        )
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[
+            Evaluator1(),
+            Evaluator2(),
+        ],
+        fn=lambda test_case: test_case.input + "!",
+        before_evaluators_hook=before_evaluators_hook,
+    )
+
+    assert num_times_hook_called == 1
+
+
+def test_async_before_evaluators_hook(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(testExternalId="my-test-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            evaluatorExternalId="evaluator-1",
+            score=0.1,
+            threshold=None,
+            metadata=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            evaluatorExternalId="evaluator-2",
+            score=0.2,
+            threshold=None,
+            metadata=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
+    )
+
+    @dataclasses.dataclass
+    class BeforeEvaluatorOutput1:
+        x: float
+
+    @dataclasses.dataclass
+    class BeforeEvaluatorOutput2:
+        y: float
+
+    @dataclasses.dataclass
+    class HookResults:
+        hook1: BeforeEvaluatorOutput1
+        hook2: BeforeEvaluatorOutput2
+
+    class Evaluator1(BaseTestEvaluator):
+        id = "evaluator-1"
+
+        def evaluate_test_case(
+            self,
+            test_case: MyTestCase,
+            output: str,
+            hook_results: HookResults,
+        ) -> Evaluation:
+            return Evaluation(score=hook_results.hook1.x)
+
+    class Evaluator2(BaseTestEvaluator):
+        id = "evaluator-2"
+
+        async def evaluate_test_case(
+            self,
+            test_case: MyTestCase,
+            output: str,
+            hook_results: HookResults,
+        ) -> Evaluation:
+            await asyncio.sleep(0.1)
+            return Evaluation(score=hook_results.hook2.y)
+
+    num_times_hook_called = 0
+
+    async def before_evaluators_hook(
+        test_case: MyTestCase,
+        output: str,
+    ) -> HookResults:
+        await asyncio.sleep(0.1)
+        nonlocal num_times_hook_called
+        num_times_hook_called += 1
+        return HookResults(
+            hook1=BeforeEvaluatorOutput1(x=0.1),
+            hook2=BeforeEvaluatorOutput2(y=0.2),
+        )
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[
+            Evaluator1(),
+            Evaluator2(),
+        ],
+        fn=lambda test_case: test_case.input + "!",
+        before_evaluators_hook=before_evaluators_hook,
+    )
+
+    assert num_times_hook_called == 1
