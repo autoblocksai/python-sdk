@@ -34,7 +34,7 @@ def test_gracefully_handles_parser_error(httpx_mock):
             version="1",
             properties=dict(
                 {
-                    "name": "not_my_val",
+                    "id": "not_my_val",
                     "value": "val-from-remote",
                 }
             ),
@@ -82,7 +82,7 @@ def test_activates_latest(httpx_mock):
             version="1",
             properties=[
                 {
-                    "name": "my_val",
+                    "id": "my_val",
                     "value": "val-from-remote",
                 }
             ],
@@ -115,7 +115,7 @@ def test_activates_specific_version(httpx_mock):
             version="1",
             properties=[
                 {
-                    "name": "my_val",
+                    "id": "my_val",
                     "value": "val-from-remote",
                 }
             ],
@@ -148,7 +148,7 @@ def test_activates_undeployed_latest(httpx_mock):
             version="1",
             properties=[
                 {
-                    "name": "my_val",
+                    "id": "my_val",
                     "value": "val-from-remote",
                 }
             ],
@@ -182,7 +182,7 @@ def test_activates_undeployed_revision_id(httpx_mock):
             version="1",
             properties=[
                 {
-                    "name": "my_val",
+                    "id": "my_val",
                     "value": "val-from-remote",
                 }
             ],
@@ -221,7 +221,7 @@ def test_activates_revision_id_override(httpx_mock):
             version="1",
             properties=[
                 {
-                    "name": "my_val",
+                    "id": "my_val",
                     "value": "val-from-remote",
                 }
             ],
@@ -260,7 +260,7 @@ def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
             version="1",
             properties=[
                 {
-                    "name": "my_val",
+                    "id": "my_val",
                     "value": "val-from-remote-latest",
                 }
             ],
