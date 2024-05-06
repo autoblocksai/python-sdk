@@ -26,6 +26,7 @@ class Property(FrozenModel):
 class RemoteConfigResponse(FrozenModel):
     id: str
     version: str
+    revision_id: str = pydantic.Field(..., alias="revisionId")
     properties: List[Property]
 
 
