@@ -160,7 +160,7 @@ def test_config_specific_version():
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=RemoteConfig(id="used-by-ci-dont-delete", major_version=1, minor_version=1),
+        config=RemoteConfig(id="used-by-ci-dont-delete", major_version=1, minor_version=0),
         parser=MyConfigValue.model_validate,
     )
 
