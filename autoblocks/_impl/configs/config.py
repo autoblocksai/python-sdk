@@ -15,6 +15,8 @@ from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.config.constants import REVISION_LATEST
 from autoblocks._impl.configs.models import RemoteConfig
 from autoblocks._impl.configs.models import RemoteConfigResponse
+from autoblocks._impl.context_vars import RevisionType
+from autoblocks._impl.context_vars import register_test_case_revision_usage
 from autoblocks._impl.util import AnyTask
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import get_running_loop
@@ -99,6 +101,8 @@ class AutoblocksConfig(
     Generic[AutoblocksConfigValueType],
 ):
     _value: AutoblocksConfigValueType
+    _remote_config_id: Optional[str] = None
+    _remote_config_revision_id: Optional[str] = None
 
     def __init__(self, value: AutoblocksConfigValueType) -> None:
         self._value = value
@@ -149,6 +153,8 @@ class AutoblocksConfig(
             parsed = parser(obj)
             if parsed is not None:
                 self._value = parsed
+                self._remote_config_id = remote_config.id
+                self._remote_config_revision_id = remote_config.revision_id
         except Exception as err:
             log.error(f"Failed to parse config '{config.id}': {err}", exc_info=True)
             raise err
@@ -241,4 +247,10 @@ class AutoblocksConfig(
 
     @property
     def value(self) -> AutoblocksConfigValueType:
+        if is_testing_context() and self._remote_config_id and self._remote_config_revision_id:
+            register_test_case_revision_usage(
+                entity_id=self._remote_config_id,
+                entity_type=RevisionType.CONFIG,
+                revision_id=self._remote_config_revision_id,
+            )
         return self._value

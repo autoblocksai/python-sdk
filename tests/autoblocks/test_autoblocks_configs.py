@@ -32,6 +32,7 @@ def test_gracefully_handles_parser_error(httpx_mock):
         json=dict(
             id="my-config-id",
             version="1",
+            revisionId="mock-revision-id",
             properties=dict(
                 {
                     "id": "not_my_val",
@@ -83,6 +84,7 @@ def test_activates_latest(httpx_mock):
         json=dict(
             id="my-config-id",
             version="1",
+            revisionId="mock-revision-id",
             properties=[
                 {
                     "id": "my_val",
@@ -117,6 +119,7 @@ def test_activates_specific_version(httpx_mock):
         json=dict(
             id="my-config-id",
             version="1",
+            revisionId="mock-revision-id",
             properties=[
                 {
                     "id": "my_val",
@@ -151,6 +154,7 @@ def test_activates_undeployed_latest(httpx_mock):
         json=dict(
             id="my-config-id",
             version="1",
+            revisionId="mock-revision-id",
             properties=[
                 {
                     "id": "my_val",
@@ -185,6 +189,7 @@ def test_activates_undeployed_revision_id(httpx_mock):
         json=dict(
             id="my-config-id",
             version="1",
+            revisionId="my-revision-id",
             properties=[
                 {
                     "id": "my_val",
@@ -224,6 +229,7 @@ def test_activates_revision_id_override(httpx_mock):
         json=dict(
             id="my-config-id",
             version="1",
+            revisionId="my-revision-id",
             properties=[
                 {
                     "id": "my_val",
@@ -263,6 +269,7 @@ def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
         json=dict(
             id="my-config-id",
             version="1",
+            revisionId="mock-revision-id",
             properties=[
                 {
                     "id": "my_val",
