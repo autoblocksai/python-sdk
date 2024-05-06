@@ -206,7 +206,7 @@ def test_config_undeployed_revision():
     config.activate_from_remote(
         config=RemoteConfig(
             id="used-by-ci-dont-delete",
-            dangerously_use_undeployed_revision="clvlcgpiq0003qtvsbz5vt7e0",
+            dangerously_use_undeployed_revision="clvv48mlc0003ximd4htzat8w",
         ),
         parser=MyConfigValue.model_validate,
         # Need to use a user-scoped API key to access undeployed configs
