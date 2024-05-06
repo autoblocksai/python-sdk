@@ -33,6 +33,6 @@ class RemoteConfigResponse(FrozenModel):
 class RemoteConfig:
     id: str
     # only one of these should be specified
-    major_version: Optional[int] = None  # should be a sepcific major version
-    minor_version: Optional[int] = None  # omitted for latest minor version
+    major_version: Optional[str] = None  # should be a specific major version
+    minor_version: Optional[str] = None  # should be a specific minor version or "latest"
     dangerously_use_undeployed_revision: Optional[str] = None  # can be a specific revision id or "latest"

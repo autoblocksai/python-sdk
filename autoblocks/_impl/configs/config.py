@@ -53,10 +53,9 @@ def config_revisions_map() -> dict[str, str]:
 def make_request_url(config: RemoteConfig) -> str:
     config_id = config.id
     base = f"{API_ENDPOINT}/configs/{config_id}"
-    if (
-        not isinstance(config, RemoteConfig)
-        and config.major_version is None
-        and config.dangerously_use_undeployed_revision is None
+    if not isinstance(config, RemoteConfig) and (
+        (config.major_version is None and config.minor_version is None)
+        or config.dangerously_use_undeployed_revision is None
     ):
         raise ValueError(f"Invalid config type: {config}")
 
@@ -69,7 +68,7 @@ def make_request_url(config: RemoteConfig) -> str:
         else:
             return f"{base}/revisions/{config.dangerously_use_undeployed_revision}"
 
-    if config.minor_version is None:
+    if config.minor_version == REVISION_LATEST:
         return f"{base}/major/{config.major_version}/minor/{REVISION_LATEST}"
 
     return f"{base}/major/{config.major_version}/minor/{config.minor_version}"
@@ -81,7 +80,7 @@ def is_remote_config_refreshable(config: RemoteConfig) -> bool:
     or the latest undeployed config.
     """
     return (
-        config.major_version is not None and config.minor_version is None
+        config.major_version is not None and config.minor_version == REVISION_LATEST
     ) or config.dangerously_use_undeployed_revision == REVISION_LATEST
 
 
