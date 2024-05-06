@@ -276,7 +276,8 @@ def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=RemoteConfig(id="my-config-id", major_version="1"), parser=MyConfigValue.model_validate
+        config=RemoteConfig(id="my-config-id", major_version="1", minor_version="latest"),
+        parser=MyConfigValue.model_validate,
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote-latest")
