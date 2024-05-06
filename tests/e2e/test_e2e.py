@@ -140,7 +140,8 @@ def test_config_latest():
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=RemoteConfig(id="used-by-ci-dont-delete", version="latest"), parser=MyConfigValue.model_validate
+        config=RemoteConfig(id="used-by-ci-dont-delete", major_version="1", minor_version="latest"),
+        parser=MyConfigValue.model_validate,
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
@@ -160,7 +161,8 @@ def test_config_specific_version():
         value=MyConfigValue(my_val="initial-val"),
     )
     config.activate_from_remote(
-        config=RemoteConfig(id="used-by-ci-dont-delete", version="1"), parser=MyConfigValue.model_validate
+        config=RemoteConfig(id="used-by-ci-dont-delete", major_version="1", minor_version="0"),
+        parser=MyConfigValue.model_validate,
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
@@ -205,7 +207,7 @@ def test_config_undeployed_revision():
     config.activate_from_remote(
         config=RemoteConfig(
             id="used-by-ci-dont-delete",
-            dangerously_use_undeployed_revision="clvlcgpiq0003qtvsbz5vt7e0",
+            dangerously_use_undeployed_revision="clvv48mlc0003ximd4htzat8w",
         ),
         parser=MyConfigValue.model_validate,
         # Need to use a user-scoped API key to access undeployed configs
