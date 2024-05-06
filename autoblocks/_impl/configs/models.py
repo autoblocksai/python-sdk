@@ -19,7 +19,7 @@ class FrozenModel(pydantic.BaseModel):
 
 
 class Property(FrozenModel):
-    name: str
+    id: str
     value: Any
 
 

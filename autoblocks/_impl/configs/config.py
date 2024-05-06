@@ -146,7 +146,7 @@ class AutoblocksConfig(
         try:
             obj = {}
             for prop in remote_config.properties:
-                obj[prop.name] = prop.value
+                obj[prop.id] = prop.value
             parsed = parser(obj)
             if parsed is not None:
                 self._value = parsed
