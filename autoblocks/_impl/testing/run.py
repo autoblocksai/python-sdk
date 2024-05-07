@@ -206,13 +206,13 @@ async def run_test_case_unsafe(
                     output,
                 )
 
+    # Revision usage is collected throughout a test case's run
+    revision_usage = get_test_case_revision_usage()
+
     # Flush the logs before we send the result, since the CLI
     # accumulates the events and sends them as a batch along
     # with the result.
     flush()
-
-    # Revision usage is collected throughout a test case's run
-    revision_usage = get_test_case_revision_usage()
 
     await post_to_cli(
         "/results",
