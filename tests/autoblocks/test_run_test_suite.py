@@ -1792,6 +1792,7 @@ def test_sync_before_evaluators_hook(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1904,6 +1905,7 @@ def test_async_before_evaluators_hook(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
