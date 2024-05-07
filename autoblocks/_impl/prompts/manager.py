@@ -4,7 +4,6 @@ import contextlib
 import json
 import logging
 from datetime import timedelta
-from enum import Enum
 from http import HTTPStatus
 from typing import Any
 from typing import ContextManager
@@ -19,7 +18,8 @@ from typing import Union
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.config.constants import REVISION_LATEST
-from autoblocks._impl.prompts.constants import UNDEPLOYED
+from autoblocks._impl.context_vars import RevisionType
+from autoblocks._impl.context_vars import register_test_case_revision_usage
 from autoblocks._impl.prompts.context import PromptExecutionContext
 from autoblocks._impl.prompts.error import IncompatiblePromptRevisionError
 from autoblocks._impl.prompts.models import Prompt
@@ -33,7 +33,6 @@ from autoblocks._impl.util import get_running_loop
 log = logging.getLogger(__name__)
 
 ExecutionContextType = TypeVar("ExecutionContextType", bound=PromptExecutionContext[Any, Any])
-MinorVersionEnumType = TypeVar("MinorVersionEnumType", bound=Enum)
 
 
 def is_testing_context() -> bool:
@@ -64,10 +63,7 @@ def prompt_revisions_map() -> dict[str, str]:
 
 class AutoblocksPromptManager(
     abc.ABC,
-    Generic[
-        ExecutionContextType,
-        MinorVersionEnumType,
-    ],
+    Generic[ExecutionContextType],
 ):
     __prompt_id__: str
     __prompt_major_version__: str
@@ -87,8 +83,7 @@ class AutoblocksPromptManager(
         self,
         minor_version: Union[
             str,
-            MinorVersionEnumType,
-            List[WeightedMinorVersion[MinorVersionEnumType]],
+            List[WeightedMinorVersion],
         ],
         api_key: Optional[str] = None,
         init_timeout: timedelta = timedelta(seconds=30),
@@ -177,12 +172,6 @@ class AutoblocksPromptManager(
                 f"for this prompt manager '{expected_revision_id}'."
             )
 
-        if self.__prompt_major_version__ == UNDEPLOYED:
-            raise NotImplementedError(
-                "Prompt revision overrides are not yet supported for prompt managers using DANGEROUSLY_USE_UNDEPLOYED. "
-                "Reach out to support@autoblocks.ai for more details."
-            )
-
         resp = await global_state.http_client().post(
             self._make_revision_validate_override_request_url(revision_id),
             timeout=self._init_timeout.total_seconds(),
@@ -234,7 +223,7 @@ class AutoblocksPromptManager(
             # tuple, not `prompt.minor_version`. This is because the
             # latter will contain the actual version number, which may be
             # different from the minor version we requested (in the case
-            # where we requested LATEST or UNDEPLOYED).
+            # where we requested LATEST).
             self._minor_version_to_prompt[minor_version] = prompt
             log.info(f"Successfully fetched version '{prompt.version}' of prompt '{self.__prompt_id__}'")
 
@@ -326,6 +315,12 @@ class AutoblocksPromptManager(
         @contextlib.contextmanager
         def gen():  # type: ignore
             prompt = self._choose_execution_prompt()
+            if is_testing_context():
+                register_test_case_revision_usage(
+                    entity_id=prompt.id,
+                    entity_type=RevisionType.PROMPT,
+                    revision_id=prompt.revision_id,
+                )
             yield self.__execution_context_class__(prompt=prompt)
 
         return gen()

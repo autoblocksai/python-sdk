@@ -1,6 +1,5 @@
 import json
 import os
-from enum import Enum
 from http import HTTPStatus
 from unittest import mock
 
@@ -49,16 +48,8 @@ class MyExecutionContext(
     __template_renderer_class__ = MyTemplateRenderer
 
 
-class MyMinorVersion(Enum):
-    v0 = "0"
-    LATEST = "latest"
-
-
 class MyPromptManager(
-    AutoblocksPromptManager[
-        MyExecutionContext,
-        MyMinorVersion,
-    ],
+    AutoblocksPromptManager[MyExecutionContext],
 ):
     __prompt_id__ = "my-prompt-id"
     __prompt_major_version__ = "1"
@@ -86,6 +77,7 @@ def test_uses_prompt_revision(httpx_mock):
         json=dict(
             id="my-prompt-id",
             version="revision:mock-revision-id",
+            revisionId="mock-revision-id",
             templates=[
                 dict(
                     id="my-template",
@@ -95,7 +87,7 @@ def test_uses_prompt_revision(httpx_mock):
         ),
     )
 
-    mgr = MyPromptManager(MyMinorVersion.v0)
+    mgr = MyPromptManager(minor_version="0")
     with mgr.exec() as p:
         rendered = p.render.my_template(name="Nicole", weather="sunny")
         assert rendered == "Hello, Nicole! The weather is sunny today!!!"
@@ -124,6 +116,7 @@ def test_uses_prompt_revision_when_version_is_latest(httpx_mock):
         json=dict(
             id="my-prompt-id",
             version="revision:mock-revision-id",
+            revisionId="mock-revision-id",
             templates=[
                 dict(
                     id="my-template",
@@ -133,7 +126,7 @@ def test_uses_prompt_revision_when_version_is_latest(httpx_mock):
         ),
     )
 
-    mgr = MyPromptManager(MyMinorVersion.LATEST)
+    mgr = MyPromptManager(minor_version="latest")
     with mgr.exec() as p:
         rendered = p.render.my_template(name="Nicole", weather="sunny")
         assert rendered == "Hello, Nicole! The weather is sunny today!!!"
@@ -157,6 +150,7 @@ def test_uses_configured_version_if_revision_is_for_different_prompt(httpx_mock)
         json=dict(
             id="my-prompt-id",
             version="1.0",
+            revisionId="mock-revision-id",
             templates=[
                 dict(
                     id="my-template",
@@ -166,7 +160,7 @@ def test_uses_configured_version_if_revision_is_for_different_prompt(httpx_mock)
         ),
     )
 
-    mgr = MyPromptManager(MyMinorVersion.v0)
+    mgr = MyPromptManager(minor_version="0")
     with mgr.exec() as p:
         rendered = p.render.my_template(name="Nicole", weather="sunny")
         assert rendered == "Hello, Nicole! The weather is sunny today."
@@ -198,7 +192,7 @@ def test_raises_if_prompt_is_incompatible(httpx_mock):
     )
 
     with pytest.raises(IncompatiblePromptRevisionError) as exc:
-        MyPromptManager(MyMinorVersion.v0)
+        MyPromptManager(minor_version="0")
 
     assert str(exc.value) == (
         "Can't override prompt 'MyPromptManager' with revision 'mock-revision-id' "
@@ -224,6 +218,7 @@ def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
         json=dict(
             id="my-prompt-id",
             version="1.0",
+            revisionId="mock-revision-id",
             templates=[
                 dict(
                     id="my-template",
@@ -233,7 +228,7 @@ def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
         ),
     )
 
-    mgr = MyPromptManager(MyMinorVersion.v0)
+    mgr = MyPromptManager(minor_version="0")
     with mgr.exec() as p:
         rendered = p.render.my_template(name="Nicole", weather="sunny")
         assert rendered == "Hello, Nicole! The weather is sunny today."

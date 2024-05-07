@@ -10,6 +10,10 @@ from unittest import mock
 import pydantic
 import pytest
 
+from autoblocks._impl.config.constants import API_ENDPOINT
+from autoblocks._impl.prompts.context import PromptExecutionContext
+from autoblocks._impl.prompts.manager import AutoblocksPromptManager
+from autoblocks._impl.prompts.renderer import TemplateRenderer
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import StrEnum
 from autoblocks.testing.models import BaseEvaluator
@@ -143,6 +147,7 @@ def test_error_in_test_fn(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -205,6 +210,7 @@ def test_error_in_async_test_fn(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -267,6 +273,7 @@ def test_error_in_evaluator(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -302,6 +309,7 @@ def test_error_in_evaluator(httpx_mock):
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -394,6 +402,7 @@ def test_no_evaluators(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -405,6 +414,7 @@ def test_no_evaluators(httpx_mock):
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -447,6 +457,7 @@ def test_with_evaluators(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -482,6 +493,7 @@ def test_with_evaluators(httpx_mock):
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -596,6 +608,7 @@ def test_concurrency(httpx_mock):
                 testCaseBody=dict(input="a"),
                 testCaseOutput="a!",
                 testCaseDurationMs=ANY_NUMBER,
+                testCaseRevisionUsage=None,
             ),
         ),
         (
@@ -606,6 +619,7 @@ def test_concurrency(httpx_mock):
                 testCaseBody=dict(input="b"),
                 testCaseOutput="b!",
                 testCaseDurationMs=ANY_NUMBER,
+                testCaseRevisionUsage=None,
             ),
         ),
         (
@@ -676,6 +690,7 @@ def test_async_test_fn(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -687,6 +702,7 @@ def test_async_test_fn(httpx_mock):
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -729,6 +745,7 @@ def test_async_evaluators(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -764,6 +781,7 @@ def test_async_evaluators(httpx_mock):
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -849,6 +867,7 @@ def test_serializes(httpx_mock):
                 u="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
             ),
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -966,6 +985,7 @@ def test_skips_non_serializable_test_case_attributes(httpx_mock):
             ),
             testCaseOutput="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1035,6 +1055,7 @@ def test_sends_tracer_events(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1055,6 +1076,7 @@ def test_sends_tracer_events(httpx_mock):
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1064,27 +1086,28 @@ def test_sends_tracer_events(httpx_mock):
     )
 
     # initialize the tracer outside the test function
-    # this ensures the context variables are being access inside send_event
+    # this ensures the context variables are being accessed inside send_event
     tracer = AutoblocksTracer("test")
 
     async def test_fn(test_case: MyTestCase) -> str:
         if test_case.input == "a":
-            # simulate doing more work than b to make sure context manager is working correctly
+            # simulate doing more work than b to make sure context var is working correctly
             await asyncio.sleep(1)
         tracer.send_event(message=test_case.input, timestamp=timestamp)
         return test_case.input + "!"
 
+    test_cases = [
+        MyTestCase(input="a"),
+        MyTestCase(input="b"),
+    ]
+
     run_test_suite(
         id="my-test-id",
-        test_cases=[
-            MyTestCase(input="a"),
-            MyTestCase(input="b"),
-        ],
+        test_cases=test_cases,
         evaluators=[],
         fn=test_fn,
-        # concurrency is set to 2 because we want test cases to run in parallel
-        # to ensure context manager is working correctly
-        max_test_case_concurrency=2,
+        # we want test cases to run in parallel to ensure context var is working correctly
+        max_test_case_concurrency=len(test_cases),
     )
 
 
@@ -1106,6 +1129,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1118,6 +1142,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1130,6 +1155,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseBody=dict(input="a"),
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
 
@@ -1143,6 +1169,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseBody=dict(input="b"),
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
 
@@ -1291,6 +1318,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
             testCaseBody=dict(x=0.5),
             testCaseOutput="whatever",
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1491,6 +1519,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             ),
             testCaseOutput=dict(actions=["1"]),
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1510,6 +1539,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             ),
             testCaseOutput=dict(actions=["2"]),
             testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1646,6 +1676,7 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
                 testCaseBody=dict(input="a"),
                 testCaseOutput="a!",
                 testCaseDurationMs=ANY_NUMBER,
+                testCaseRevisionUsage=None,
             ),
         ),
         dict(
@@ -1709,6 +1740,7 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
                 testCaseBody=dict(input="b"),
                 testCaseOutput="b!",
                 testCaseDurationMs=ANY_NUMBER,
+                testCaseRevisionUsage=None,
             ),
         ),
         dict(
@@ -1968,3 +2000,163 @@ def test_async_before_evaluators_hook(httpx_mock):
     )
 
     assert num_times_hook_called == 1
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "AUTOBLOCKS_API_KEY": "mock-api-key",
+    },
+)
+def test_prompt_manager_revision_usage(httpx_mock):
+    class MyPromptParams(pydantic.BaseModel):
+        pass
+
+    class MyTemplateRenderer(TemplateRenderer):
+        __name_mapper__ = {}
+
+    class MyExecutionContext(
+        PromptExecutionContext[
+            MyPromptParams,
+            MyTemplateRenderer,
+        ],
+    ):
+        __params_class__ = MyPromptParams
+        __template_renderer_class__ = MyTemplateRenderer
+
+    class PromptManagerA(
+        AutoblocksPromptManager[MyExecutionContext],
+    ):
+        __prompt_id__ = "prompt-a"
+        __prompt_major_version__ = "1"
+        __execution_context_class__ = MyExecutionContext
+
+    class PromptManagerB(
+        AutoblocksPromptManager[MyExecutionContext],
+    ):
+        __prompt_id__ = "prompt-b"
+        __prompt_major_version__ = "undeployed"
+        __execution_context_class__ = MyExecutionContext
+
+    # Mock the requests the prompt managers will make to fetch the prompts
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/prompts/prompt-a/major/1/minor/latest",
+        method="GET",
+        match_headers={"Authorization": "Bearer mock-api-key"},
+        json=dict(
+            id="prompt-a",
+            version="1.1",
+            revisionId="prompt-a-mock-revision-id",
+            templates=[],
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/prompts/prompt-b/major/undeployed/minor/0",
+        method="GET",
+        match_headers={"Authorization": "Bearer mock-api-key"},
+        json=dict(
+            id="prompt-b",
+            version="revision:prompt-b-mock-revision-id",
+            revisionId="prompt-b-mock-revision-id",
+            templates=[],
+        ),
+    )
+
+    mgr_a = PromptManagerA(minor_version="latest")
+    mgr_b = PromptManagerB(minor_version="0")
+
+    async def test_fn(test_case: MyTestCase) -> str:
+        """
+        y: prompt-a, prompt-b, prompt-a
+        z: prompt-a
+        """
+        if test_case.input == "y":
+            # simulate doing more work in y than z to ensure context var is working correctly
+            await asyncio.sleep(1)
+
+            with mgr_a.exec():
+                pass
+            with mgr_b.exec():
+                pass
+
+        with mgr_a.exec():
+            pass
+
+        return test_case.input + "!"
+
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="y",
+            testCaseBody=dict(input="y"),
+            testCaseOutput="y!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=[
+                dict(
+                    entityExternalId="prompt-a",
+                    entityType="prompt",
+                    revisionId="prompt-a-mock-revision-id",
+                    usedAt=mock.ANY,
+                ),
+                dict(
+                    entityExternalId="prompt-b",
+                    entityType="prompt",
+                    revisionId="prompt-b-mock-revision-id",
+                    usedAt=mock.ANY,
+                ),
+                dict(
+                    entityExternalId="prompt-a",
+                    entityType="prompt",
+                    revisionId="prompt-a-mock-revision-id",
+                    usedAt=mock.ANY,
+                ),
+            ],
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="z",
+            testCaseBody=dict(input="z"),
+            testCaseOutput="z!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=[
+                dict(
+                    entityExternalId="prompt-a",
+                    entityType="prompt",
+                    revisionId="prompt-a-mock-revision-id",
+                    usedAt=mock.ANY,
+                ),
+            ],
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
+    )
+
+    test_cases = [
+        MyTestCase(input="y"),
+        MyTestCase(input="z"),
+    ]
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=test_cases,
+        evaluators=[],
+        fn=test_fn,
+        # we want test cases to run in parallel to ensure context var is working correctly
+        max_test_case_concurrency=len(test_cases),
+    )

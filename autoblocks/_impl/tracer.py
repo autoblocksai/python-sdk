@@ -4,9 +4,7 @@ import dataclasses
 import inspect
 import logging
 import uuid
-from datetime import datetime
 from datetime import timedelta
-from datetime import timezone
 from typing import Any
 from typing import Dict
 from typing import List
@@ -25,6 +23,7 @@ from autoblocks._impl.util import AnyTask
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import get_running_loop
+from autoblocks._impl.util import now_iso_8601
 
 log = logging.getLogger(__name__)
 
@@ -280,7 +279,7 @@ class AutoblocksTracer:
         prompt_tracking: Optional[Dict[str, Any]],
     ) -> Payload:
         trace_id = trace_id or self._trace_id
-        timestamp = timestamp or datetime.now(timezone.utc).isoformat()
+        timestamp = timestamp or now_iso_8601()
 
         merged_properties = dict(self._properties)
         merged_properties.update(properties or {})

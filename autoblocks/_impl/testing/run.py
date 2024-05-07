@@ -21,6 +21,7 @@ from httpx import Response
 
 from autoblocks._impl import global_state
 from autoblocks._impl.context_vars import TestCaseRunContext
+from autoblocks._impl.context_vars import get_test_case_revision_usage
 from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
@@ -210,6 +211,9 @@ async def run_test_case_unsafe(
     # with the result.
     flush()
 
+    # Revision usage is collected throughout a test case's run
+    revision_usage = get_test_case_revision_usage()
+
     await post_to_cli(
         "/results",
         json=dict(
@@ -218,6 +222,7 @@ async def run_test_case_unsafe(
             testCaseBody=serialize_test_case(test_case_ctx.test_case),
             testCaseOutput=serialize(output),
             testCaseDurationMs=(time.perf_counter() - start_time) * 1000,
+            testCaseRevisionUsage=[usage.serialize() for usage in revision_usage] if revision_usage else None,
         ),
     )
     return output, hook_results
@@ -230,7 +235,12 @@ async def run_test_case(
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
 ) -> None:
-    token = test_case_run_context_var.set(TestCaseRunContext(test_id=test_id, test_case_hash=test_case_ctx.hash()))
+    reset_token = test_case_run_context_var.set(
+        TestCaseRunContext(
+            test_id=test_id,
+            test_case_hash=test_case_ctx.hash(),
+        ),
+    )
     try:
         output, hook_results = await run_test_case_unsafe(
             test_id=test_id,
@@ -247,7 +257,7 @@ async def run_test_case(
         )
         return
     finally:
-        test_case_run_context_var.reset(token)
+        test_case_run_context_var.reset(reset_token)
 
     try:
         await all_settled(

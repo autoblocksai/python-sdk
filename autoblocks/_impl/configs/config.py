@@ -15,6 +15,8 @@ from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.config.constants import REVISION_LATEST
 from autoblocks._impl.configs.models import RemoteConfig
 from autoblocks._impl.configs.models import RemoteConfigResponse
+from autoblocks._impl.context_vars import RevisionType
+from autoblocks._impl.context_vars import register_test_case_revision_usage
 from autoblocks._impl.util import AnyTask
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import get_running_loop
@@ -53,10 +55,9 @@ def config_revisions_map() -> dict[str, str]:
 def make_request_url(config: RemoteConfig) -> str:
     config_id = config.id
     base = f"{API_ENDPOINT}/configs/{config_id}"
-    if (
-        not isinstance(config, RemoteConfig)
-        and config.version is None
-        and config.dangerously_use_undeployed_revision is None
+    if not isinstance(config, RemoteConfig) and (
+        (config.major_version is None and config.minor_version is None)
+        or config.dangerously_use_undeployed_revision is None
     ):
         raise ValueError(f"Invalid config type: {config}")
 
@@ -69,10 +70,10 @@ def make_request_url(config: RemoteConfig) -> str:
         else:
             return f"{base}/revisions/{config.dangerously_use_undeployed_revision}"
 
-    if config.version == REVISION_LATEST:
-        return f"{base}/versions/{REVISION_LATEST}"
+    if config.minor_version == REVISION_LATEST:
+        return f"{base}/major/{config.major_version}/minor/{REVISION_LATEST}"
 
-    return f"{base}/versions/{config.version}"
+    return f"{base}/major/{config.major_version}/minor/{config.minor_version}"
 
 
 def is_remote_config_refreshable(config: RemoteConfig) -> bool:
@@ -80,7 +81,9 @@ def is_remote_config_refreshable(config: RemoteConfig) -> bool:
     A config is refreshable if the user has specified that they want the latest deployed config
     or the latest undeployed config.
     """
-    return config.version == REVISION_LATEST or config.dangerously_use_undeployed_revision == REVISION_LATEST
+    return (
+        config.major_version is not None and config.minor_version == REVISION_LATEST
+    ) or config.dangerously_use_undeployed_revision == REVISION_LATEST
 
 
 async def get_remote_config(config: RemoteConfig, timeout: timedelta, api_key: str) -> RemoteConfigResponse:
@@ -90,12 +93,7 @@ async def get_remote_config(config: RemoteConfig, timeout: timedelta, api_key: s
         headers={"Authorization": f"Bearer {api_key}"},
     )
     resp.raise_for_status()
-    resp_json = resp.json()
-    return RemoteConfigResponse(
-        id=resp_json["id"],
-        version=resp_json["version"],
-        value=resp_json["value"],
-    )
+    return RemoteConfigResponse.model_validate(resp.json())
 
 
 class AutoblocksConfig(
@@ -103,6 +101,8 @@ class AutoblocksConfig(
     Generic[AutoblocksConfigValueType],
 ):
     _value: AutoblocksConfigValueType
+    _remote_config_id: Optional[str] = None
+    _remote_config_revision_id: Optional[str] = None
 
     def __init__(self, value: AutoblocksConfigValueType) -> None:
         self._value = value
@@ -147,9 +147,14 @@ class AutoblocksConfig(
         """
         remote_config = await get_remote_config(config, timeout=timeout, api_key=api_key)
         try:
-            parsed = parser(remote_config.value)
+            obj = {}
+            for prop in remote_config.properties:
+                obj[prop.id] = prop.value
+            parsed = parser(obj)
             if parsed is not None:
                 self._value = parsed
+                self._remote_config_id = remote_config.id
+                self._remote_config_revision_id = remote_config.revision_id
         except Exception as err:
             log.error(f"Failed to parse config '{config.id}': {err}", exc_info=True)
             raise err
@@ -242,4 +247,10 @@ class AutoblocksConfig(
 
     @property
     def value(self) -> AutoblocksConfigValueType:
+        if is_testing_context() and self._remote_config_id and self._remote_config_revision_id:
+            register_test_case_revision_usage(
+                entity_id=self._remote_config_id,
+                entity_type=RevisionType.CONFIG,
+                revision_id=self._remote_config_revision_id,
+            )
         return self._value

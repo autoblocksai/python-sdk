@@ -67,189 +67,134 @@ def test_infer_type():
     assert infer_type(None) is None
 
 
-MOCK_PROMPTS_API_RESPONSE = [
-    {
-        "id": "prompt-a",
-        "params": {
-            "params": {
-                "frequencyPenalty": 0,
-                "maxTokens": 256,
-                "model": "gpt-4",
-                "presencePenalty": 0.3,
-                "stopSequences": [],
-                "temperature": 0.7,
-                "topP": 1,
-            },
-            "version": "1.0",
-        },
-        "templates": [
-            {
-                "id": "template-a",
-                "template": "Hello, {{ name }}! The weather is {{ weather }} today.",
-                "version": "1.0",
-            },
-            {
-                "id": "template-b",
-                "template": "Hello, {{ name-1 }}! My name is {{ name-2 }}.",
-                "version": "1.0",
-            },
-        ],
-        "version": "1.0",
-    },
-    {
-        "id": "prompt-b",
-        "templates": [
-            {
-                "id": "template-a",
-                "template": "Hello, {{ name }}! The weather is {{ weather }} today.",
-                "version": "1.0",
-            },
-            {
-                "id": "template-b",
-                "template": "Hello, {{ name1 }}! My name is {{ name2 }}.",
-                "version": "1.0",
-            },
-            {
-                "id": "template-c",
-                "template": "I am template c and I have no params",
-                "version": "1.0",
-            },
-        ],
-        "version": "2.0",
-    },
-    {
-        "id": "prompt-b",
-        "params": {
-            "params": {
-                "frequencyPenalty": 0,
-                "maxTokens": 256,
-                "model": "gpt-4",
-                "presencePenalty": -0.3,
-                "stopSequences": [],
-                "temperature": 0.7,
-                "topP": 1,
-            },
-            "version": "1.1",
-        },
-        "templates": [
-            {
-                "id": "template-a",
-                "template": "Hello, {{ name }}! The weather is {{ weather }} today.",
-                "version": "1.0",
-            },
-            {
-                "id": "template-b",
-                "template": "Hello, {{ name1 }}! My name is {{ name2 }}.",
-                "version": "1.0",
-            },
-        ],
-        "version": "1.1",
-    },
-    {
-        "id": "prompt-b",
-        "params": {
-            "params": {
-                "frequencyPenalty": 0,
-                "maxTokens": 256,
-                "model": "gpt-4",
-                "presencePenalty": 0.3,
-                "stopSequences": [],
-                "temperature": 0.7,
-                "topP": 1,
-            },
-            "version": "1.0",
-        },
-        "templates": [
-            {
-                "id": "template-a",
-                "template": "Hello, {{ name }}! The weather is {{ weather }} today.",
-                "version": "1.0",
-            },
-            {
-                "id": "template-b",
-                "template": "Hello, {{ name1 }}! My name is {{ name2 }}.",
-                "version": "1.0",
-            },
-        ],
-        "version": "1.0",
-    },
-]
-
-PROMPT_C_UNDEPLOYED_RESPONSE = {
-    "id": "prompt-c",
-    "params": {
-        "params": {
-            "frequencyPenalty": 0,
-            "maxTokens": 256,
-            "model": "gpt-4",
-            "presencePenalty": 0.3,
-            "stopSequences": [],
-            "temperature": 0.7,
-            "topP": 1,
-        },
-        "version": "1.0",
-    },
-    "templates": [
-        {
-            "id": "template",
-            "template": "Hello !!!",
-            "version": "1.0",
-        },
-    ],
-    "version": "undeployed",
-}
-
-
 @mock.patch.dict(
     os.environ,
     {
         "AUTOBLOCKS_API_KEY": "mock-api-key",
     },
 )
-def test_write(httpx_mock):
+def test_write(httpx_mock, snapshot):
     config = AutogeneratePromptsConfig(
         outfile="test.py",
         prompts=[
             AutogeneratePromptConfig(
                 id="prompt-a",
-                major_versions=["1"],
+                major_version="1",
             ),
             AutogeneratePromptConfig(
                 id="prompt-b",
                 # Test that it works with numbers
-                major_versions=[1, 2],  # type: ignore
+                major_version=1,  # type: ignore
             ),
             AutogeneratePromptConfig(
                 id="prompt-c",
-                major_versions=["dangerously-use-undeployed"],
+                dangerously_use_undeployed_revision="latest",
+            ),
+            AutogeneratePromptConfig(
+                id="prompt-d",
+                dangerously_use_undeployed_revision="mock-specific-revision-id",
             ),
         ],
     )
 
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/prompts",
+        url=f"{API_ENDPOINT}/prompts/prompt-a/major/1/minor/latest",
         method="GET",
         status_code=200,
-        json=MOCK_PROMPTS_API_RESPONSE,
+        json={
+            "id": "prompt-a",
+            "params": {
+                "params": {
+                    "frequencyPenalty": 0,
+                    "maxTokens": 256,
+                    "model": "gpt-4",
+                    "presencePenalty": 0.3,
+                    "stopSequences": [],
+                    "temperature": 0.7,
+                    "topP": 1,
+                },
+                "version": "1.0",
+            },
+            "templates": [
+                {
+                    "id": "template-a",
+                    "template": "Hello, {{ name }}! The weather is {{ weather }} today.",
+                },
+                {
+                    "id": "template-b",
+                    "template": "Hello, {{ name-1 }}! My name is {{ name-2 }}.",
+                },
+            ],
+            "version": "1.0",
+            "revisionId": "mock-revision-id",
+        },
         match_headers={"Authorization": "Bearer mock-api-key"},
     )
+
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/prompts/prompt-a/major/undeployed/minor/undeployed",
-        method="GET",
-        status_code=404,
-        match_headers={"Authorization": "Bearer mock-api-key"},
-    )
-    httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/prompts/prompt-b/major/undeployed/minor/undeployed",
-        method="GET",
-        status_code=404,
-        match_headers={"Authorization": "Bearer mock-api-key"},
-    )
-    httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/prompts/prompt-c/major/undeployed/minor/undeployed",
+        url=f"{API_ENDPOINT}/prompts/prompt-b/major/1/minor/latest",
         method="GET",
         status_code=200,
-        json=PROMPT_C_UNDEPLOYED_RESPONSE,
+        json={
+            "id": "prompt-b",
+            "params": {
+                "params": {
+                    "frequencyPenalty": 0,
+                    "maxTokens": 256,
+                    "model": "gpt-4",
+                    "presencePenalty": -0.3,
+                    "stopSequences": [],
+                    "temperature": 0.7,
+                    "topP": 1,
+                },
+            },
+            "templates": [
+                {
+                    "id": "template-a",
+                    "template": "Hello, {{ name }}! The weather is {{ weather }} today.",
+                },
+            ],
+            "version": "3.1",
+            "revisionId": "mock-revision-id",
+        },
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/prompts/prompt-c/major/undeployed/minor/latest",
+        method="GET",
+        status_code=200,
+        json={
+            "id": "prompt-c",
+            "params": None,
+            "templates": [
+                {
+                    "id": "template-a",
+                    "template": "Hello, {{ name }}! The weather is {{ weather }} today.",
+                },
+            ],
+            "version": "revision:mock-revision-id",
+            "revisionId": "mock-revision-id",
+        },
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/prompts/prompt-d/major/undeployed/minor/mock-specific-revision-id",
+        method="GET",
+        status_code=200,
+        json={
+            "id": "prompt-c",
+            "params": None,
+            "templates": [
+                {
+                    "id": "template-a",
+                    "template": "Hello, {{ name }}! The weather is {{ weather }} today.",
+                },
+            ],
+            "version": "revision:mock-specific-revision-id",
+            "revisionId": "mock-specific-revision-id",
+        },
         match_headers={"Authorization": "Bearer mock-api-key"},
     )
 
@@ -258,274 +203,7 @@ def test_write(httpx_mock):
     with mock.patch("autoblocks._impl.prompts.autogenerate.open", m):
         write_generated_code_for_config(config)
 
-    expected = """############################################################################
-# This file was generated automatically by Autoblocks. Do not edit directly.
-############################################################################
-
-from enum import Enum
-from typing import Union  # noqa: F401
-
-import pydantic
-
-from autoblocks.prompts.context import PromptExecutionContext
-from autoblocks.prompts.manager import AutoblocksPromptManager
-from autoblocks.prompts.models import FrozenModel
-from autoblocks.prompts.renderer import TemplateRenderer
-
-
-class PromptAParams(FrozenModel):
-    frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
-    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
-    model: str = pydantic.Field(..., alias="model")
-    presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
-    top_p: Union[float, int] = pydantic.Field(..., alias="topP")
-
-
-class PromptATemplateRenderer(TemplateRenderer):
-    __name_mapper__ = {
-        "name": "name",
-        "name-1": "name_1",
-        "name-2": "name_2",
-        "weather": "weather",
-    }
-
-    def template_a(
-        self,
-        *,
-        name: str,
-        weather: str,
-    ) -> str:
-        return self._render(
-            "template-a",
-            name=name,
-            weather=weather,
-        )
-
-    def template_b(
-        self,
-        *,
-        name_1: str,
-        name_2: str,
-    ) -> str:
-        return self._render(
-            "template-b",
-            name_1=name_1,
-            name_2=name_2,
-        )
-
-
-class PromptAExecutionContext(
-    PromptExecutionContext[
-        PromptAParams,
-        PromptATemplateRenderer,
-    ],
-):
-    __params_class__ = PromptAParams
-    __template_renderer_class__ = PromptATemplateRenderer
-
-
-class PromptAMinorVersion(Enum):
-    v0 = "0"
-    LATEST = "latest"
-
-
-class PromptAPromptManager(
-    AutoblocksPromptManager[
-        PromptAExecutionContext,
-        PromptAMinorVersion,
-    ],
-):
-    __prompt_id__ = "prompt-a"
-    __prompt_major_version__ = "1"
-    __execution_context_class__ = PromptAExecutionContext
-
-
-class PromptB1Params(FrozenModel):
-    frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
-    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
-    model: str = pydantic.Field(..., alias="model")
-    presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
-    top_p: Union[float, int] = pydantic.Field(..., alias="topP")
-
-
-class PromptB1TemplateRenderer(TemplateRenderer):
-    __name_mapper__ = {
-        "name": "name",
-        "name1": "name1",
-        "name2": "name2",
-        "weather": "weather",
-    }
-
-    def template_a(
-        self,
-        *,
-        name: str,
-        weather: str,
-    ) -> str:
-        return self._render(
-            "template-a",
-            name=name,
-            weather=weather,
-        )
-
-    def template_b(
-        self,
-        *,
-        name1: str,
-        name2: str,
-    ) -> str:
-        return self._render(
-            "template-b",
-            name1=name1,
-            name2=name2,
-        )
-
-
-class PromptB1ExecutionContext(
-    PromptExecutionContext[
-        PromptB1Params,
-        PromptB1TemplateRenderer,
-    ],
-):
-    __params_class__ = PromptB1Params
-    __template_renderer_class__ = PromptB1TemplateRenderer
-
-
-class PromptB1MinorVersion(Enum):
-    v0 = "0"
-    v1 = "1"
-    LATEST = "latest"
-
-
-class PromptB1PromptManager(
-    AutoblocksPromptManager[
-        PromptB1ExecutionContext,
-        PromptB1MinorVersion,
-    ],
-):
-    __prompt_id__ = "prompt-b"
-    __prompt_major_version__ = "1"
-    __execution_context_class__ = PromptB1ExecutionContext
-
-
-class PromptB2Params(FrozenModel):
-    pass
-
-
-class PromptB2TemplateRenderer(TemplateRenderer):
-    __name_mapper__ = {
-        "name": "name",
-        "name1": "name1",
-        "name2": "name2",
-        "weather": "weather",
-    }
-
-    def template_a(
-        self,
-        *,
-        name: str,
-        weather: str,
-    ) -> str:
-        return self._render(
-            "template-a",
-            name=name,
-            weather=weather,
-        )
-
-    def template_b(
-        self,
-        *,
-        name1: str,
-        name2: str,
-    ) -> str:
-        return self._render(
-            "template-b",
-            name1=name1,
-            name2=name2,
-        )
-
-    def template_c(
-        self,
-    ) -> str:
-        return self._render(
-            "template-c",
-        )
-
-
-class PromptB2ExecutionContext(
-    PromptExecutionContext[
-        PromptB2Params,
-        PromptB2TemplateRenderer,
-    ],
-):
-    __params_class__ = PromptB2Params
-    __template_renderer_class__ = PromptB2TemplateRenderer
-
-
-class PromptB2MinorVersion(Enum):
-    v0 = "0"
-    LATEST = "latest"
-
-
-class PromptB2PromptManager(
-    AutoblocksPromptManager[
-        PromptB2ExecutionContext,
-        PromptB2MinorVersion,
-    ],
-):
-    __prompt_id__ = "prompt-b"
-    __prompt_major_version__ = "2"
-    __execution_context_class__ = PromptB2ExecutionContext
-
-
-class PromptCUndeployedParams(FrozenModel):
-    frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
-    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
-    model: str = pydantic.Field(..., alias="model")
-    presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
-    top_p: Union[float, int] = pydantic.Field(..., alias="topP")
-
-
-class PromptCUndeployedTemplateRenderer(TemplateRenderer):
-    __name_mapper__ = {}
-
-    def template(
-        self,
-    ) -> str:
-        return self._render(
-            "template",
-        )
-
-
-class PromptCUndeployedExecutionContext(
-    PromptExecutionContext[
-        PromptCUndeployedParams,
-        PromptCUndeployedTemplateRenderer,
-    ],
-):
-    __params_class__ = PromptCUndeployedParams
-    __template_renderer_class__ = PromptCUndeployedTemplateRenderer
-
-
-class PromptCUndeployedMinorVersion(Enum):
-    DANGEROUSLY_USE_UNDEPLOYED = "undeployed"
-
-
-class PromptCUndeployedPromptManager(
-    AutoblocksPromptManager[
-        PromptCUndeployedExecutionContext,
-        PromptCUndeployedMinorVersion,
-    ],
-):
-    __prompt_id__ = "prompt-c"
-    __prompt_major_version__ = "undeployed"
-    __execution_context_class__ = PromptCUndeployedExecutionContext
-"""
-
     m.assert_called_once_with("test.py", "w")
     m().write.assert_called_once()
     write_called_with = m().write.call_args[0][0]
-    assert write_called_with == expected
+    assert write_called_with == snapshot

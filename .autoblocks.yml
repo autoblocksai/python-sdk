@@ -4,10 +4,13 @@ autogenerate:
 
     prompts:
       - id: used-by-ci-dont-delete
-        major_versions:
-          - 2
+        major_version: 2
 
       - id: used-by-ci-dont-delete-no-params
-        major_versions:
-          - 1
-          - dangerously-use-undeployed
+        major_version: 1
+
+      - id: text-summarization
+        dangerously_use_undeployed_revision: latest
+
+      - id: question-answerer
+        dangerously_use_undeployed_revision: clvodtv700003a2z02fumceby
