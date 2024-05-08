@@ -47,6 +47,13 @@ class BaseTestCase(abc.ABC):
         """
         pass
 
+    def pre_serialization_hook(self) -> Any:
+        """
+        Can be overridden to customize how the test case is displayed in Autoblocks,
+        e.g. to add, remove, or transform fields.
+        """
+        return self
+
 
 TestCaseType = TypeVar("TestCaseType", bound=BaseTestCase)
 

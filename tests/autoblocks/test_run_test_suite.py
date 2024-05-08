@@ -2162,3 +2162,57 @@ def test_prompt_manager_revision_usage(httpx_mock):
         # we want test cases to run in parallel to ensure context var is working correctly
         max_test_case_concurrency=len(test_cases),
     )
+
+
+def test_test_case_pre_serialization_hook(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(testExternalId="my-test-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="1-2",
+            testCaseBody=dict(
+                x=1,
+                y=2,
+                # This is not a field on the test case but is added by the pre_serialization_hook
+                sum=3,
+            ),
+            testCaseOutput="1 + 2 = 3",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
+    )
+
+    @dataclasses.dataclass
+    class MyCustomTestCase(BaseTestCase):
+        x: int
+        y: int
+
+        def hash(self):
+            return f"{self.x}-{self.y}"
+
+        def pre_serialization_hook(self):
+            return dict(
+                x=self.x,
+                y=self.y,
+                sum=self.x + self.y,
+            )
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyCustomTestCase(x=1, y=2),
+        ],
+        evaluators=[],
+        fn=lambda test_case: f"{test_case.x} + {test_case.y} = {test_case.x + test_case.y}",
+    )
