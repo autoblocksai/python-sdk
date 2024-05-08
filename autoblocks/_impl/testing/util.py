@@ -38,11 +38,13 @@ def serialize(x: Any) -> Any:
 
 
 def serialize_test_case(test_case: BaseTestCase) -> Any:
+    obj_to_serialize = test_case.pre_serialization_hook()
+
     # See https://docs.python.org/3/library/dataclasses.html#dataclasses.is_dataclass:
     # isinstance(test_case, type) checks test_case is an instance and not a type
-    if dataclasses.is_dataclass(test_case) and not isinstance(test_case, type):
+    if dataclasses.is_dataclass(obj_to_serialize) and not isinstance(obj_to_serialize, type):
         serialized: dict[Any, Any] = {}
-        for k, v in dataclasses.asdict(test_case).items():
+        for k, v in dataclasses.asdict(obj_to_serialize).items():
             if k == TEST_CASE_CONFIG_ATTR:
                 # Don't serialize the config
                 continue
@@ -53,7 +55,7 @@ def serialize_test_case(test_case: BaseTestCase) -> Any:
                 pass
         return serialized
 
-    return serialize(test_case)
+    return serialize(obj_to_serialize)
 
 
 def config_from_test_case(test_case: TestCaseType) -> Optional[TestCaseConfig]:

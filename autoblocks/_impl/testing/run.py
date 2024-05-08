@@ -186,6 +186,10 @@ async def run_test_case_unsafe(
                 test_case_ctx.test_case,
             )
 
+        # Calculate duration before running hooks so that the duration only
+        # includes time spent in fn()
+        test_case_duration_ms = (time.perf_counter() - start_time) * 1_000
+
         # Run the before-evaluators hook if provided.
         # Note we run this within the test case semaphore so that
         # max_test_case_concurrency applies to both fn + before_evaluators_hook.
@@ -221,7 +225,7 @@ async def run_test_case_unsafe(
             testCaseHash=test_case_ctx.hash(),
             testCaseBody=serialize_test_case(test_case_ctx.test_case),
             testCaseOutput=serialize(output),
-            testCaseDurationMs=(time.perf_counter() - start_time) * 1000,
+            testCaseDurationMs=test_case_duration_ms,
             testCaseRevisionUsage=[usage.serialize() for usage in revision_usage] if revision_usage else None,
         ),
     )
