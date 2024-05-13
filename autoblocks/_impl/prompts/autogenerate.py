@@ -11,20 +11,14 @@ from autoblocks._impl.config.constants import REVISION_LATEST
 from autoblocks._impl.config.constants import REVISION_UNDEPLOYED
 from autoblocks._impl.prompts.models import AutogeneratePromptsConfig
 from autoblocks._impl.prompts.models import FrozenModel
+from autoblocks._impl.prompts.placeholders import TemplatePlaceholder
+from autoblocks._impl.prompts.placeholders import parse_placeholders_from_template
 from autoblocks._impl.util import AutoblocksEnvVar
-
-
-class TemplateParam(FrozenModel):
-    name: str
-
-    @property
-    def snake_case_name(self) -> str:
-        return to_snake_case(self.name)
 
 
 class Template(FrozenModel):
     id: str
-    params: List[TemplateParam]
+    placeholders: List[TemplatePlaceholder]
 
     @property
     def snake_case_id(self) -> str:
@@ -103,15 +97,6 @@ def to_snake_case(s: str) -> str:
     return s.lower()
 
 
-def parse_template_params(template: str) -> List[str]:
-    """
-    Extracts placeholders from a string. Placeholders look like: {{ param }}
-    """
-    pattern = r"\{\{\s*(.*?)\s*\}\}"
-    params = re.findall(pattern, template)
-    return sorted(list(set(params)))
-
-
 def infer_type(value: Any) -> Optional[str]:
     if isinstance(value, str):
         return "str"
@@ -151,18 +136,19 @@ def generate_params_class_code(prompt: PromptCodegen) -> str:
 def generate_template_render_method_code(template: Template) -> str:
     auto = f"{indent()}def {template.snake_case_id}(\n{indent(2)}self,\n"
 
-    if template.params:
+    if template.placeholders:
         # Require all params to be passed in as keyword arguments
         auto += f"{indent(2)}*,\n"
 
-    for param in template.params:
-        auto += f"{indent(2)}{param.snake_case_name}: str,\n"
+    for placeholder in template.placeholders:
+        auto += f"{indent(2)}{to_snake_case(placeholder.name)}: str,\n"
 
     auto += f"{indent()}) -> str:\n"
     auto += f'{indent(2)}return self._render(\n{indent(3)}"{template.id}",\n'
 
-    for param in template.params:
-        auto += f"{indent(3)}{param.snake_case_name}={param.snake_case_name},\n"
+    for placeholder in template.placeholders:
+        kwarg_name = to_snake_case(placeholder.name)
+        auto += f"{indent(3)}{kwarg_name}={kwarg_name},\n"
 
     auto += f"{indent(2)})\n"
 
@@ -177,8 +163,10 @@ def generate_template_renderer_class_code(prompt: PromptCodegen) -> str:
     # to the snake case name of the corresponding keyword argument
     name_mapper = {}
     for template in prompt.templates:
-        for param in template.params:
-            name_mapper[param.name] = param.snake_case_name
+        for placeholder in template.placeholders:
+            # We should have filtered out escaped placeholders earlier
+            assert not placeholder.is_escaped
+            name_mapper[placeholder.name] = to_snake_case(placeholder.name)
 
     if name_mapper:
         auto += f"{indent()}__name_mapper__ = {{\n"
@@ -270,11 +258,11 @@ def make_prompts_from_config(
         templates = []
         for template in data["templates"]:
             template_id = template["id"]
-            template_params = [TemplateParam(name=name) for name in parse_template_params(template["template"])]
+            template_placeholders = parse_placeholders_from_template(template["template"])
             templates.append(
                 Template(
                     id=template_id,
-                    params=sorted(template_params, key=lambda p: p.snake_case_name),
+                    placeholders=[p for p in template_placeholders if not p.is_escaped],
                 ),
             )
 

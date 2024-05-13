@@ -7,6 +7,9 @@ from typing import Optional
 from typing import Set
 from typing import Union
 
+from autoblocks._impl.prompts.placeholders import TemplatePlaceholder
+from autoblocks._impl.prompts.placeholders import parse_placeholders_from_template
+
 try:
     import pydantic
 
@@ -33,6 +36,10 @@ class PromptTemplate(FrozenModel):
 
     id: str
     template: str
+
+    @functools.cached_property
+    def placeholders(self) -> List[TemplatePlaceholder]:
+        return parse_placeholders_from_template(self.template)
 
 
 class Prompt(FrozenModel):

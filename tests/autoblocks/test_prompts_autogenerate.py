@@ -3,12 +3,13 @@ from unittest import mock
 
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.prompts.autogenerate import infer_type
-from autoblocks._impl.prompts.autogenerate import parse_template_params
 from autoblocks._impl.prompts.autogenerate import to_snake_case
 from autoblocks._impl.prompts.autogenerate import to_title_case
 from autoblocks._impl.prompts.autogenerate import write_generated_code_for_config
 from autoblocks._impl.prompts.models import AutogeneratePromptConfig
 from autoblocks._impl.prompts.models import AutogeneratePromptsConfig
+from autoblocks._impl.prompts.placeholders import TemplatePlaceholder
+from autoblocks._impl.prompts.placeholders import parse_placeholders_from_template
 
 # Show full diff in unittest
 # import unittest
@@ -47,12 +48,60 @@ def test_to_snake_case():
     assert to_snake_case("123hello-world") == "hello_world"
 
 
-def test_parse_template_params():
-    assert parse_template_params("Hello") == []
-    assert parse_template_params("Hello, {{ name }}!") == ["name"]
-    assert parse_template_params("Hello, {{ name }}! My name is {{ name }}.") == ["name"]
-    assert parse_template_params("{{ c }} {{ b }} {{a}}") == ["a", "b", "c"]
-    assert parse_template_params("{{ param with spaces }}") == ["param with spaces"]
+def test_parse_placeholders_from_template():
+    assert parse_placeholders_from_template("Hello") == []
+    assert parse_placeholders_from_template("Hello, {{ name }}!") == [
+        TemplatePlaceholder(
+            is_escaped=False,
+            name="name",
+        ),
+    ]
+    assert parse_placeholders_from_template("Hello, {{ name }}! My name is {{ name }}.") == [
+        TemplatePlaceholder(
+            is_escaped=False,
+            name="name",
+        ),
+    ]
+    assert parse_placeholders_from_template("{{ c }} {{ b }} {{a}}") == [
+        TemplatePlaceholder(
+            is_escaped=False,
+            name="a",
+        ),
+        TemplatePlaceholder(
+            is_escaped=False,
+            name="b",
+        ),
+        TemplatePlaceholder(
+            is_escaped=False,
+            name="c",
+        ),
+    ]
+    assert parse_placeholders_from_template("{{ param with spaces }}") == [
+        TemplatePlaceholder(
+            is_escaped=False,
+            name="param with spaces",
+        ),
+    ]
+    assert parse_placeholders_from_template("I am \{{ escaped }} and I am {{ not }} escaped") == [
+        TemplatePlaceholder(
+            is_escaped=True,
+            name="escaped",
+        ),
+        TemplatePlaceholder(
+            is_escaped=False,
+            name="not",
+        ),
+    ]
+    assert parse_placeholders_from_template("\{{ escaped }} \{{ escaped }} {{ escaped }}") == [
+        TemplatePlaceholder(
+            is_escaped=False,
+            name="escaped",
+        ),
+        TemplatePlaceholder(
+            is_escaped=True,
+            name="escaped",
+        ),
+    ]
 
 
 def test_infer_type():
@@ -122,7 +171,8 @@ def test_write(httpx_mock, snapshot):
                 },
                 {
                     "id": "template-b",
-                    "template": "Hello, {{ name-1 }}! My name is {{ name-2 }}.",
+                    "template": "Hello, {{ name-1 }}! My name is {{ name-2 }}. "
+                    "Escaped \{{escaped}} placeholders should be ignored.",
                 },
             ],
             "version": "1.0",
