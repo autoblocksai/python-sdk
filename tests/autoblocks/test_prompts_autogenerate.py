@@ -76,13 +76,13 @@ def test_parse_placeholders_from_template():
             name="c",
         ),
     ]
-    assert parse_placeholders_from_template("{{ param with spaces }}") == [
+    assert parse_placeholders_from_template("{{ param with spaces }} {{ param-with-hyphens }}") == [
         TemplatePlaceholder(
             is_escaped=False,
-            name="param with spaces",
+            name="param-with-hyphens",
         ),
     ]
-    assert parse_placeholders_from_template("I am \{{ escaped }} and I am {{ not }} escaped") == [
+    assert parse_placeholders_from_template("I am \\{{ escaped }} and I am {{ not }} escaped") == [
         TemplatePlaceholder(
             is_escaped=True,
             name="escaped",
@@ -92,7 +92,7 @@ def test_parse_placeholders_from_template():
             name="not",
         ),
     ]
-    assert parse_placeholders_from_template("\{{ escaped }} \{{ escaped }} {{ escaped }}") == [
+    assert parse_placeholders_from_template("\\{{ escaped }} \\{{ escaped }} {{ escaped }}") == [
         TemplatePlaceholder(
             is_escaped=False,
             name="escaped",
@@ -102,6 +102,21 @@ def test_parse_placeholders_from_template():
             name="escaped",
         ),
     ]
+    assert (
+        parse_placeholders_from_template(
+            """Please respond in the format:
+
+{{
+  "x": {{
+    "y": 1
+  }}
+}}
+
+Thanks!
+"""
+        )
+        == []
+    )
 
 
 def test_infer_type():
