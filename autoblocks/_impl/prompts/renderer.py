@@ -4,10 +4,8 @@ from typing import Any
 from typing import Dict
 
 from autoblocks._impl.prompts.models import Prompt
-
-# Regular expression pattern for finding placeholders
-# in templates
-placeholder_pattern: re.Pattern[str] = re.compile(r"\{\{\s*(.*?)\s*\}\}")
+from autoblocks._impl.prompts.placeholders import PLACEHOLDER_PATTERN
+from autoblocks._impl.prompts.placeholders import make_placeholder_from_match
 
 
 class TemplateRenderer(abc.ABC):
@@ -24,12 +22,15 @@ class TemplateRenderer(abc.ABC):
 
     def _render(self, template_id: str, **kwargs: Any) -> str:
         def replace(match: re.Match[str]) -> str:
-            param_name = match.group(1).strip()
-            kwarg_name = self.__name_mapper__[param_name]
+            placeholder = make_placeholder_from_match(match)
+            if placeholder.is_escaped:
+                # Remove escape character from escaped placeholder
+                return match.group(0)[1:]
+            kwarg_name = self.__name_mapper__[placeholder.name]
             return str(kwargs[kwarg_name])
 
         return re.sub(
-            pattern=placeholder_pattern,
+            pattern=PLACEHOLDER_PATTERN,
             repl=replace,
             string=self.__template_map[template_id],
         )
