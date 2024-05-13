@@ -429,13 +429,13 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
             testExternalId="my-test-id",
             testCaseHash="hash",
             testCaseBody={"x": 1},
-            testCaseOutput="gpt-4",
+            testCaseOutput="llama7b-v2-chat",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=[
                 dict(
                     entityExternalId="used-by-ci-dont-delete",
                     entityType="prompt",
-                    revisionId="clvgwh7oq003ukasycf9rmwdo",
+                    revisionId="clw53api200031046spnkttha",
                     usedAt=mock.ANY,
                 ),
             ],
