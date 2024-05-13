@@ -219,63 +219,55 @@ def test_config_undeployed_revision():
 
 def test_prompt_manager():
     mgr = UsedByCiDontDeletePromptManager(
-        minor_version="1",
+        minor_version="0",
     )
 
     with mgr.exec() as ctx:
-        assert ctx.params.frequency_penalty == 0
         assert ctx.params.max_tokens == 256
-        assert ctx.params.model == "gpt-4"
-        assert ctx.params.presence_penalty == -0.3
-        assert ctx.params.temperature == 0.7
+        assert ctx.params.model == "llama7b-v2-chat"
+        assert ctx.params.temperature == 0.3
         assert ctx.params.top_p == 1
+        assert ctx.params.top_k == 0
 
         assert (
             ctx.render.template_a(
                 name="Alice",
                 weather="sunny",
             )
-            == "Hello, Alice! The weather is sunny today."
+            == "Hello, Alice! The weather is sunny today!"
         )
-
-        # # TODO: add support for optional params
-        # assert ctx.render.template_b(
-        #     name="Alice",
-        # ) == "Hello! My name is Alice."
 
         assert (
             ctx.render.template_b(
                 name="Alice",
-                optional="Bob",
             )
-            == "Hello Bob! My name is Alice."
+            == "My name is Alice."
         )
 
         assert ctx.render.template_c() == "I am template c and I have no params"
 
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
-            "version": "2.1",
-            "revisionId": "clvgwh7oq003ukasycf9rmwdo",
+            "version": "4.0",
+            "revisionId": "clw535icr0003qrvahk0tfd2j",
             "params": {
                 "params": {
-                    "frequencyPenalty": 0,
                     "maxTokens": 256,
-                    "model": "gpt-4",
-                    "presencePenalty": -0.3,
+                    "model": "llama7b-v2-chat",
                     "stopSequences": [],
-                    "temperature": 0.7,
+                    "temperature": 0.3,
+                    "topK": 0,
                     "topP": 1,
                 },
             },
             "templates": [
                 {
                     "id": "template-a",
-                    "template": "Hello, {{ name }}! The weather is {{ weather }} today.",
+                    "template": "Hello, {{ name }}! The weather is {{ weather }} today!",
                 },
                 {
                     "id": "template-b",
-                    "template": "Hello {{ optional? }}! My name is {{ name }}.",
+                    "template": "My name is {{ name }}.",
                 },
                 {
                     "id": "template-c",
@@ -291,8 +283,58 @@ def test_prompt_manager_latest():
     )
 
     with mgr.exec() as ctx:
-        assert ctx.params.model == "gpt-4"
-        assert ctx.track()["version"] == "2.3"
+        assert ctx.params.max_tokens == 256
+        assert ctx.params.model == "llama7b-v2-chat"
+        assert ctx.params.temperature == 0.3
+        assert ctx.params.top_p == 1
+        assert ctx.params.top_k == 0
+
+        assert (
+            ctx.render.template_a(
+                name="Alice",
+                weather="sunny",
+            )
+            == "Hello, Alice! The weather is sunny today!"
+        )
+
+        assert (
+            ctx.render.template_b(
+                name="Alice",
+            )
+            == "My name is Alice!"
+        )
+
+        assert ctx.render.template_c() == "I am template c and I have no params"
+
+        assert ctx.track() == {
+            "id": "used-by-ci-dont-delete",
+            "version": "4.1",
+            "revisionId": "clw53api200031046spnkttha",
+            "params": {
+                "params": {
+                    "maxTokens": 256,
+                    "model": "llama7b-v2-chat",
+                    "stopSequences": [],
+                    "temperature": 0.3,
+                    "topK": 0,
+                    "topP": 1,
+                },
+            },
+            "templates": [
+                {
+                    "id": "template-a",
+                    "template": "Hello, {{ name }}! The weather is {{ weather }} today!",
+                },
+                {
+                    "id": "template-b",
+                    "template": "My name is {{ name }}!",
+                },
+                {
+                    "id": "template-c",
+                    "template": "I am template c and I have no params",
+                },
+            ],
+        }
 
 
 def test_prompt_manager_weighted():
@@ -310,8 +352,8 @@ def test_prompt_manager_weighted():
     )
 
     with mgr.exec() as ctx:
-        assert ctx.params.model == "gpt-4"
-        assert ctx.track()["version"] in ("2.0", "2.3")
+        assert ctx.params.model == "llama7b-v2-chat"
+        assert ctx.track()["version"] in ("4.0", "4.1")
 
 
 def test_prompt_manager_no_model_params():
@@ -387,13 +429,13 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
             testExternalId="my-test-id",
             testCaseHash="hash",
             testCaseBody={"x": 1},
-            testCaseOutput="gpt-4",
+            testCaseOutput="llama7b-v2-chat",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=[
                 dict(
                     entityExternalId="used-by-ci-dont-delete",
                     entityType="prompt",
-                    revisionId="clvgwh7oq003ukasycf9rmwdo",
+                    revisionId="clw53api200031046spnkttha",
                     usedAt=mock.ANY,
                 ),
             ],

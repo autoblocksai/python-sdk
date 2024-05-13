@@ -91,6 +91,59 @@ def test_handles_escaped_template_params(httpx_mock):
     os.environ,
     {
         "AUTOBLOCKS_API_KEY": "mock-api-key",
+    },
+)
+def test_handles_double_curly_json_spec(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/prompts/my-prompt-id/major/1/minor/0",
+        method="GET",
+        match_headers={"Authorization": "Bearer mock-api-key"},
+        json=dict(
+            id="my-prompt-id",
+            version="1.0",
+            revisionId="mock-revision-id",
+            templates=[
+                dict(
+                    id="my-template",
+                    template="""Hello, {{ weather }} {{ name }}!
+Please respond in the format:
+
+{{
+  "x": {{
+    "y": 1
+  }}
+}}
+
+Thanks!
+""",
+                ),
+            ],
+        ),
+    )
+
+    mgr = MyPromptManager(minor_version="0")
+    with mgr.exec() as p:
+        rendered = p.render.my_template(name="Nicole", weather="sunny")
+        assert (
+            rendered
+            == """Hello, sunny Nicole!
+Please respond in the format:
+
+{{
+  "x": {{
+    "y": 1
+  }}
+}}
+
+Thanks!
+"""
+        )
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "AUTOBLOCKS_API_KEY": "mock-api-key",
         "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
         "AUTOBLOCKS_PROMPT_REVISIONS": json.dumps({MyPromptManager.__prompt_id__: "mock-revision-id"}),
     },

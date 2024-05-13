@@ -159,18 +159,16 @@ class TextSummarizationPromptManager(
 
 
 class UsedByCiDontDeleteParams(FrozenModel):
+    top_k: Union[float, int] = pydantic.Field(..., alias="topK")
     top_p: Union[float, int] = pydantic.Field(..., alias="topP")
     model: str = pydantic.Field(..., alias="model")
     max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
     temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
-    presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
 
 
 class UsedByCiDontDeleteTemplateRenderer(TemplateRenderer):
     __name_mapper__ = {
         "name": "name",
-        "optional?": "optional",
         "weather": "weather",
     }
 
@@ -190,12 +188,10 @@ class UsedByCiDontDeleteTemplateRenderer(TemplateRenderer):
         self,
         *,
         name: str,
-        optional: str,
     ) -> str:
         return self._render(
             "template-b",
             name=name,
-            optional=optional,
         )
 
     def template_c(
@@ -220,7 +216,7 @@ class UsedByCiDontDeletePromptManager(
     AutoblocksPromptManager[UsedByCiDontDeleteExecutionContext],
 ):
     __prompt_id__ = "used-by-ci-dont-delete"
-    __prompt_major_version__ = "2"
+    __prompt_major_version__ = "4"
     __execution_context_class__ = UsedByCiDontDeleteExecutionContext
 
 
