@@ -4,6 +4,7 @@ import sys
 from autoblocks.tracer import AutoblocksTracer
 from tests.e2e.slow_evaluators import SlowEvaluator1
 from tests.e2e.slow_evaluators import SlowEvaluator2
+from tests.e2e.test_e2e import E2E_TESTS_EXPECTED_MESSAGE
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ if __name__ == "__main__":
 
     log.info(f"Sending event with trace ID {trace_id}")
     tracer.send_event(
-        "e2e-test-event-plain-script",
+        E2E_TESTS_EXPECTED_MESSAGE,
         trace_id=trace_id,
         properties=dict(
             sleep_seconds=sleep_seconds,

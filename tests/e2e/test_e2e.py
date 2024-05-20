@@ -46,6 +46,22 @@ client = AutoblocksAPIClient(timeout=timedelta(seconds=30))
 tracer = AutoblocksTracer()
 
 
+def wait_for_trace_to_exist(trace_id: str) -> None:
+    num_tries = 10
+    while num_tries:
+        traces_from_view = client.get_traces_from_view(E2E_TESTS_VIEW_ID, page_size=10)
+
+        if any(trace.id == trace_id for trace in traces_from_view.traces):
+            log.info(f"Found trace {trace_id}!")
+            return
+
+        log.info(f"Trace {trace_id} not found... {num_tries} tries left.")
+        time.sleep(5)
+        num_tries -= 1
+
+    raise Exception(f"Trace {trace_id} was not found.")
+
+
 @pytest.fixture
 def non_mocked_hosts() -> list[str]:
     """
@@ -54,18 +70,6 @@ def non_mocked_hosts() -> list[str]:
     https://colin-b.github.io/pytest_httpx/#do-not-mock-some-requests
     """
     return ["api.autoblocks.ai"]
-
-
-def test_get_trace():
-    # Test that we can fetch a trace by ID
-    trace = client.get_trace(E2E_TESTS_TRACE_ID)
-    print(f"Found trace {trace.id}!")
-    assert trace.id == E2E_TESTS_TRACE_ID
-    assert trace.events[0].id == "ee9dd0c7-daa4-4086-8d6c-b9706f435a68"
-    assert trace.events[0].trace_id == E2E_TESTS_TRACE_ID
-    assert trace.events[0].message == "langchain.chain.start"
-    assert trace.events[0].timestamp == "2023-12-11T12:27:26.831Z"
-    assert trace.events[0].properties["inputs"]["input"] == "What is today's date? What is that date divided by 2?"
 
 
 def test_get_views():
@@ -469,23 +473,6 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
         evaluators=[],
         fn=test_fn,
     )
-
-
-def wait_for_trace_to_exist(trace_id: str) -> None:
-    num_tries = 30
-    while num_tries:
-        try:
-            client.get_trace(trace_id)
-            log.info(f"Found trace {trace_id} with {num_tries} tries remaining")
-            return
-        except httpx.HTTPStatusError:
-            pass
-
-        log.info(f"Trace {trace_id} not found... {num_tries} tries left.")
-        time.sleep(1)
-        num_tries -= 1
-
-    raise Exception(f"Trace {trace_id} was not sent.")
 
 
 def test_flask_app_flushes_on_sigterm():
