@@ -445,8 +445,8 @@ async def async_run_test_suite(
 def run_test_suite(
     id: str,
     test_cases: Sequence[TestCaseType],
-    evaluators: Sequence[BaseTestEvaluator],
     fn: Callable[[TestCaseType], Any],
+    evaluators: Optional[Sequence[BaseTestEvaluator]] = None,
     max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
 ) -> None: ...
@@ -457,8 +457,8 @@ def run_test_suite(
 def run_test_suite(
     id: str,
     test_cases: Sequence[TestCaseType],
-    evaluators: Sequence[BaseTestEvaluator],
     fn: Callable[[TestCaseType], Awaitable[Any]],
+    evaluators: Optional[Sequence[BaseTestEvaluator]] = None,
     max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
 ) -> None: ...
@@ -467,8 +467,8 @@ def run_test_suite(
 def run_test_suite(
     id: str,
     test_cases: Sequence[TestCaseType],
-    evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
+    evaluators: Optional[Sequence[BaseTestEvaluator]] = None,
     # How many test cases to run concurrently
     max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
@@ -485,7 +485,7 @@ def run_test_suite(
         async_run_test_suite(
             test_id=id,
             test_cases=test_cases,
-            evaluators=evaluators,
+            evaluators=evaluators or [],
             fn=fn,
             before_evaluators_hook=before_evaluators_hook,
             max_test_case_concurrency=max_test_case_concurrency,
