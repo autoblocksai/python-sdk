@@ -57,7 +57,6 @@ def test_no_test_cases(httpx_mock):
     run_test_suite(
         id="my-test-id",
         test_cases=[],
-        evaluators=[],
         fn=lambda _: None,
         max_test_case_concurrency=1,
     )
@@ -434,7 +433,6 @@ def test_no_evaluators(httpx_mock):
             MyTestCase(input="a"),
             MyTestCase(input="b"),
         ],
-        evaluators=[],
         fn=test_fn,
         max_test_case_concurrency=1,
     )
