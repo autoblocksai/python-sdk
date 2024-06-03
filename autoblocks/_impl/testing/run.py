@@ -28,7 +28,9 @@ from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.util import serialize
+from autoblocks._impl.testing.util import serialize_output_for_human_review
 from autoblocks._impl.testing.util import serialize_test_case
+from autoblocks._impl.testing.util import serialize_test_case_for_human_review
 from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cases
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
@@ -227,6 +229,8 @@ async def run_test_case_unsafe(
             testCaseOutput=serialize(output),
             testCaseDurationMs=test_case_duration_ms,
             testCaseRevisionUsage=[usage.serialize() for usage in revision_usage] if revision_usage else None,
+            testCaseHumanReviewInputFields=serialize_test_case_for_human_review(test_case_ctx.test_case),
+            testCaseHumanReviewOutputFields=serialize_output_for_human_review(output),
         ),
     )
     return output, hook_results

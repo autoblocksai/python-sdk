@@ -20,6 +20,7 @@ from autoblocks.testing.models import BaseEvaluator
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.models import BaseTestEvaluator
 from autoblocks.testing.models import Evaluation
+from autoblocks.testing.models import HumanReviewField
 from autoblocks.testing.models import TestCaseConfig
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.models import TracerEvent
@@ -147,6 +148,8 @@ def test_error_in_test_fn(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -210,6 +213,8 @@ def test_error_in_async_test_fn(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -273,6 +278,8 @@ def test_error_in_evaluator(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -309,6 +316,8 @@ def test_error_in_evaluator(httpx_mock):
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -402,6 +411,8 @@ def test_no_evaluators(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -414,6 +425,8 @@ def test_no_evaluators(httpx_mock):
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -456,6 +469,8 @@ def test_with_evaluators(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -492,6 +507,8 @@ def test_with_evaluators(httpx_mock):
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -607,6 +624,8 @@ def test_concurrency(httpx_mock):
                 testCaseOutput="a!",
                 testCaseDurationMs=ANY_NUMBER,
                 testCaseRevisionUsage=None,
+                testCaseHumanReviewInputFields=None,
+                testCaseHumanReviewOutputFields=None,
             ),
         ),
         (
@@ -618,6 +637,8 @@ def test_concurrency(httpx_mock):
                 testCaseOutput="b!",
                 testCaseDurationMs=ANY_NUMBER,
                 testCaseRevisionUsage=None,
+                testCaseHumanReviewInputFields=None,
+                testCaseHumanReviewOutputFields=None,
             ),
         ),
         (
@@ -689,6 +710,8 @@ def test_async_test_fn(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -701,6 +724,8 @@ def test_async_test_fn(httpx_mock):
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -744,6 +769,8 @@ def test_async_evaluators(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -780,6 +807,8 @@ def test_async_evaluators(httpx_mock):
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -866,6 +895,8 @@ def test_serializes(httpx_mock):
             ),
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -984,6 +1015,8 @@ def test_skips_non_serializable_test_case_attributes(httpx_mock):
             testCaseOutput="ed022d1e-d0f2-41e4-ad55-9df0479cb62d",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -1054,6 +1087,8 @@ def test_sends_tracer_events(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -1075,6 +1110,8 @@ def test_sends_tracer_events(httpx_mock):
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -1128,6 +1165,8 @@ def test_repeated_test_cases(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -1141,6 +1180,8 @@ def test_repeated_test_cases(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -1154,6 +1195,8 @@ def test_repeated_test_cases(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
 
@@ -1168,6 +1211,8 @@ def test_repeated_test_cases(httpx_mock):
             testCaseOutput="b!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
 
@@ -1317,6 +1362,8 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
             testCaseOutput="whatever",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -1518,6 +1565,8 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             testCaseOutput=dict(actions=["1"]),
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -1538,6 +1587,8 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             testCaseOutput=dict(actions=["2"]),
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -1675,6 +1726,8 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
                 testCaseOutput="a!",
                 testCaseDurationMs=ANY_NUMBER,
                 testCaseRevisionUsage=None,
+                testCaseHumanReviewInputFields=None,
+                testCaseHumanReviewOutputFields=None,
             ),
         ),
         dict(
@@ -1739,6 +1792,8 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
                 testCaseOutput="b!",
                 testCaseDurationMs=ANY_NUMBER,
                 testCaseRevisionUsage=None,
+                testCaseHumanReviewInputFields=None,
+                testCaseHumanReviewOutputFields=None,
             ),
         ),
         dict(
@@ -1791,6 +1846,8 @@ def test_sync_before_evaluators_hook(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -1904,6 +1961,8 @@ def test_async_before_evaluators_hook(httpx_mock):
             testCaseOutput="a!",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -2120,6 +2179,8 @@ def test_prompt_manager_revision_usage(httpx_mock):
                     usedAt=mock.ANY,
                 ),
             ],
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -2139,6 +2200,8 @@ def test_prompt_manager_revision_usage(httpx_mock):
                     usedAt=mock.ANY,
                 ),
             ],
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
         ),
     )
     expect_cli_post_request(
@@ -2162,7 +2225,7 @@ def test_prompt_manager_revision_usage(httpx_mock):
     )
 
 
-def test_test_case_pre_serialization_hook(httpx_mock):
+def test_serialize_for_human_review(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
         path="/start",
@@ -2177,12 +2240,49 @@ def test_test_case_pre_serialization_hook(httpx_mock):
             testCaseBody=dict(
                 x=1,
                 y=2,
-                # This is not a field on the test case but is added by the pre_serialization_hook
-                sum=3,
             ),
-            testCaseOutput="1 + 2 = 3",
+            testCaseOutput=dict(
+                x=1,
+                y=2,
+            ),
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=[
+                dict(
+                    name="x",
+                    value="1",
+                ),
+                dict(
+                    name="y",
+                    value="2",
+                ),
+                dict(
+                    name="sum",
+                    value="3",
+                ),
+            ],
+            testCaseHumanReviewOutputFields=[
+                dict(
+                    name="x",
+                    value="1",
+                ),
+                dict(
+                    name="y",
+                    value="2",
+                ),
+                dict(
+                    name="sum",
+                    value="3",
+                ),
+                dict(
+                    name="prod",
+                    value="2",
+                ),
+                dict(
+                    name="diff",
+                    value="-1",
+                ),
+            ],
         ),
     )
     expect_cli_post_request(
@@ -2199,18 +2299,55 @@ def test_test_case_pre_serialization_hook(httpx_mock):
         def hash(self):
             return f"{self.x}-{self.y}"
 
-        def pre_serialization_hook(self):
-            return dict(
-                x=self.x,
-                y=self.y,
-                sum=self.x + self.y,
-            )
+        def serialize_for_human_review(self):
+            return [
+                HumanReviewField(
+                    name="x",
+                    value=f"{self.x}",
+                ),
+                HumanReviewField(
+                    name="y",
+                    value=f"{self.y}",
+                ),
+                HumanReviewField(
+                    name="sum",
+                    value=f"{self.x + self.y}",
+                ),
+            ]
+
+    @dataclasses.dataclass
+    class MyCustomOutput:
+        x: int
+        y: int
+
+        def serialize_for_human_review(self):
+            return [
+                HumanReviewField(
+                    name="x",
+                    value=f"{self.x}",
+                ),
+                HumanReviewField(
+                    name="y",
+                    value=f"{self.y}",
+                ),
+                HumanReviewField(
+                    name="sum",
+                    value=f"{self.x + self.y}",
+                ),
+                HumanReviewField(
+                    name="prod",
+                    value=f"{self.x * self.y}",
+                ),
+                HumanReviewField(
+                    name="diff",
+                    value=f"{self.x - self.y}",
+                ),
+            ]
 
     run_test_suite(
         id="my-test-id",
         test_cases=[
             MyCustomTestCase(x=1, y=2),
         ],
-        evaluators=[],
-        fn=lambda test_case: f"{test_case.x} + {test_case.y} = {test_case.x + test_case.y}",
+        fn=lambda test_case: MyCustomOutput(x=test_case.x, y=test_case.y),
     )

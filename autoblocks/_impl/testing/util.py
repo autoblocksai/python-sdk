@@ -8,6 +8,7 @@ from typing import Sequence
 import orjson
 
 from autoblocks._impl.testing.models import BaseTestCase
+from autoblocks._impl.testing.models import HumanReviewField
 from autoblocks._impl.testing.models import TestCaseConfig
 from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
@@ -38,13 +39,11 @@ def serialize(x: Any) -> Any:
 
 
 def serialize_test_case(test_case: BaseTestCase) -> Any:
-    obj_to_serialize = test_case.pre_serialization_hook()
-
     # See https://docs.python.org/3/library/dataclasses.html#dataclasses.is_dataclass:
     # isinstance(test_case, type) checks test_case is an instance and not a type
-    if dataclasses.is_dataclass(obj_to_serialize) and not isinstance(obj_to_serialize, type):
+    if dataclasses.is_dataclass(test_case) and not isinstance(test_case, type):
         serialized: dict[Any, Any] = {}
-        for k, v in dataclasses.asdict(obj_to_serialize).items():
+        for k, v in dataclasses.asdict(test_case).items():
             if k == TEST_CASE_CONFIG_ATTR:
                 # Don't serialize the config
                 continue
@@ -55,7 +54,23 @@ def serialize_test_case(test_case: BaseTestCase) -> Any:
                 pass
         return serialized
 
-    return serialize(obj_to_serialize)
+    return serialize(test_case)
+
+
+def _serialize_human_review_fields(fields: Optional[list[HumanReviewField]]) -> Optional[list[dict[str, str]]]:
+    if fields is not None:
+        return [f.serialize() for f in fields]
+    return None
+
+
+def serialize_test_case_for_human_review(test_case: BaseTestCase) -> Optional[list[dict[str, str]]]:
+    return _serialize_human_review_fields(test_case.serialize_for_human_review())
+
+
+def serialize_output_for_human_review(output: Any) -> Optional[list[dict[str, str]]]:
+    if callable(getattr(output, "serialize_for_human_review", None)):
+        return _serialize_human_review_fields(output.serialize_for_human_review())
+    return None
 
 
 def config_from_test_case(test_case: TestCaseType) -> Optional[TestCaseConfig]:
