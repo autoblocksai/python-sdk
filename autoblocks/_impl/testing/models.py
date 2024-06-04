@@ -39,6 +39,18 @@ class TestCaseConfig:
     repeat_num_times: Optional[int] = None
 
 
+@dataclasses.dataclass
+class HumanReviewField:
+    name: str
+    value: str
+
+    def serialize(self) -> Dict[str, str]:
+        return dict(
+            name=self.name,
+            value=self.value,
+        )
+
+
 class BaseTestCase(abc.ABC):
     @abc.abstractmethod
     def hash(self) -> str:
@@ -47,12 +59,12 @@ class BaseTestCase(abc.ABC):
         """
         pass
 
-    def pre_serialization_hook(self) -> Any:
+    def serialize_for_human_review(self) -> Optional[list[HumanReviewField]]:
         """
-        Can be overridden to customize how the test case is displayed in Autoblocks,
+        Can be overridden to customize how the test case is displayed in Autoblocks Human Review,
         e.g. to add, remove, or transform fields.
         """
-        return self
+        return None
 
 
 TestCaseType = TypeVar("TestCaseType", bound=BaseTestCase)
