@@ -292,6 +292,7 @@ def test_error_in_evaluator(httpx_mock):
             score=0.5,
             threshold=dict(lt=0.6, lte=None, gt=None, gte=None),
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -304,6 +305,7 @@ def test_error_in_evaluator(httpx_mock):
             score=0.6,
             threshold=dict(lt=0.7, lte=None, gt=None, gte=None),
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -483,6 +485,7 @@ def test_with_evaluators(httpx_mock):
             score=0,
             threshold=None,
             metadata=dict(reason="because"),
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -495,6 +498,7 @@ def test_with_evaluators(httpx_mock):
             score=1,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -521,6 +525,7 @@ def test_with_evaluators(httpx_mock):
             score=0,
             threshold=None,
             metadata=dict(reason="because"),
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -533,6 +538,7 @@ def test_with_evaluators(httpx_mock):
             score=1,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -650,6 +656,7 @@ def test_concurrency(httpx_mock):
                 score=0,
                 threshold=None,
                 metadata=None,
+                revisionUsage=None,
             ),
         ),
         (
@@ -661,6 +668,7 @@ def test_concurrency(httpx_mock):
                 score=1,
                 threshold=None,
                 metadata=None,
+                revisionUsage=None,
             ),
         ),
         (
@@ -672,6 +680,7 @@ def test_concurrency(httpx_mock):
                 score=0,
                 threshold=None,
                 metadata=None,
+                revisionUsage=None,
             ),
         ),
         (
@@ -683,6 +692,7 @@ def test_concurrency(httpx_mock):
                 score=1,
                 threshold=None,
                 metadata=None,
+                revisionUsage=None,
             ),
         ),
         (
@@ -783,6 +793,7 @@ def test_async_evaluators(httpx_mock):
             score=0,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -795,6 +806,7 @@ def test_async_evaluators(httpx_mock):
             score=1,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -821,6 +833,7 @@ def test_async_evaluators(httpx_mock):
             score=0,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -833,6 +846,7 @@ def test_async_evaluators(httpx_mock):
             score=1,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1227,6 +1241,7 @@ def test_repeated_test_cases(httpx_mock):
             score=0.97,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1239,6 +1254,7 @@ def test_repeated_test_cases(httpx_mock):
             score=0.97,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1251,6 +1267,7 @@ def test_repeated_test_cases(httpx_mock):
             score=0.97,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
 
@@ -1265,6 +1282,7 @@ def test_repeated_test_cases(httpx_mock):
             score=0.98,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
 
@@ -1376,6 +1394,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
             score=0.5,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1606,6 +1625,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
                     "this also really, really shouldn't happen",
                 ]
             ),
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1618,6 +1638,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             score=0,
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=dict(failed_rules=["not ideal but whatever"]),
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1630,6 +1651,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             score=0,
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=dict(failed_rules=["this is a bit concerning"]),
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1860,6 +1882,7 @@ def test_sync_before_evaluators_hook(httpx_mock):
             score=0.1,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1872,6 +1895,7 @@ def test_sync_before_evaluators_hook(httpx_mock):
             score=0.2,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1975,6 +1999,7 @@ def test_async_before_evaluators_hook(httpx_mock):
             score=0.1,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -1987,6 +2012,7 @@ def test_async_before_evaluators_hook(httpx_mock):
             score=0.2,
             threshold=None,
             metadata=None,
+            revisionUsage=None,
         ),
     )
     expect_cli_post_request(
@@ -2143,6 +2169,14 @@ def test_prompt_manager_revision_usage(httpx_mock):
 
         return test_case.input + "!"
 
+    class MyEvaluator(BaseTestEvaluator):
+        id = "my-evaluator"
+
+        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
+            with mgr_b.exec():
+                pass
+            return Evaluation(score=0.97)
+
     expect_cli_post_request(
         httpx_mock,
         path="/start",
@@ -2206,6 +2240,46 @@ def test_prompt_manager_revision_usage(httpx_mock):
     )
     expect_cli_post_request(
         httpx_mock,
+        "/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="y",
+            evaluatorExternalId="my-evaluator",
+            score=0.97,
+            threshold=None,
+            metadata=None,
+            revisionUsage=[
+                dict(
+                    entityExternalId="prompt-b",
+                    entityType="prompt",
+                    revisionId="prompt-b-mock-revision-id",
+                    usedAt=mock.ANY,
+                ),
+            ],
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        "/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="z",
+            evaluatorExternalId="my-evaluator",
+            score=0.97,
+            threshold=None,
+            metadata=None,
+            revisionUsage=[
+                dict(
+                    entityExternalId="prompt-b",
+                    entityType="prompt",
+                    revisionId="prompt-b-mock-revision-id",
+                    usedAt=mock.ANY,
+                ),
+            ],
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
         path="/end",
         body=dict(testExternalId="my-test-id"),
     )
@@ -2218,7 +2292,7 @@ def test_prompt_manager_revision_usage(httpx_mock):
     run_test_suite(
         id="my-test-id",
         test_cases=test_cases,
-        evaluators=[],
+        evaluators=[MyEvaluator()],
         fn=test_fn,
         # we want test cases to run in parallel to ensure context var is working correctly
         max_test_case_concurrency=len(test_cases),

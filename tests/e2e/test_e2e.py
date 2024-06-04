@@ -23,6 +23,8 @@ from autoblocks.configs.config import AutoblocksConfig
 from autoblocks.configs.models import RemoteConfig
 from autoblocks.prompts.models import WeightedMinorVersion
 from autoblocks.testing.models import BaseTestCase
+from autoblocks.testing.models import BaseTestEvaluator
+from autoblocks.testing.models import Evaluation
 from autoblocks.testing.run import run_test_suite
 from autoblocks.tracer import AutoblocksTracer
 from tests.e2e.prompts import QuestionAnswererPromptManager
@@ -37,7 +39,6 @@ log = logging.getLogger(__name__)
 
 # The below are entities in our Autoblocks CI org that we use for testing.
 E2E_TESTS_VIEW_ID = "cllmlk8py0003l608vd83dc03"
-E2E_TESTS_TRACE_ID = "4943bb26-3526-4e9c-bcd1-62f08baa621a"
 E2E_TESTS_EXPECTED_MESSAGE = "sdk.e2e"
 E2E_TEST_SUITE_ID = "my-test-suite"
 E2E_TEST_CASE_ID = "cluh2cwla0001d590dha70npc"
@@ -449,6 +450,26 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
     )
     expect_cli_post_request(
         httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hash",
+            evaluatorExternalId="my-evaluator",
+            score=0.97,
+            threshold=None,
+            metadata=None,
+            revisionUsage=[
+                dict(
+                    entityExternalId="used-by-ci-dont-delete-no-params",
+                    entityType="prompt",
+                    revisionId="clvgwh7on003kkasy8cltjobg",
+                    usedAt=mock.ANY,
+                ),
+            ],
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
         path="/end",
         body=dict(testExternalId="my-test-id"),
     )
@@ -467,12 +488,24 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
         with mgr.exec() as prompt:
             return prompt.params.model
 
+    class MyEvaluator(BaseTestEvaluator):
+        id = "my-evaluator"
+
+        mgr = UsedByCiDontDeleteNoParamsPromptManager(
+            minor_version="0",
+        )
+
+        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
+            with self.mgr.exec():
+                pass
+            return Evaluation(score=0.97)
+
     run_test_suite(
         id="my-test-id",
         test_cases=[
             MyTestCase(x=1),
         ],
-        evaluators=[],
+        evaluators=[MyEvaluator()],
         fn=test_fn,
     )
 

@@ -20,8 +20,10 @@ from httpx import HTTPStatusError
 from httpx import Response
 
 from autoblocks._impl import global_state
+from autoblocks._impl.context_vars import EvaluatorRunContext
 from autoblocks._impl.context_vars import TestCaseRunContext
-from autoblocks._impl.context_vars import get_test_case_revision_usage
+from autoblocks._impl.context_vars import evaluator_run_context_var
+from autoblocks._impl.context_vars import get_revision_usage
 from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
@@ -125,6 +127,9 @@ async def run_evaluator_unsafe(
     if evaluation is None:
         return
 
+    # Revision usage is collected throughout an evaluator's evaluate_test_case call on a test case
+    revision_usage = get_revision_usage()
+
     await post_to_cli(
         "/evals",
         json=dict(
@@ -134,6 +139,7 @@ async def run_evaluator_unsafe(
             score=evaluation.score,
             threshold=dataclasses.asdict(evaluation.threshold) if evaluation.threshold else None,
             metadata=evaluation.metadata,
+            revisionUsage=[usage.serialize() for usage in revision_usage] if revision_usage else None,
         ),
     )
 
@@ -145,6 +151,9 @@ async def run_evaluator(
     hook_results: Any,
     evaluator: BaseTestEvaluator,
 ) -> None:
+    reset_token = evaluator_run_context_var.set(
+        EvaluatorRunContext(),
+    )
     try:
         await run_evaluator_unsafe(
             test_id=test_id,
@@ -160,6 +169,8 @@ async def run_evaluator(
             evaluator_id=evaluator.id,
             error=err,
         )
+    finally:
+        evaluator_run_context_var.reset(reset_token)
 
 
 async def run_test_case_unsafe(
@@ -213,7 +224,7 @@ async def run_test_case_unsafe(
                 )
 
     # Revision usage is collected throughout a test case's run
-    revision_usage = get_test_case_revision_usage()
+    revision_usage = get_revision_usage()
 
     # Flush the logs before we send the result, since the CLI
     # accumulates the events and sends them as a batch along
