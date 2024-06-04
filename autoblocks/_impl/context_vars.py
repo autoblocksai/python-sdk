@@ -42,14 +42,24 @@ test_case_run_context_var: ContextVar[Optional[TestCaseRunContext]] = ContextVar
 )
 
 
-def register_test_case_revision_usage(
+@dataclasses.dataclass
+class EvaluatorRunContext:
+    revision_usage: List[RevisionUsage] = dataclasses.field(default_factory=list)
+
+
+evaluator_run_context_var: ContextVar[Optional[EvaluatorRunContext]] = ContextVar(
+    "autoblocks_sdk_evaluator_run_context_var",
+    default=None,
+)
+
+
+def register_revision_usage(
     entity_id: str,
     entity_type: RevisionType,
     revision_id: str,
 ) -> None:
-    ctx = test_case_run_context_var.get()
+    ctx = evaluator_run_context_var.get() or test_case_run_context_var.get()
     if ctx is None:
-        # Shouldn't happen, but just return
         return
 
     ctx.revision_usage.append(
@@ -62,6 +72,6 @@ def register_test_case_revision_usage(
     )
 
 
-def get_test_case_revision_usage() -> Optional[List[RevisionUsage]]:
-    ctx = test_case_run_context_var.get()
+def get_revision_usage() -> Optional[List[RevisionUsage]]:
+    ctx = evaluator_run_context_var.get() or test_case_run_context_var.get()
     return ctx.revision_usage if ctx else None
