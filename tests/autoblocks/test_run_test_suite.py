@@ -1088,7 +1088,13 @@ def test_sends_tracer_events(httpx_mock):
         body=dict(
             testExternalId="my-test-id",
             testCaseHash="a",
-            event=dict(message="a", traceId=None, timestamp=timestamp, properties=dict()),
+            event=dict(
+                message="a",
+                traceId=None,
+                timestamp=timestamp,
+                properties=dict(),
+                systemProperties=None,
+            ),
         ),
     )
     expect_cli_post_request(
@@ -1111,7 +1117,13 @@ def test_sends_tracer_events(httpx_mock):
         body=dict(
             testExternalId="my-test-id",
             testCaseHash="b",
-            event=dict(message="b", traceId=None, timestamp=timestamp, properties=dict()),
+            event=dict(
+                message="b",
+                traceId=None,
+                timestamp=timestamp,
+                properties=dict(),
+                systemProperties=None,
+            ),
         ),
     )
     expect_cli_post_request(
@@ -1367,6 +1379,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
                 traceId=None,
                 timestamp=timestamp,
                 properties=dict(x=0.5),
+                systemProperties=None,
             ),
         ),
     )
