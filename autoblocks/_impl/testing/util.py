@@ -57,19 +57,19 @@ def serialize_test_case(test_case: BaseTestCase) -> Any:
     return serialize(test_case)
 
 
-def _serialize_human_review_fields(fields: Optional[list[HumanReviewField]]) -> Optional[list[dict[str, str]]]:
+def serialize_human_review_fields(fields: Optional[list[HumanReviewField]]) -> Optional[list[dict[str, str]]]:
     if fields is not None:
         return [f.serialize() for f in fields]
     return None
 
 
 def serialize_test_case_for_human_review(test_case: BaseTestCase) -> Optional[list[dict[str, str]]]:
-    return _serialize_human_review_fields(test_case.serialize_for_human_review())
+    return serialize_human_review_fields(test_case.serialize_for_human_review())
 
 
 def serialize_output_for_human_review(output: Any) -> Optional[list[dict[str, str]]]:
     if callable(getattr(output, "serialize_for_human_review", None)):
-        return _serialize_human_review_fields(output.serialize_for_human_review())
+        return serialize_human_review_fields(output.serialize_for_human_review())
     return None
 
 

@@ -18,7 +18,9 @@ from autoblocks._impl.config.constants import INGESTION_ENDPOINT
 from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import Evaluation
+from autoblocks._impl.testing.models import HumanReviewField
 from autoblocks._impl.testing.models import TracerEvent
+from autoblocks._impl.testing.util import serialize_human_review_fields
 from autoblocks._impl.util import AnyTask
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
@@ -36,6 +38,7 @@ class Payload:
     trace_id: Optional[str]
     timestamp: str
     properties: dict[str, Any]
+    system_properties: Optional[dict[str, Any]]
 
     def to_json(self) -> dict[str, Any]:
         return {
@@ -43,6 +46,7 @@ class Payload:
             "traceId": self.trace_id,
             "timestamp": self.timestamp,
             "properties": self.properties,
+            "systemProperties": self.system_properties or None,
         }
 
 
@@ -277,6 +281,7 @@ class AutoblocksTracer:
         parent_span_id: Optional[str],
         properties: Optional[Dict[str, Any]],
         prompt_tracking: Optional[Dict[str, Any]],
+        human_review_fields: Optional[List[HumanReviewField]],
     ) -> Payload:
         trace_id = trace_id or self._trace_id
         timestamp = timestamp or now_iso_8601()
@@ -292,11 +297,16 @@ class AutoblocksTracer:
         if prompt_tracking:
             merged_properties["promptTracking"] = prompt_tracking
 
+        system_properties = {}
+        if human_review_fields:
+            system_properties["humanReviewFields"] = serialize_human_review_fields(human_review_fields)
+
         return Payload(
             message=message,
             trace_id=trace_id,
             timestamp=timestamp,
             properties=merged_properties,
+            system_properties=system_properties,
         )
 
     def _dispatch_event_unsafe(
@@ -348,6 +358,7 @@ class AutoblocksTracer:
         properties: Optional[Dict[str, Any]] = None,
         evaluators: Optional[Sequence[BaseEventEvaluator]] = None,
         prompt_tracking: Optional[Dict[str, Any]] = None,
+        human_review_fields: Optional[List[HumanReviewField]] = None,
     ) -> None:
         """
         Sends an event to the Autoblocks ingestion API.
@@ -362,6 +373,7 @@ class AutoblocksTracer:
                 parent_span_id=parent_span_id,
                 properties=properties,
                 prompt_tracking=prompt_tracking,
+                human_review_fields=human_review_fields,
             )
 
             # If the test case run contextvar is set, we are in a test context and should send events to the CLI.
