@@ -10,6 +10,7 @@ import freezegun
 import pytest
 
 from autoblocks._impl.config.constants import INGESTION_ENDPOINT
+from autoblocks._impl.testing.models import HumanReviewField
 from autoblocks.testing.models import BaseEvaluator
 from autoblocks.testing.models import BaseEventEvaluator
 from autoblocks.testing.models import BaseTestCase
@@ -63,6 +64,7 @@ def expect_ingestion_post_request(
     trace_id: Optional[str] = None,
     timestamp: Optional[str] = None,
     properties: Optional[dict[str, Any]] = None,
+    system_properties: Optional[dict[str, Any]] = None,
     status_code: int = 200,
 ) -> None:
     httpx_mock.add_response(
@@ -76,6 +78,7 @@ def expect_ingestion_post_request(
                 traceId=trace_id,
                 timestamp=timestamp or mock_now_timestamp,
                 properties=properties or dict(),
+                systemProperties=system_properties,
             )
         ),
     )
@@ -575,4 +578,31 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
         ],
     )
 
+    flush()
+
+
+def test_tracer_human_review_fields(httpx_mock):
+    expect_ingestion_post_request(
+        httpx_mock,
+        message="my-message",
+        system_properties=dict(
+            humanReviewFields=[
+                dict(
+                    name="Name",
+                    value="Value",
+                ),
+            ],
+        ),
+    )
+
+    tracer = AutoblocksTracer("mock-ingestion-key")
+    tracer.send_event(
+        "my-message",
+        human_review_fields=[
+            HumanReviewField(
+                name="Name",
+                value="Value",
+            ),
+        ],
+    )
     flush()
