@@ -68,6 +68,7 @@ class BaseTestCase(abc.ABC):
 
 
 TestCaseType = TypeVar("TestCaseType", bound=BaseTestCase)
+OutputType = TypeVar("OutputType")
 
 
 @dataclasses.dataclass
