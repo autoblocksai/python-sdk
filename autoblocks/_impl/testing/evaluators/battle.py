@@ -8,7 +8,6 @@ from typing import Optional
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.context_vars import test_case_run_context_var
-from autoblocks._impl.testing.evaluators.openai_client import openai_client
 from autoblocks._impl.testing.evaluators.pydantic_util import FrozenModel
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import Evaluation
@@ -16,11 +15,30 @@ from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks._impl.util import ThirdPartyEnvVar
 
 autoblocks_api_key = AutoblocksEnvVar.API_KEY.get()
 # The Autoblocks API key should always be set since we will be in a testing context
 if not autoblocks_api_key:
-    raise ValueError(f"You must set the {AutoblocksEnvVar.API_KEY} environment variable to use the Battle Evaluator.")
+    raise ValueError(f"You must set the {AutoblocksEnvVar.API_KEY} environment variable to use the Battle evaluator.")
+
+try:
+    import openai
+
+    assert openai.__version__.startswith("1.")
+except (ImportError, AssertionError):
+    raise ImportError(
+        "The Battle evaluator requires openai version 1.x. " "You can install it with `pip install openai==1.*`."
+    )
+
+
+openai_api_key = ThirdPartyEnvVar.OPENAI_API_KEY.get()
+if not openai_api_key:
+    raise ValueError(
+        f"You must set the {ThirdPartyEnvVar.OPENAI_API_KEY} environment variable to use the Battle evaluator."
+    )
+
+openai_client = openai.AsyncOpenAI(api_key=openai_api_key)
 
 
 @dataclass
