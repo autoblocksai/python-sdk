@@ -42,7 +42,9 @@ async def save_baseline(test_id: str, baseline: str, test_case_hash: str) -> Non
 
 
 async def battle(instructions: str, baseline: str, challenger: str) -> BattleResponse:
-    """Returns true if the challenger wins, false if the baseline wins."""
+    """
+    Returns true if the challenger wins, false if the baseline wins.
+    """
     response = await openai_client.chat.completions.create(
         model="gpt-4-turbo",
         temperature=0.0,
@@ -120,6 +122,8 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
         baseline = await self.get_baseline(test_id=test_id, test_case_hash=test_case_hash)
         mapped_output = self.output_mapper(output)
         if baseline is None:
+            # If there isn't an existing baseline, and the user didn't pass one in
+            # We save the current challenger as the baseline and skip evaluating
             await save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case_hash)
             return None
 
