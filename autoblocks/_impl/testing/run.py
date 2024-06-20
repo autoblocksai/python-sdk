@@ -105,9 +105,9 @@ async def run_evaluator_unsafe(
     """
     async with evaluator_semaphore_registry[test_id][evaluator.id]:
         if hook_results is not None:
-            kwargs = dict(hook_results=hook_results)
+            kwargs = dict(test_case_hash=test_case_ctx.hash(), test_id=test_id, hook_results=hook_results)
         else:
-            kwargs = dict()
+            kwargs = dict(test_case_hash=test_case_ctx.hash(), test_id=test_id)
 
         if inspect.iscoroutinefunction(evaluator.evaluate_test_case):
             evaluation = await evaluator.evaluate_test_case(test_case_ctx.test_case, output, **kwargs)
