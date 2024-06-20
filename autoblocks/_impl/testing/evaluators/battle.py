@@ -48,7 +48,7 @@ class BattleResponse:
 
 
 class BaselineResponse(FrozenModel):
-    baseline: Optional[str]
+    baseline: Optional[str] = None
 
 
 async def save_baseline(test_id: str, baseline: str, test_case_hash: str) -> None:
