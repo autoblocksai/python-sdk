@@ -120,7 +120,7 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
     async def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Optional[Evaluation]:
         test_run_ctx = test_case_run_context_var.get()
         if test_run_ctx is None:
-            raise ValueError("No test case context found")
+            raise ValueError("No test case context found in the Battle evaluator.")
         test_id = test_run_ctx.test_id
         baseline = await self.get_baseline(test_id=test_id, test_case_hash=test_case.hash())
         mapped_output = self.output_mapper(output)
