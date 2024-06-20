@@ -7,6 +7,7 @@ from typing import Optional
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
+from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.testing.evaluators.openai_client import openai_client
 from autoblocks._impl.testing.evaluators.pydantic_util import FrozenModel
 from autoblocks._impl.testing.models import BaseTestEvaluator
@@ -116,15 +117,17 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
         validated = BaselineResponse.model_validate(resp.json())
         return validated.baseline
 
-    async def evaluate_test_case(
-        self, test_case: TestCaseType, output: OutputType, test_id: str, test_case_hash: str
-    ) -> Optional[Evaluation]:
-        baseline = await self.get_baseline(test_id=test_id, test_case_hash=test_case_hash)
+    async def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Optional[Evaluation]:
+        test_run_ctx = test_case_run_context_var.get()
+        if test_run_ctx is None:
+            raise ValueError("No test case context found")
+        test_id = test_run_ctx.test_id
+        baseline = await self.get_baseline(test_id=test_id, test_case_hash=test_case.hash())
         mapped_output = self.output_mapper(output)
         if baseline is None:
             # If there isn't an existing baseline, and the user didn't pass one in
             # We save the current challenger as the baseline and skip evaluating
-            await save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case_hash)
+            await save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case.hash())
             return None
 
         battle_result = await battle(
@@ -134,7 +137,7 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
         )
         if battle_result.result:
             # save the new baseline if the challenger wins
-            await save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case_hash)
+            await save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case.hash())
 
         score = 1 if battle_result.result else 0
         return Evaluation(
