@@ -115,7 +115,7 @@ async def battle(instructions: str, baseline: str, challenger: str) -> BattleRes
 class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
     id = "battle"
 
-    def __init__(self, instructions: str, output_mapper: Callable[[OutputType], str], baseline: Optional[str]):
+    def __init__(self, instructions: str, output_mapper: Callable[[OutputType], str], baseline: Optional[str] = None):
         super().__init__()
         self.output_mapper = output_mapper
         self.baseline = baseline
