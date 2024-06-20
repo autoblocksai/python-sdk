@@ -41,20 +41,6 @@ async def save_baseline(test_id: str, baseline: str, test_case_hash: str) -> Non
     resp.raise_for_status()
 
 
-battle_system_prompt = """You are an expert in comparing responses to given instructions.
-You are comparing responses to the following instructions.
-Is the first response better than the second?
-You must provide one answer based on your subjective view and provide a reason for your answer.
-
-Always output in the following JSON format:
-
-{
-  "reason": "This is the reason.",
-  "result": "1" | "2"
-}
-"""
-
-
 async def battle(instructions: str, baseline: str, challenger: str) -> BattleResponse:
     """Returns true if the challenger wins, false if the baseline wins."""
     response = await openai_client.chat.completions.create(
