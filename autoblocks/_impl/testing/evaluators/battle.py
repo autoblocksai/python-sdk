@@ -7,55 +7,25 @@ from typing import Optional
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
+from autoblocks._impl.testing.evaluators.openai_client import openai_client
+from autoblocks._impl.testing.evaluators.pydantic_util import FrozenModel
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
 from autoblocks._impl.util import AutoblocksEnvVar
-from autoblocks._impl.util import ThirdPartyEnvVar
-
-try:
-    import pydantic
-
-    assert pydantic.__version__.startswith("2.")
-except (ImportError, AssertionError):
-    raise ImportError(
-        "The Battle evaluator requires pydantic version 2.x. " "You can install it with `pip install pydantic==2.*`."
-    )
-
-
-try:
-    import openai
-
-    assert openai.__version__.startswith("1.")
-except (ImportError, AssertionError):
-    raise ImportError(
-        "The Battle evaluator requires openai version 1.x. " "You can install it with `pip install openai==1.*`."
-    )
 
 autoblocks_api_key = AutoblocksEnvVar.API_KEY.get()
+# The Autoblocks API key should always be set since we will be in a testing context
 if not autoblocks_api_key:
     raise ValueError(f"You must set the {AutoblocksEnvVar.API_KEY} environment variable to use the Battle Evaluator.")
-
-
-openai_api_key = ThirdPartyEnvVar.OPENAI_API_KEY.get()
-if not openai_api_key:
-    raise ValueError(
-        f"You must set the {ThirdPartyEnvVar.OPENAI_API_KEY} environment variable to use the Battle Evaluator."
-    )
-
-openai_client = openai.AsyncOpenAI(api_key=openai_api_key)
 
 
 @dataclass
 class BattleResponse:
     result: bool
     reason: str
-
-
-class FrozenModel(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(frozen=True)
 
 
 class BaselineResponse(FrozenModel):
@@ -94,7 +64,19 @@ async def battle(instructions: str, baseline: str, challenger: str) -> BattleRes
         messages=[
             dict(
                 role="system",
-                content=battle_system_prompt,
+                content=dedent(
+                    """You are an expert in comparing responses to given instructions.
+                    You are comparing responses to the following instructions.
+                    Is the first response better than the second?
+                    You must provide one answer based on your subjective view and provide a reason for your answer.
+
+                    Always output in the following JSON format:
+
+                    {
+                      "reason": "This is the reason.",
+                      "result": "1" | "2"
+                    }"""
+                ),
             ),
             dict(
                 role="user",
@@ -106,8 +88,7 @@ async def battle(instructions: str, baseline: str, challenger: str) -> BattleRes
                     {baseline}
 
                     [Response 2]
-                    {challenger}
-                """
+                    {challenger}"""
                 ),
             ),
         ],
