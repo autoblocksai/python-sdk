@@ -145,8 +145,7 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
         score: float = 0
 
         if battle_result.result == "2":
-            # challenger wins
-            # save the new baseline if the challenger wins
+            # challenger wins so save the new baseline
             await self.save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case.hash())
             score = 1
         elif battle_result.result == "0":
