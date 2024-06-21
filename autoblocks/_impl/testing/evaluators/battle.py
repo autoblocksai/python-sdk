@@ -52,7 +52,7 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
         )
         resp.raise_for_status()
         baseline = resp.json().get("baseline")
-        return baseline if baseline else None
+        return baseline if isinstance(baseline, str) else None
 
     async def save_baseline(self, test_id: str, baseline: str, test_case_hash: str) -> None:
         resp = await global_state.http_client().post(
