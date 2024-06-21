@@ -122,14 +122,19 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
             reason=parsed_content["reason"],
         )
 
-    async def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Optional[Evaluation]:
+    def get_test_id(self) -> str:
+        """
+        Retrieves the current test from the test run context
+        """
         test_run_ctx = test_case_run_context_var.get()
         if test_run_ctx is None:
             # Evaluators should always be run inside the context of a test case
             raise ValueError(f"No test case context found in the {self.id} evaluator.")
-        test_id = test_run_ctx.test_id
-        mapped_output = self.output_mapper(output)
+        return test_run_ctx.test_id
 
+    async def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Optional[Evaluation]:
+        test_id = self.get_test_id()
+        mapped_output = self.output_mapper(output)
         baseline = await self.get_baseline(test_id=test_id, test_case=test_case)
         if baseline is None:
             # If there isn't an existing baseline, and the user didn't pass one in
@@ -143,7 +148,6 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
             challenger=mapped_output,
         )
         score: float = 0
-
         if battle_result.result == "2":
             # challenger wins so save the new baseline
             await self.save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case.hash())
