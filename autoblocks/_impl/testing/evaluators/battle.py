@@ -64,7 +64,7 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
 
     async def battle(self, baseline: str, challenger: str) -> BattleResponse:
         """
-        Returns true if the challenger wins, false if the baseline wins.
+        Returns 0 if tie, 1 if baseline wins, 2 if challenger wins
         """
         response = await get_openai_client(evaluator_id=self.id).chat.completions.create(
             model="gpt-4-turbo",
@@ -75,8 +75,9 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
                     role="system",
                     content=dedent(
                         """You are an expert in comparing responses to given instructions.
-                        You are comparing responses to the following instructions.
-                        Pick which response is the best. If they are equally good, you can set the result to 0.
+                        You are comparing responses to the following criteria.
+                        Pick which response is the best.
+                        Return 1 if the baseline is better, 2 if the challenger is better, and 0 if they are equal.
                         You must provide one answer based on your subjective view and provide a reason for your answer.
 
                         Always output in the following JSON format:
@@ -93,10 +94,10 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
                         f"""[Criteria]
                         {self.criteria}
 
-                        [Response 1]
+                        [Baseline]
                         {baseline}
 
-                        [Response 2]
+                        [Challenger]
                         {challenger}"""
                     ),
                 ),
@@ -116,10 +117,12 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
     async def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Optional[Evaluation]:
         test_run_ctx = test_case_run_context_var.get()
         if test_run_ctx is None:
-            raise ValueError("No test case context found in the Battle evaluator.")
+            # Evaluators should always be run inside the context of a test case
+            raise ValueError(f"No test case context found in the {self.id} evaluator.")
         test_id = test_run_ctx.test_id
-        baseline = await self.get_baseline(test_id=test_id, test_case=test_case)
         mapped_output = self.output_mapper(output)
+
+        baseline = await self.get_baseline(test_id=test_id, test_case=test_case)
         if baseline is None:
             # If there isn't an existing baseline, and the user didn't pass one in
             # We save the current challenger as the baseline and skip evaluating
@@ -133,6 +136,7 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
         score: float = 0
 
         if battle_result.result == "2":
+            # challenger wins
             # save the new baseline if the challenger wins
             await self.save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case.hash())
             score = 1
