@@ -2,6 +2,7 @@ from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import ThirdPartyEnvVar
 
 
+# Wrapped in a function so that the error is only thrown when relevant evaluators are used
 def get_openai_client(evaluator_id: str):  # type: ignore[no-untyped-def]
     try:
         import openai
@@ -23,6 +24,7 @@ def get_openai_client(evaluator_id: str):  # type: ignore[no-untyped-def]
     return openai.AsyncOpenAI(api_key=openai_api_key)
 
 
+# Wrapped in a function so that the error is only thrown when relevant evaluators are used
 def get_autoblocks_api_key(evaluator_id: str) -> str:
     autoblocks_api_key = AutoblocksEnvVar.API_KEY.get()
     # The Autoblocks API key should always be set since we will be in a testing context
