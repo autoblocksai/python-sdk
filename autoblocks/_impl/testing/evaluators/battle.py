@@ -24,24 +24,31 @@ class BattleResponse:
 
 
 class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
+    """
+    The Battle evaluator compares two responses based on a given criteria.
+    If the challenger wins, the challenger becomes the new baseline automatically.
+    You can override this behavior by passing in a baseline_mapper and handling the baseline yourself.
+    """
+
     id = "battle"
 
     def __init__(
         self,
+        # Criteria to be used in the battle
         criteria: str,
+        # Map your output to a string for comparison
         output_mapper: Callable[[OutputType], str],
+        # Optional baseline_mapper allows you to store a baseline on your test case
+        # Instead of having Autoblocks automatically track it
         baseline_mapper: Optional[Callable[[TestCaseType], str]] = None,
-        evaluator_id: Optional[str] = None,
     ):
         super().__init__()
         self.output_mapper = output_mapper
         self.baseline_mapper = baseline_mapper
         self.criteria = criteria
-        if evaluator_id:
-            self.id = evaluator_id
 
     async def get_baseline(self, test_id: str, test_case: TestCaseType) -> Optional[str]:
-        # if the user passed in a baseline, we use that
+        # if the user passed in a baseline_mapper, we use that
         if self.baseline_mapper:
             return self.baseline_mapper(test_case)
 
@@ -52,6 +59,7 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
         )
         resp.raise_for_status()
         baseline = resp.json().get("baseline")
+        # If this is the first time the battle evaluator has been run for this test case, there won't be a baseline
         return baseline if isinstance(baseline, str) else None
 
     async def save_baseline(self, test_id: str, baseline: str, test_case_hash: str) -> None:
@@ -125,6 +133,7 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
         baseline = await self.get_baseline(test_id=test_id, test_case=test_case)
         if baseline is None:
             # If there isn't an existing baseline, and the user didn't pass one in
+            # Or it is the first time this evaluator is being run for this test case
             # We save the current challenger as the baseline and skip evaluating
             await self.save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case.hash())
             return None
@@ -146,6 +155,6 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
 
         return Evaluation(
             score=score,
-            threshold=Threshold(gte=0.5),
+            threshold=Threshold(gte=0.5),  # Consider a tie as passing
             metadata={"reason": battle_result.reason, "baseline": baseline, "challenger": mapped_output},
         )
