@@ -38,6 +38,13 @@ class AutoblocksEnvVar(StrEnum):
         return os.environ.get(self.value)
 
 
+class ThirdPartyEnvVar(StrEnum):
+    OPENAI_API_KEY = "OPENAI_API_KEY"
+
+    def get(self) -> Optional[str]:
+        return os.environ.get(self.value)
+
+
 def encode_uri_component(s: str) -> str:
     """
     This should have the same behavior as encodeURIComponent from JS.

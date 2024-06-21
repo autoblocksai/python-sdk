@@ -275,8 +275,6 @@ async def run_test_case(
             error=err,
         )
         return
-    finally:
-        test_case_run_context_var.reset(reset_token)
 
     try:
         await all_settled(
@@ -298,6 +296,8 @@ async def run_test_case(
             evaluator_id=None,
             error=err,
         )
+    finally:
+        test_case_run_context_var.reset(reset_token)
 
 
 def validate_test_suite_inputs(

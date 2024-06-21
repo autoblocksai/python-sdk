@@ -33,6 +33,27 @@ def expect_cli_post_request(
     )
 
 
+def expect_openai_post_request(
+    httpx_mock: Any,
+    response_message_content: str,
+    status_code: int = 200,
+) -> None:
+    httpx_mock.add_response(
+        url="https://api.openai.com/v1/chat/completions",
+        method="POST",
+        json={
+            "choices": [
+                {
+                    "message": {
+                        "content": response_message_content,
+                    },
+                },
+            ],
+        },
+        status_code=status_code,
+    )
+
+
 class AnyNumber(float):
     """
     Like mock.ANY but checks if the value is any number.

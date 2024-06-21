@@ -10,10 +10,18 @@ from autoblocks._impl.testing.models import Threshold
 
 
 class HasAllSubstrings(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
+    """
+    The HasAllSubstrings evaluator checks if the output contains all expected substrings.
+    """
+
     id = "has-all-substrings"
 
     def __init__(
-        self, output_mapper: Callable[[OutputType], str], test_case_mapper: Callable[[TestCaseType], List[str]]
+        self,
+        # Map your output to a string for comparison
+        output_mapper: Callable[[OutputType], str],
+        # Map your test_case to a list of strings to check for in the output
+        test_case_mapper: Callable[[TestCaseType], List[str]],
     ):
         super().__init__()
         self.output_mapper = output_mapper
