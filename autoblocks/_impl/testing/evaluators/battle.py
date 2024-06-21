@@ -38,8 +38,8 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
         criteria: str,
         # Map your output to a string for comparison
         output_mapper: Callable[[OutputType], str],
-        # Optional baseline_mapper allows you to store a baseline on your test case
-        # Instead of having Autoblocks automatically track it
+        # Optional baseline_mapper allows you to use a baseline from your test case
+        # Instead of having Autoblocks automatically track it from the output
         baseline_mapper: Optional[Callable[[TestCaseType], str]] = None,
     ):
         super().__init__()
