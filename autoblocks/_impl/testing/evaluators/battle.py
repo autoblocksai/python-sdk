@@ -82,9 +82,8 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
                 dict(
                     role="system",
                     content=dedent(
-                        """You are an expert in comparing responses to given instructions.
-                        You are comparing responses to the following criteria.
-                        Pick which response is the best.
+                        """You are an expert in comparing responses to given criteria.
+                        Pick which response is the best while taking the criteria into consideration.
                         Return 1 if the baseline is better, 2 if the challenger is better, and 0 if they are equal.
                         You must provide one answer based on your subjective view and provide a reason for your answer.
 
