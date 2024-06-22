@@ -144,7 +144,7 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
             return Evaluation(
                 score=1,
                 threshold=self.threshold,
-                metadata={"reason": "No baseline found, saving the challenger as the new baseline."},
+                metadata={"reason": "No baseline found, saving the output as the baseline."},
             )
 
         battle_result = await self.battle(
