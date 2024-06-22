@@ -31,6 +31,7 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
     """
 
     id = "battle"
+    threshold = Threshold(gte=0.5)  # consider a tie as passing
 
     def __init__(
         self,
@@ -38,8 +39,8 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
         criteria: str,
         # Map your output to a string for comparison
         output_mapper: Callable[[OutputType], str],
-        # Optional baseline_mapper allows you to store a baseline on your test case
-        # Instead of having Autoblocks automatically track it
+        # Optional baseline_mapper allows you to use a baseline from your test case
+        # Instead of having Autoblocks automatically track it from the output
         baseline_mapper: Optional[Callable[[TestCaseType], str]] = None,
     ):
         super().__init__()
@@ -82,9 +83,8 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
                 dict(
                     role="system",
                     content=dedent(
-                        """You are an expert in comparing responses to given instructions.
-                        You are comparing responses to the following criteria.
-                        Pick which response is the best.
+                        """You are an expert in comparing responses to given criteria.
+                        Pick which response is the best while taking the criteria into consideration.
                         Return 1 if the baseline is better, 2 if the challenger is better, and 0 if they are equal.
                         You must provide one answer based on your subjective view and provide a reason for your answer.
 
@@ -132,7 +132,7 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
             raise ValueError(f"No test case context found in the {self.id} evaluator.")
         return test_run_ctx.test_id
 
-    async def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Optional[Evaluation]:
+    async def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
         test_id = self.get_test_id()
         mapped_output = self.output_mapper(output)
         baseline = await self.get_baseline(test_id=test_id, test_case=test_case)
@@ -141,7 +141,11 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
             # Or it is the first time this evaluator is being run for this test case
             # We save the current challenger as the baseline and skip evaluating
             await self.save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case.hash())
-            return None
+            return Evaluation(
+                score=1,
+                threshold=self.threshold,
+                metadata={"reason": "No baseline found, saving the challenger as the new baseline."},
+            )
 
         battle_result = await self.battle(
             baseline=baseline,
@@ -158,6 +162,6 @@ class Battle(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
 
         return Evaluation(
             score=score,
-            threshold=Threshold(gte=0.5),  # Consider a tie as passing
+            threshold=self.threshold,
             metadata={"reason": battle_result.reason, "baseline": baseline, "challenger": mapped_output},
         )

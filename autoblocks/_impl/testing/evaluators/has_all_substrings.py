@@ -11,7 +11,9 @@ from autoblocks._impl.testing.models import Threshold
 
 class HasAllSubstrings(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
     """
-    The HasAllSubstrings evaluator checks if the output contains all expected substrings.
+    The HasAllSubstrings evaluator checks if the output contains all the expected substrings.
+    Scores 1 if all substrings are present, 0 otherwise.
+    The comparison is case-sensitive.
     """
 
     id = "has-all-substrings"
