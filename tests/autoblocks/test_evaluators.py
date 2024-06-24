@@ -111,7 +111,6 @@ def test_has_all_substrings_evaluator(httpx_mock):
         return test_case.input
 
     class MyHasAllSubstrings(HasAllSubstrings[MyTestCase, str]):
-
         id = "has-all-substrings"
 
         def test_case_mapper(self, test_case: MyTestCase) -> list[str]:
