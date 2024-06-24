@@ -2,7 +2,7 @@ import abc
 import json
 from dataclasses import dataclass
 from textwrap import dedent
-from typing import Any
+from typing import Generic
 from typing import Optional
 
 from autoblocks._impl import global_state
@@ -94,7 +94,7 @@ async def battle(baseline: str, challenger: str, criteria: str, evaluator_id: st
     )
 
 
-class ManualBattle(BaseTestEvaluator, abc.ABC):
+class ManualBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
     The Battle evaluator compares two responses based on a given criteria.
     """
@@ -107,14 +107,14 @@ class ManualBattle(BaseTestEvaluator, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def baseline_mapper(self, test_case: Any) -> str:
+    def baseline_mapper(self, test_case: TestCaseType) -> str:
         """
         Map the baseline ground truth from your test case for comparison.
         """
         pass
 
     @abc.abstractmethod
-    def output_mapper(self, output: Any) -> str:
+    def output_mapper(self, output: OutputType) -> str:
         """
         Map your output to a string for comparison to the baseline.
         """
@@ -127,7 +127,7 @@ class ManualBattle(BaseTestEvaluator, abc.ABC):
         return await battle(baseline=baseline, challenger=mapped_output, criteria=self.criteria, evaluator_id=self.id)
 
 
-class AutomaticBattle(BaseTestEvaluator, abc.ABC):
+class AutomaticBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
     The Battle evaluator compares two responses based on a given criteria.
     If the challenger wins, the challenger becomes the new baseline automatically.

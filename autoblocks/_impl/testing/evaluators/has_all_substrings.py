@@ -1,5 +1,5 @@
 import abc
-from typing import Any
+from typing import Generic
 from typing import List
 
 from autoblocks._impl.testing.models import BaseTestEvaluator
@@ -9,7 +9,7 @@ from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
 
 
-class HasAllSubstrings(BaseTestEvaluator, abc.ABC):
+class HasAllSubstrings(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
     The HasAllSubstrings evaluator checks if the output contains all the expected substrings.
     Scores 1 if all substrings are present, 0 otherwise.
@@ -17,14 +17,14 @@ class HasAllSubstrings(BaseTestEvaluator, abc.ABC):
     """
 
     @abc.abstractmethod
-    def test_case_mapper(self, test_case: Any) -> List[str]:
+    def test_case_mapper(self, test_case: TestCaseType) -> List[str]:
         """
         Map your test_case to a list of strings to check for in the output
         """
         pass
 
     @abc.abstractmethod
-    def output_mapper(self, output: Any) -> str:
+    def output_mapper(self, output: OutputType) -> str:
         """
         Map your output to a string for comparison
         """

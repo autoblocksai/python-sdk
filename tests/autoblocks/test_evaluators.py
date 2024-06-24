@@ -110,7 +110,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
-    class MyHasAllSubstrings(HasAllSubstrings):
+    class MyHasAllSubstrings(HasAllSubstrings[MyTestCase, str]):
 
         id = "has-all-substrings"
 
@@ -196,7 +196,7 @@ def test_battle_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
-    class Battle(ManualBattle):
+    class Battle(ManualBattle[MyTestCase, str]):
         id = "battle"
         criteria = "Choose the best greeting."
 
