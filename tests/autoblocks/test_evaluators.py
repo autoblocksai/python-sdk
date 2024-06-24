@@ -4,10 +4,12 @@ from unittest import mock
 
 import pytest
 
+from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import ThirdPartyEnvVar
-from autoblocks.testing.evaluators import Battle
+from autoblocks.testing.evaluators import AutomaticBattle
 from autoblocks.testing.evaluators import HasAllSubstrings
+from autoblocks.testing.evaluators import ManualBattle
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.run import run_test_suite
 from tests.util import ANY_NUMBER
@@ -110,6 +112,15 @@ def test_has_all_substrings_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
+    class MyHasAllSubstrings(HasAllSubstrings[MyTestCase, str]):
+        id = "has-all-substrings"
+
+        def test_case_mapper(self, test_case: MyTestCase) -> list[str]:
+            return test_case.expected_substrings
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
     run_test_suite(
         id="my-test-id",
         test_cases=[
@@ -117,10 +128,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
             MyTestCase(input="foo", expected_substrings=["bar"]),
         ],
         evaluators=[
-            HasAllSubstrings[MyTestCase, str](
-                output_mapper=lambda output: output,
-                test_case_mapper=lambda test_case: test_case.expected_substrings,
-            ),
+            MyHasAllSubstrings(),
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
@@ -133,7 +141,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
         ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
     },
 )
-def test_battle_evaluator(httpx_mock):
+def test_manual_battle_evaluator(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
         path="/start",
@@ -171,8 +179,9 @@ def test_battle_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=0.5),
             metadata=dict(
                 reason="This is the reason.",
-                baseline="goodbye world",
+                baseline="goodbye",
                 challenger="hello world",
+                criteria="Choose the best greeting.",
             ),
             revisionUsage=None,
         ),
@@ -188,17 +197,117 @@ def test_battle_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
+    class Battle(ManualBattle[MyTestCase, str]):
+        id = "battle"
+        criteria = "Choose the best greeting."
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
+        def baseline_mapper(self, test_case: MyTestCase) -> str:
+            return "goodbye"
+
     run_test_suite(
         id="my-test-id",
         test_cases=[
             MyTestCase(input="hello world", expected_substrings=[]),
         ],
         evaluators=[
-            Battle[MyTestCase, str](
-                output_mapper=lambda output: output,
-                baseline_mapper=lambda test_case: "goodbye world",
+            Battle(),
+        ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
+    },
+)
+def test_automatic_battle_evaluator(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hello world",
+            testCaseBody=dict(input="hello world", expected_substrings=[]),
+            testCaseOutput="hello world",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/test-suites/my-test-id/test-cases/hello world/baseline",
+        method="GET",
+        status_code=200,
+        json={"baseline": "goodbye"},
+    )
+    expect_openai_post_request(
+        httpx_mock,
+        response_message_content='{"reason": "This is the reason.", "result": "2"}',
+        status_code=200,
+    )
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/test-suites/my-test-id/test-cases/hello world/baseline",
+        method="POST",
+        status_code=200,
+        match_json={"baseline": "hello world"},
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hello world",
+            evaluatorExternalId="battle",
+            score=1,
+            threshold=dict(lt=None, lte=None, gt=None, gte=0.5),
+            metadata=dict(
+                reason="This is the reason.",
+                baseline="goodbye",
+                challenger="hello world",
                 criteria="Choose the best greeting.",
             ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+
+    def test_fn(test_case: MyTestCase) -> str:
+        return test_case.input
+
+    class Battle(AutomaticBattle[MyTestCase, str]):
+        id = "battle"
+        criteria = "Choose the best greeting."
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="hello world", expected_substrings=[]),
+        ],
+        evaluators=[
+            Battle(),
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
