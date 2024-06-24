@@ -166,7 +166,7 @@ class AutomaticBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputTy
         )
         resp.raise_for_status()
 
-    async def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
+    async def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Optional[Evaluation]:
         test_id = get_test_id(evaluator_id=self.id)
         mapped_output = self.output_mapper(output)
         baseline = await self.get_baseline(test_id=test_id, test_case=test_case)
@@ -175,11 +175,7 @@ class AutomaticBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputTy
             # Or it is the first time this evaluator is being run for this test case
             # We save the current challenger as the baseline and skip evaluating
             await self.save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case.hash())
-            return Evaluation(
-                score=1,
-                threshold=threshold,
-                metadata={"reason": "No baseline found, saving the output as the baseline."},
-            )
+            return None
 
         result = await battle(baseline=baseline, challenger=mapped_output, criteria=self.criteria, evaluator_id=self.id)
         if result.score == 1:
