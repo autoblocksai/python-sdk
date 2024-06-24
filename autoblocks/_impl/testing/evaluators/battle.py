@@ -179,4 +179,9 @@ class AutomaticBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputTy
                 metadata={"reason": "No baseline found, saving the output as the baseline."},
             )
 
-        return await battle(baseline=baseline, challenger=mapped_output, criteria=self.criteria, evaluator_id=self.id)
+        result = await battle(baseline=baseline, challenger=mapped_output, criteria=self.criteria, evaluator_id=self.id)
+        if result.score == 1:
+            # save the current challenger as the new baseline if it wins
+            await self.save_baseline(test_id=test_id, baseline=mapped_output, test_case_hash=test_case.hash())
+
+        return result
