@@ -109,15 +109,14 @@ class ManualBattle(BaseTestEvaluator, abc.ABC):
     @abc.abstractmethod
     def baseline_mapper(self, test_case: Any) -> str:
         """
-        Optional baseline_mapper allows you to use a baseline from your test case
-        Instead of having Autoblocks automatically track it from the output
+        Map the baseline ground truth from your test case for comparison.
         """
         pass
 
     @abc.abstractmethod
     def output_mapper(self, output: Any) -> str:
         """
-        TMap your output to a string for comparison
+        Map your output to a string for comparison to the baseline.
         """
         pass
 
@@ -142,7 +141,7 @@ class AutomaticBattle(BaseTestEvaluator, abc.ABC):
     @abc.abstractmethod
     def output_mapper(self, output: OutputType) -> str:
         """
-        Map your output to a string for comparison
+        Map your output to a string for comparison to the baseline.
         """
         pass
 

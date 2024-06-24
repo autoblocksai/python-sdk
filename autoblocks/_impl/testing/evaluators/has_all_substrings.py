@@ -1,5 +1,5 @@
-from typing import Callable
-from typing import Generic
+import abc
+from typing import Any
 from typing import List
 
 from autoblocks._impl.testing.models import BaseTestEvaluator
@@ -9,25 +9,26 @@ from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
 
 
-class HasAllSubstrings(BaseTestEvaluator, Generic[TestCaseType, OutputType]):
+class HasAllSubstrings(BaseTestEvaluator, abc.ABC):
     """
     The HasAllSubstrings evaluator checks if the output contains all the expected substrings.
     Scores 1 if all substrings are present, 0 otherwise.
     The comparison is case-sensitive.
     """
 
-    id = "has-all-substrings"
+    @abc.abstractmethod
+    def test_case_mapper(self, test_case: Any) -> List[str]:
+        """
+        Map your test_case to a list of strings to check for in the output
+        """
+        pass
 
-    def __init__(
-        self,
-        # Map your output to a string for comparison
-        output_mapper: Callable[[OutputType], str],
-        # Map your test_case to a list of strings to check for in the output
-        test_case_mapper: Callable[[TestCaseType], List[str]],
-    ):
-        super().__init__()
-        self.output_mapper = output_mapper
-        self.test_case_mapper = test_case_mapper
+    @abc.abstractmethod
+    def output_mapper(self, output: Any) -> str:
+        """
+        Map your output to a string for comparison
+        """
+        pass
 
     def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
         expected_substrings = self.test_case_mapper(test_case)

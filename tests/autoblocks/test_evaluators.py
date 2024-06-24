@@ -110,6 +110,16 @@ def test_has_all_substrings_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
+    class MyHasAllSubstrings(HasAllSubstrings):
+
+        id = "has-all-substrings"
+
+        def test_case_mapper(self, test_case: MyTestCase) -> list[str]:
+            return test_case.expected_substrings
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
     run_test_suite(
         id="my-test-id",
         test_cases=[
@@ -117,10 +127,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
             MyTestCase(input="foo", expected_substrings=["bar"]),
         ],
         evaluators=[
-            HasAllSubstrings[MyTestCase, str](
-                output_mapper=lambda output: output,
-                test_case_mapper=lambda test_case: test_case.expected_substrings,
-            ),
+            MyHasAllSubstrings(),
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
