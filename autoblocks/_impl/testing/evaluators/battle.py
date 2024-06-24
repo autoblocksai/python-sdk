@@ -96,7 +96,8 @@ async def battle(baseline: str, challenger: str, criteria: str, evaluator_id: st
 
 class ManualBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
-    The Battle evaluator compares two responses based on a given criteria.
+    The ManualBattle evaluator compares two responses based on a given criteria.
+    If you would like to Autoblocks to automatically manage the baseline, use the AutomaticBattle evaluator.
     """
 
     threshold = Threshold(gte=0.5)  # consider a tie as passing
@@ -129,8 +130,9 @@ class ManualBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
 
 class AutomaticBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
-    The Battle evaluator compares two responses based on a given criteria.
+    The AutomaticBattle evaluator compares two responses based on a given criteria.
     If the challenger wins, the challenger becomes the new baseline automatically.
+    If you would like to provide your own baseline, use the ManualBattle evaluator.
     """
 
     @property
