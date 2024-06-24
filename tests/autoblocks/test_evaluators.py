@@ -179,7 +179,7 @@ def test_manual_battle_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=0.5),
             metadata=dict(
                 reason="This is the reason.",
-                baseline="goodbye world",
+                baseline="goodbye",
                 challenger="hello world",
                 criteria="Choose the best greeting.",
             ),
@@ -205,7 +205,7 @@ def test_manual_battle_evaluator(httpx_mock):
             return output
 
         def baseline_mapper(self, test_case: MyTestCase) -> str:
-            return "goodbye world"
+            return "goodbye"
 
     run_test_suite(
         id="my-test-id",
@@ -252,7 +252,7 @@ def test_automatic_battle_evaluator(httpx_mock):
         url=f"{API_ENDPOINT}/test-suites/my-test-id/test-cases/hello world/baseline",
         method="GET",
         status_code=200,
-        json={"baseline": "goodbye world"},
+        json={"baseline": "goodbye"},
     )
     expect_openai_post_request(
         httpx_mock,
@@ -276,7 +276,7 @@ def test_automatic_battle_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=0.5),
             metadata=dict(
                 reason="This is the reason.",
-                baseline="goodbye world",
+                baseline="goodbye",
                 challenger="hello world",
                 criteria="Choose the best greeting.",
             ),
