@@ -1,3 +1,4 @@
+from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import ThirdPartyEnvVar
 
@@ -34,3 +35,14 @@ def get_autoblocks_api_key(evaluator_id: str) -> str:
         )
 
     return autoblocks_api_key
+
+
+def get_test_id(evaluator_id: str) -> str:
+    """
+    Retrieves the current test from the test run context
+    """
+    test_run_ctx = test_case_run_context_var.get()
+    if test_run_ctx is None:
+        # Evaluators should always be run inside the context of a test case
+        raise ValueError(f"No test case context found in the {evaluator_id} evaluator.")
+    return test_run_ctx.test_id

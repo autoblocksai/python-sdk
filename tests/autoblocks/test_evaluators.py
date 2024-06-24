@@ -6,8 +6,8 @@ import pytest
 
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import ThirdPartyEnvVar
-from autoblocks.testing.evaluators import Battle
 from autoblocks.testing.evaluators import HasAllSubstrings
+from autoblocks.testing.evaluators import ManualBattle
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.run import run_test_suite
 from tests.util import ANY_NUMBER
@@ -173,6 +173,7 @@ def test_battle_evaluator(httpx_mock):
                 reason="This is the reason.",
                 baseline="goodbye world",
                 challenger="hello world",
+                criteria="Choose the best greeting.",
             ),
             revisionUsage=None,
         ),
@@ -188,17 +189,23 @@ def test_battle_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
+    class Battle(ManualBattle):
+        id = "battle"
+        criteria = "Choose the best greeting."
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
+        def baseline_mapper(self, test_case: MyTestCase) -> str:
+            return "goodbye world"
+
     run_test_suite(
         id="my-test-id",
         test_cases=[
             MyTestCase(input="hello world", expected_substrings=[]),
         ],
         evaluators=[
-            Battle[MyTestCase, str](
-                output_mapper=lambda output: output,
-                baseline_mapper=lambda test_case: "goodbye world",
-                criteria="Choose the best greeting.",
-            ),
+            Battle(),
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
