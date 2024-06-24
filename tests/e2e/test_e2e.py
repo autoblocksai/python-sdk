@@ -425,13 +425,19 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
         path="/start",
-        body=dict(testExternalId="my-test-id"),
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
     )
     expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hash",
             testCaseBody={"x": 1},
             testCaseOutput="llama7b-v2-chat",
@@ -453,6 +459,7 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hash",
             evaluatorExternalId="my-evaluator",
             score=0.97,
@@ -471,7 +478,10 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
         path="/end",
-        body=dict(testExternalId="my-test-id"),
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+        ),
     )
 
     @dataclasses.dataclass

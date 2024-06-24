@@ -45,13 +45,17 @@ def test_has_all_substrings_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
+            gridSearchId=None,
+            gridSearchParamsCombo=None,
         ),
+        json=dict(id="mock-run-id"),
     )
     expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hello world",
             testCaseBody=dict(input="hello world", expected_substrings=["hello", "world"]),
             testCaseOutput="hello world",
@@ -66,6 +70,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hello world",
             evaluatorExternalId="has-all-substrings",
             score=1,
@@ -79,6 +84,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="foo",
             testCaseBody=dict(input="foo", expected_substrings=["bar"]),
             testCaseOutput="foo",
@@ -93,6 +99,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="foo",
             evaluatorExternalId="has-all-substrings",
             score=0,
@@ -106,6 +113,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
         path="/end",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
         ),
     )
 
@@ -147,13 +155,17 @@ def test_manual_battle_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
+            gridSearchId=None,
+            gridSearchParamsCombo=None,
         ),
+        json=dict(id="mock-run-id"),
     )
     expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hello world",
             testCaseBody=dict(input="hello world", expected_substrings=[]),
             testCaseOutput="hello world",
@@ -173,6 +185,7 @@ def test_manual_battle_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hello world",
             evaluatorExternalId="battle",
             score=0,
@@ -191,6 +204,7 @@ def test_manual_battle_evaluator(httpx_mock):
         path="/end",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
         ),
     )
 
@@ -232,13 +246,17 @@ def test_automatic_battle_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
+            gridSearchId=None,
+            gridSearchParamsCombo=None,
         ),
+        json=dict(id="mock-run-id"),
     )
     expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hello world",
             testCaseBody=dict(input="hello world", expected_substrings=[]),
             testCaseOutput="hello world",
@@ -249,7 +267,7 @@ def test_automatic_battle_evaluator(httpx_mock):
         ),
     )
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/test-suites/my-test-id/test-cases/hello world/baseline",
+        url=f"{API_ENDPOINT}/test-suites/my-test-id/test-cases/hello%20world/baseline",
         method="GET",
         status_code=200,
         json={"baseline": "goodbye"},
@@ -260,7 +278,7 @@ def test_automatic_battle_evaluator(httpx_mock):
         status_code=200,
     )
     httpx_mock.add_response(
-        url=f"{API_ENDPOINT}/test-suites/my-test-id/test-cases/hello world/baseline",
+        url=f"{API_ENDPOINT}/test-suites/my-test-id/test-cases/hello%20world/baseline",
         method="POST",
         status_code=200,
         match_json={"baseline": "hello world"},
@@ -270,6 +288,7 @@ def test_automatic_battle_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hello world",
             evaluatorExternalId="battle",
             score=1,
@@ -288,6 +307,7 @@ def test_automatic_battle_evaluator(httpx_mock):
         path="/end",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
         ),
     )
 
