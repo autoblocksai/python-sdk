@@ -87,7 +87,6 @@ jobs:
       - name: Run tests
         run: poetry run pytest tests/autoblocks
         env:
-          # Org-scoped API key
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Run e2e tests
