@@ -9,9 +9,9 @@ from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks.testing.evaluators import BaseAutomaticBattle
 from autoblocks.testing.evaluators import BaseHasAllSubstrings
 from autoblocks.testing.evaluators import BaseManualBattle
-from autoblocks.testing.evaluators import RagasContextPrecision
-from autoblocks.testing.evaluators import RagasContextRecall
-from autoblocks.testing.evaluators import RagasFaithfulness
+from autoblocks.testing.evaluators import BaseRagasContextPrecision
+from autoblocks.testing.evaluators import BaseRagasContextRecall
+from autoblocks.testing.evaluators import BaseRagasFaithfulness
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.run import run_test_suite
@@ -355,7 +355,7 @@ def test_ragas_context_precision_evaluator(httpx_mock):
     def test_fn(test_case: RagasTestCase) -> str:
         return test_case.expected_answer
 
-    class ContextPrecision(RagasContextPrecision[RagasTestCase, str]):
+    class ContextPrecision(BaseRagasContextPrecision[RagasTestCase, str]):
         id = "context-precision"
         threshold = Threshold(gte=1)
 
@@ -430,7 +430,7 @@ def test_ragas_context_recall_evaluator(httpx_mock):
     def test_fn(test_case: RagasTestCase) -> str:
         return test_case.expected_answer
 
-    class ContextPrecision(RagasContextRecall[RagasTestCase, str]):
+    class ContextPrecision(BaseRagasContextRecall[RagasTestCase, str]):
         id = "context-recall"
         threshold = Threshold(gte=1)
 
@@ -505,7 +505,7 @@ def test_ragas_faithfulness_evaluator(httpx_mock):
     def test_fn(test_case: RagasTestCase) -> str:
         return test_case.expected_answer
 
-    class ContextPrecision(RagasFaithfulness[RagasTestCase, str]):
+    class ContextPrecision(BaseRagasFaithfulness[RagasTestCase, str]):
         id = "faithfulness"
         threshold = Threshold(gte=1)
 

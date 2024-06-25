@@ -1,13 +1,13 @@
 import abc
 from typing import Generic
 
-from autoblocks._impl.testing.evaluators.ragas_base import RagasBase
+from autoblocks._impl.testing.evaluators.ragas_base import BaseRagas
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import TestCaseType
 
 
-class RagasFaithfulness(RagasBase[TestCaseType, OutputType], abc.ABC, Generic[TestCaseType, OutputType]):
+class BaseRagasFaithfulness(BaseRagas[TestCaseType, OutputType], abc.ABC, Generic[TestCaseType, OutputType]):
     """
     The RagasFaithfulness evaluator evaluates the factual consistency of the generated answer against the given context.
 

@@ -1,13 +1,13 @@
 import abc
 from typing import Generic
 
-from autoblocks._impl.testing.evaluators.ragas_base import RagasBase
+from autoblocks._impl.testing.evaluators.ragas_base import BaseRagas
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import TestCaseType
 
 
-class RagasContextRecall(RagasBase[TestCaseType, OutputType], abc.ABC, Generic[TestCaseType, OutputType]):
+class BaseRagasContextRecall(BaseRagas[TestCaseType, OutputType], abc.ABC, Generic[TestCaseType, OutputType]):
     """
     The RagasContextRecall evaluator evaluates the extent to which the retrieved context
     aligns with the annotated answer, treated as the ground truth.

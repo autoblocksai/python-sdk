@@ -11,7 +11,7 @@ from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
 
 
-class RagasBase(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
+class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
     Base class for Ragas Metrics
     """
