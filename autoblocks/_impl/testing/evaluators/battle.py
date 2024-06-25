@@ -94,7 +94,7 @@ async def battle(baseline: str, challenger: str, criteria: str, evaluator_id: st
     )
 
 
-class ManualBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
+class BaseManualBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
     The ManualBattle evaluator compares two responses based on a given criteria.
     If you would like to Autoblocks to automatically manage the baseline, use the AutomaticBattle evaluator.
@@ -128,7 +128,7 @@ class ManualBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         return await battle(baseline=baseline, challenger=mapped_output, criteria=self.criteria, evaluator_id=self.id)
 
 
-class AutomaticBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
+class BaseAutomaticBattle(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
     The AutomaticBattle evaluator compares two responses based on a given criteria.
     If the challenger wins, the challenger becomes the new baseline automatically.
