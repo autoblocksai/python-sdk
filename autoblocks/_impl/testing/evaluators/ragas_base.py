@@ -1,9 +1,11 @@
 import abc
 from typing import Generic
 from typing import List
+from typing import Optional
 
 from autoblocks._impl.testing.evaluators.util import get_openai_client
 from autoblocks._impl.testing.models import BaseTestEvaluator
+from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
@@ -16,7 +18,15 @@ class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
 
     @property
     @abc.abstractmethod
-    def threshold(self) -> Threshold:
+    def metric_name(self) -> str:
+        """
+        The ragas metric name
+        """
+        pass
+
+    @property
+    @abc.abstractmethod
+    def threshold(self) -> Optional[Threshold]:
         """
         The threshold for the evaluation
         """
@@ -77,3 +87,9 @@ class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
             raise ImportError(f"The {self.id} evaluator requires ragas. You can install it with `pip install ragas`")
 
         return ragas
+
+    def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
+        dataset = self.make_dataset(test_case=test_case, output=output)
+        ragas = self.get_ragas()  # type: ignore[no-untyped-call]
+        result = ragas.evaluate(dataset=dataset, metrics=[getattr(ragas.metrics, self.metric_name)])
+        return Evaluation(score=result[self.metric_name], threshold=self.threshold)

@@ -53,11 +53,11 @@ ANY_NUMBER = AnyNumber()
 
 class AnyString(str):
     """
-    Like mock.ANY but checks if the value is any number.
+    Like mock.ANY but checks if the value is any string.
     """
 
     def __eq__(self, other: Any) -> bool:
-        return isinstance(other, str) and not isinstance(other, bool)
+        return isinstance(other, str)
 
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)

@@ -14,8 +14,10 @@ class BaseRagasAnswerRelevancy(BaseRagas[TestCaseType, OutputType], abc.ABC, Gen
     See more: https://docs.ragas.io/en/stable/concepts/metrics/answer_relevance.html
     """
 
+    metric_name = "answer_relevancy"
+
     def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
         dataset = self.make_dataset(test_case=test_case, output=output)
         ragas = self.get_ragas()  # type: ignore[no-untyped-call]
-        result = ragas.evaluate(dataset=dataset, metrics=[ragas.metrics.answer_relevancy])
-        return Evaluation(score=result["answer_relevancy"], threshold=self.threshold)
+        result = ragas.evaluate(dataset=dataset, metrics=[getattr(ragas.metrics, self.metric_name)])
+        return Evaluation(score=result["answer_correctness"], threshold=self.threshold)
