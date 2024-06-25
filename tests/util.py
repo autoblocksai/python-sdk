@@ -45,6 +45,7 @@ def expect_openai_post_request(
             "choices": [
                 {
                     "message": {
+                        "role": "assistant",
                         "content": response_message_content,
                     },
                 },

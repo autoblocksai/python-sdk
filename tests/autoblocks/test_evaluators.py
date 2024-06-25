@@ -10,7 +10,11 @@ from autoblocks._impl.util import ThirdPartyEnvVar
 from autoblocks.testing.evaluators import BaseAutomaticBattle
 from autoblocks.testing.evaluators import BaseHasAllSubstrings
 from autoblocks.testing.evaluators import BaseManualBattle
+from autoblocks.testing.evaluators import RagasContextPrecision
+from autoblocks.testing.evaluators import RagasContextRecall
+from autoblocks.testing.evaluators import RagasFaithfulness
 from autoblocks.testing.models import BaseTestCase
+from autoblocks.testing.models import Threshold
 from autoblocks.testing.run import run_test_suite
 from tests.util import ANY_NUMBER
 from tests.util import MOCK_CLI_SERVER_ADDRESS
@@ -37,6 +41,15 @@ class MyTestCase(BaseTestCase):
 
     def hash(self) -> str:
         return self.input
+
+
+@dataclasses.dataclass
+class RagasTestCase(BaseTestCase):
+    question: str
+    expected_answer: str
+
+    def hash(self) -> str:
+        return self.question
 
 
 def test_has_all_substrings_evaluator(httpx_mock):
@@ -308,6 +321,277 @@ def test_automatic_battle_evaluator(httpx_mock):
         ],
         evaluators=[
             Battle(),
+        ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
+    },
+)
+def test_ragas_context_precision_evaluator(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="How tall is the Eiffel tower?",
+            testCaseBody=dict(question="How tall is the Eiffel tower?", expected_answer="300 meters"),
+            testCaseOutput="300 meters",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_openai_post_request(
+        httpx_mock,
+        response_message_content='{"verdict": "0", "reason": "this is the reason"}',
+        status_code=200,
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="How tall is the Eiffel tower?",
+            evaluatorExternalId="context-precision",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=None,
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+
+    def test_fn(test_case: RagasTestCase) -> str:
+        return test_case.expected_answer
+
+    class ContextPrecision(RagasContextPrecision[RagasTestCase, str]):
+        id = "context-precision"
+        threshold = Threshold(gte=1)
+
+        def question_mapper(self, test_case: RagasTestCase, output: str) -> str:
+            return test_case.question
+
+        def answer_mapper(self, output: str) -> str:
+            return output
+
+        def contexts_mapper(self, test_case: RagasTestCase, output: str) -> list[str]:
+            return ["The eiffel tower stands 300 meters tall."]
+
+        def ground_truth_mapper(self, test_case: RagasTestCase, output: str) -> str:
+            return test_case.expected_answer
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            RagasTestCase(question="How tall is the Eiffel tower?", expected_answer="300 meters"),
+        ],
+        evaluators=[
+            ContextPrecision(),
+        ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
+    },
+)
+def test_ragas_context_recall_evaluator(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="How tall is the Eiffel tower?",
+            testCaseBody=dict(question="How tall is the Eiffel tower?", expected_answer="300 meters"),
+            testCaseOutput="300 meters",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_openai_post_request(
+        httpx_mock,
+        response_message_content="""
+        [
+            {"attributed": 0, "reason": "this is the reason", "statement": "this is the statement"}
+        ]
+        """,
+        status_code=200,
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="How tall is the Eiffel tower?",
+            evaluatorExternalId="context-recall",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=None,
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+
+    def test_fn(test_case: RagasTestCase) -> str:
+        return test_case.expected_answer
+
+    class ContextPrecision(RagasContextRecall[RagasTestCase, str]):
+        id = "context-recall"
+        threshold = Threshold(gte=1)
+
+        def question_mapper(self, test_case: RagasTestCase, output: str) -> str:
+            return test_case.question
+
+        def answer_mapper(self, output: str) -> str:
+            return output
+
+        def contexts_mapper(self, test_case: RagasTestCase, output: str) -> list[str]:
+            return ["The eiffel tower stands 300 meters tall."]
+
+        def ground_truth_mapper(self, test_case: RagasTestCase, output: str) -> str:
+            return test_case.expected_answer
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            RagasTestCase(question="How tall is the Eiffel tower?", expected_answer="300 meters"),
+        ],
+        evaluators=[
+            ContextPrecision(),
+        ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
+    },
+)
+def test_ragas_faithfulness_evaluator(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="How tall is the Eiffel tower?",
+            testCaseBody=dict(question="How tall is the Eiffel tower?", expected_answer="300 meters"),
+            testCaseOutput="300 meters",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_openai_post_request(
+        httpx_mock,
+        response_message_content='[{"sentence_index": 0, "simpler_statements": ["this is the statement"]}]',
+        status_code=200,
+    )
+    expect_openai_post_request(
+        httpx_mock,
+        response_message_content="""
+        [
+            {"verdict": 0, "reason": "this is the reason", "statement": "this is the statement"}
+        ]
+        """,
+        status_code=200,
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="How tall is the Eiffel tower?",
+            evaluatorExternalId="faithfulness",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=None,
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+
+    def test_fn(test_case: RagasTestCase) -> str:
+        return test_case.expected_answer
+
+    class ContextPrecision(RagasFaithfulness[RagasTestCase, str]):
+        id = "faithfulness"
+        threshold = Threshold(gte=1)
+
+        def question_mapper(self, test_case: RagasTestCase, output: str) -> str:
+            return test_case.question
+
+        def answer_mapper(self, output: str) -> str:
+            return output
+
+        def contexts_mapper(self, test_case: RagasTestCase, output: str) -> list[str]:
+            return ["The eiffel tower stands 300 meters tall."]
+
+        def ground_truth_mapper(self, test_case: RagasTestCase, output: str) -> str:
+            return test_case.expected_answer
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            RagasTestCase(question="How tall is the Eiffel tower?", expected_answer="300 meters"),
+        ],
+        evaluators=[
+            ContextPrecision(),
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
