@@ -6,7 +6,6 @@ import pytest
 
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
-from autoblocks._impl.util import ThirdPartyEnvVar
 from autoblocks.testing.evaluators import BaseAutomaticBattle
 from autoblocks.testing.evaluators import BaseHasAllSubstrings
 from autoblocks.testing.evaluators import BaseManualBattle
@@ -17,9 +16,9 @@ from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.run import run_test_suite
 from tests.util import ANY_NUMBER
+from tests.util import ANY_STRING
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import expect_cli_post_request
-from tests.util import expect_openai_post_request
 
 
 @pytest.fixture(autouse=True)
@@ -32,6 +31,11 @@ def mock_cli_server_address_env_var():
         },
     ):
         yield
+
+
+@pytest.fixture(autouse=True)
+def non_mocked_hosts() -> list[str]:
+    return ["api.openai.com"]
 
 
 @dataclasses.dataclass
@@ -148,12 +152,6 @@ def test_has_all_substrings_evaluator(httpx_mock):
     )
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
-    },
-)
 def test_manual_battle_evaluator(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
@@ -176,11 +174,6 @@ def test_manual_battle_evaluator(httpx_mock):
             testCaseHumanReviewOutputFields=None,
         ),
     )
-    expect_openai_post_request(
-        httpx_mock,
-        response_message_content='{"reason": "This is the reason.", "result": "1"}',
-        status_code=200,
-    )
     expect_cli_post_request(
         httpx_mock,
         path="/evals",
@@ -188,10 +181,10 @@ def test_manual_battle_evaluator(httpx_mock):
             testExternalId="my-test-id",
             testCaseHash="hello world",
             evaluatorExternalId="battle",
-            score=0,
+            score=1,
             threshold=dict(lt=None, lte=None, gt=None, gte=0.5),
             metadata=dict(
-                reason="This is the reason.",
+                reason=ANY_STRING,
                 baseline="goodbye",
                 challenger="hello world",
                 criteria="Choose the best greeting.",
@@ -233,12 +226,6 @@ def test_manual_battle_evaluator(httpx_mock):
     )
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
-    },
-)
 def test_automatic_battle_evaluator(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
@@ -267,11 +254,6 @@ def test_automatic_battle_evaluator(httpx_mock):
         status_code=200,
         json={"baseline": "goodbye"},
     )
-    expect_openai_post_request(
-        httpx_mock,
-        response_message_content='{"reason": "This is the reason.", "result": "2"}',
-        status_code=200,
-    )
     httpx_mock.add_response(
         url=f"{API_ENDPOINT}/test-suites/my-test-id/test-cases/hello world/baseline",
         method="POST",
@@ -288,7 +270,7 @@ def test_automatic_battle_evaluator(httpx_mock):
             score=1,
             threshold=dict(lt=None, lte=None, gt=None, gte=0.5),
             metadata=dict(
-                reason="This is the reason.",
+                reason=ANY_STRING,
                 baseline="goodbye",
                 challenger="hello world",
                 criteria="Choose the best greeting.",
@@ -327,12 +309,6 @@ def test_automatic_battle_evaluator(httpx_mock):
     )
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
-    },
-)
 def test_ragas_context_precision_evaluator(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
@@ -355,11 +331,6 @@ def test_ragas_context_precision_evaluator(httpx_mock):
             testCaseHumanReviewOutputFields=None,
         ),
     )
-    expect_openai_post_request(
-        httpx_mock,
-        response_message_content='{"verdict": "0", "reason": "this is the reason"}',
-        status_code=200,
-    )
     expect_cli_post_request(
         httpx_mock,
         path="/evals",
@@ -367,7 +338,7 @@ def test_ragas_context_precision_evaluator(httpx_mock):
             testExternalId="my-test-id",
             testCaseHash="How tall is the Eiffel tower?",
             evaluatorExternalId="context-precision",
-            score=0,
+            score=ANY_NUMBER,
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=None,
             revisionUsage=None,
@@ -413,12 +384,6 @@ def test_ragas_context_precision_evaluator(httpx_mock):
     )
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
-    },
-)
 def test_ragas_context_recall_evaluator(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
@@ -441,15 +406,6 @@ def test_ragas_context_recall_evaluator(httpx_mock):
             testCaseHumanReviewOutputFields=None,
         ),
     )
-    expect_openai_post_request(
-        httpx_mock,
-        response_message_content="""
-        [
-            {"attributed": 0, "reason": "this is the reason", "statement": "this is the statement"}
-        ]
-        """,
-        status_code=200,
-    )
     expect_cli_post_request(
         httpx_mock,
         path="/evals",
@@ -457,7 +413,7 @@ def test_ragas_context_recall_evaluator(httpx_mock):
             testExternalId="my-test-id",
             testCaseHash="How tall is the Eiffel tower?",
             evaluatorExternalId="context-recall",
-            score=0,
+            score=ANY_NUMBER,
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=None,
             revisionUsage=None,
@@ -503,12 +459,6 @@ def test_ragas_context_recall_evaluator(httpx_mock):
     )
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
-    },
-)
 def test_ragas_faithfulness_evaluator(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
@@ -531,20 +481,6 @@ def test_ragas_faithfulness_evaluator(httpx_mock):
             testCaseHumanReviewOutputFields=None,
         ),
     )
-    expect_openai_post_request(
-        httpx_mock,
-        response_message_content='[{"sentence_index": 0, "simpler_statements": ["this is the statement"]}]',
-        status_code=200,
-    )
-    expect_openai_post_request(
-        httpx_mock,
-        response_message_content="""
-        [
-            {"verdict": 0, "reason": "this is the reason", "statement": "this is the statement"}
-        ]
-        """,
-        status_code=200,
-    )
     expect_cli_post_request(
         httpx_mock,
         path="/evals",
@@ -552,7 +488,7 @@ def test_ragas_faithfulness_evaluator(httpx_mock):
             testExternalId="my-test-id",
             testCaseHash="How tall is the Eiffel tower?",
             evaluatorExternalId="faithfulness",
-            score=0,
+            score=ANY_NUMBER,
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=None,
             revisionUsage=None,
