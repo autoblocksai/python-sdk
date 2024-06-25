@@ -2,8 +2,6 @@ import abc
 from typing import Generic
 from typing import List
 
-from datasets import Dataset  # type: ignore[import-untyped]
-
 from autoblocks._impl.testing.evaluators.util import get_openai_client
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import OutputType
@@ -52,7 +50,14 @@ class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
         """
         pass
 
-    def make_dataset(self, test_case: TestCaseType, output: OutputType) -> Dataset:
+    def make_dataset(self, test_case: TestCaseType, output: OutputType):  # type: ignore[no-untyped-def]
+        try:
+            import datasets  # type: ignore[import-untyped]
+        except (ImportError, AssertionError):
+            raise ImportError(
+                f"The {self.id} evaluator requires datasets. You can install it with `pip install datasets`"
+            )
+
         data_dict = {
             "question": [self.question_mapper(test_case, output)],
             "answer": [self.answer_mapper(output)],
@@ -60,7 +65,7 @@ class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
             "ground_truth": [self.ground_truth_mapper(test_case, output)],
         }
         # Convert dictionary to Hugging Face datasets format
-        return Dataset.from_dict(data_dict)
+        return datasets.Dataset.from_dict(data_dict)
 
     def get_ragas(self):  # type: ignore[no-untyped-def]
         # We try to get the openai client first, so that if it doesn't exist we can raise a more informative error
@@ -69,6 +74,6 @@ class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
         try:
             import ragas  # type: ignore[import-untyped]
         except (ImportError, AssertionError):
-            raise ImportError(f"The {self.id} evaluator requires ragas. You can install it with `pip install ragas")
+            raise ImportError(f"The {self.id} evaluator requires ragas. You can install it with `pip install ragas`")
 
         return ragas
