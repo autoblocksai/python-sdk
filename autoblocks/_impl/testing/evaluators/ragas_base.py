@@ -69,6 +69,6 @@ class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
         try:
             import ragas  # type: ignore[import-untyped]
         except (ImportError, AssertionError):
-            raise ImportError(f"The {self.id} evaluator requires ragas." "You can install it with `pip install ragas")
+            raise ImportError(f"The {self.id} evaluator requires ragas. You can install it with `pip install ragas")
 
         return ragas
