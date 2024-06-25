@@ -9,7 +9,7 @@ from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
 
 
-class HasAllSubstrings(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
+class BaseHasAllSubstrings(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
     The HasAllSubstrings evaluator checks if the output contains all the expected substrings.
     Scores 1 if all substrings are present, 0 otherwise.

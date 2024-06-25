@@ -7,9 +7,9 @@ import pytest
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import ThirdPartyEnvVar
-from autoblocks.testing.evaluators import AutomaticBattle
-from autoblocks.testing.evaluators import HasAllSubstrings
-from autoblocks.testing.evaluators import ManualBattle
+from autoblocks.testing.evaluators import BaseAutomaticBattle
+from autoblocks.testing.evaluators import BaseHasAllSubstrings
+from autoblocks.testing.evaluators import BaseManualBattle
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.run import run_test_suite
 from tests.util import ANY_NUMBER
@@ -112,7 +112,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
-    class MyHasAllSubstrings(HasAllSubstrings[MyTestCase, str]):
+    class HasAllSubstrings(BaseHasAllSubstrings[MyTestCase, str]):
         id = "has-all-substrings"
 
         def test_case_mapper(self, test_case: MyTestCase) -> list[str]:
@@ -128,7 +128,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
             MyTestCase(input="foo", expected_substrings=["bar"]),
         ],
         evaluators=[
-            MyHasAllSubstrings(),
+            HasAllSubstrings(),
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
@@ -197,7 +197,7 @@ def test_manual_battle_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
-    class Battle(ManualBattle[MyTestCase, str]):
+    class Battle(BaseManualBattle[MyTestCase, str]):
         id = "battle"
         criteria = "Choose the best greeting."
 
@@ -294,7 +294,7 @@ def test_automatic_battle_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
-    class Battle(AutomaticBattle[MyTestCase, str]):
+    class Battle(BaseAutomaticBattle[MyTestCase, str]):
         id = "battle"
         criteria = "Choose the best greeting."
 
