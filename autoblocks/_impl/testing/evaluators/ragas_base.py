@@ -19,7 +19,7 @@ def round_and_clamp_score(score: float) -> float:
     We want to round to 2 decimal places for readability.
     and ensure that the score is a max of 1
     """
-    return min(round(score, 4), 1)
+    return min(round(score, 2), 1)
 
 
 class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
