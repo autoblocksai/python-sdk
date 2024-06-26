@@ -12,6 +12,16 @@ from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
 
 
+def round_and_clamp_score(score: float) -> float:
+    """
+    Ragas returns scores between 0 and 1
+    But sometimes returns score like 1.000004 or 0.154313
+    We want to round to 2 decimal places for readability.
+    and ensure that the score is a max of 1
+    """
+    return min(round(score, 2), 1)
+
+
 class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
     Base class for Ragas Metrics
@@ -118,4 +128,4 @@ class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
             llm=self.llm,
             embeddings=self.embeddings,
         )
-        return Evaluation(score=result[self.metric_name], threshold=self.threshold)
+        return Evaluation(score=round_and_clamp_score(result[self.metric_name]), threshold=self.threshold)
