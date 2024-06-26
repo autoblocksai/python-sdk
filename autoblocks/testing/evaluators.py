@@ -4,6 +4,8 @@ from autoblocks._impl.testing.evaluators.battle import BaseManualBattle
 from autoblocks._impl.testing.evaluators.battle import BaseManualBattle as ManualBattle
 from autoblocks._impl.testing.evaluators.has_all_substrings import BaseHasAllSubstrings
 from autoblocks._impl.testing.evaluators.has_all_substrings import BaseHasAllSubstrings as HasAllSubstrings
+from autoblocks._impl.testing.evaluators.is_equals import BaseIsEquals
+from autoblocks._impl.testing.evaluators.is_valid_json import BaseIsValidJson
 from autoblocks._impl.testing.evaluators.ragas_answer_correctness import BaseRagasAnswerCorrectness
 from autoblocks._impl.testing.evaluators.ragas_answer_relevancy import BaseRagasAnswerRelevancy
 from autoblocks._impl.testing.evaluators.ragas_answer_semantic_similarity import BaseRagasAnswerSemanticSimilarity
@@ -14,6 +16,8 @@ from autoblocks._impl.testing.evaluators.ragas_context_relevancy import BaseRaga
 from autoblocks._impl.testing.evaluators.ragas_faithfulness import BaseRagasFaithfulness
 
 __all__ = [
+    "BaseIsEquals",
+    "BaseIsValidJson",
     "BaseHasAllSubstrings",
     "BaseAutomaticBattle",
     "BaseManualBattle",

@@ -25,7 +25,7 @@ class BaseIsValidJson(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputTy
     def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
         mapped_output = self.output_mapper(output)
         score = 1
-        metadata = {}
+        metadata = None
         try:
             json.loads(mapped_output)
         except Exception as e:

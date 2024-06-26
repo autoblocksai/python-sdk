@@ -8,6 +8,8 @@ from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks.testing.evaluators import BaseAutomaticBattle
 from autoblocks.testing.evaluators import BaseHasAllSubstrings
+from autoblocks.testing.evaluators import BaseIsEquals
+from autoblocks.testing.evaluators import BaseIsValidJson
 from autoblocks.testing.evaluators import BaseManualBattle
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.run import run_test_suite
@@ -142,6 +144,169 @@ def test_has_all_substrings_evaluator(httpx_mock):
         ],
         evaluators=[
             HasAllSubstrings(),
+        ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+
+def test_is_equals_evaluator(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hello world",
+            testCaseBody=dict(input="hello world", expected_substrings=["hello", "world"]),
+            testCaseOutput="hello world",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hello world",
+            evaluatorExternalId="is-equals",
+            score=1,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                expected_output="hello world",
+                actual_output="hello world",
+            ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+
+    def test_fn(test_case: MyTestCase) -> str:
+        return test_case.input
+
+    class IsEquals(BaseIsEquals[MyTestCase, str]):
+        id = "is-equals"
+
+        def test_case_mapper(self, test_case: MyTestCase) -> str:
+            return test_case.input
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="hello world", expected_substrings=["hello", "world"]),
+        ],
+        evaluators=[
+            IsEquals(),
+        ],
+        fn=test_fn,
+    )
+
+
+def test_is_valid_json_evaluator(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hello world",
+            testCaseBody=dict(input="hello world", expected_substrings=["hello", "world"]),
+            testCaseOutput="hello world",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hello world",
+            evaluatorExternalId="is-valid-json",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(error="Expecting value: line 1 column 1 (char 0)"),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash='{"hi": "world"}',
+            testCaseBody=dict(input='{"hi": "world"}', expected_substrings=["hi", "world"]),
+            testCaseOutput='{"hi": "world"}',
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash='{"hi": "world"}',
+            evaluatorExternalId="is-valid-json",
+            score=1,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=None,
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+
+    def test_fn(test_case: MyTestCase) -> str:
+        return test_case.input
+
+    class IsValidJSON(BaseIsValidJson[MyTestCase, str]):
+        id = "is-valid-json"
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="hello world", expected_substrings=["hello", "world"]),
+            MyTestCase(input='{"hi": "world"}', expected_substrings=["hi", "world"]),
+        ],
+        evaluators=[
+            IsValidJSON(),
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
