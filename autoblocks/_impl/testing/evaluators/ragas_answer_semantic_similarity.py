@@ -16,4 +16,4 @@ class BaseRagasAnswerSemanticSimilarity(
     See more: https://docs.ragas.io/en/stable/concepts/metrics/semantic_similarity.html
     """
 
-    metric_name = "answer_semantic_similarity"
+    metric_name = "answer_similarity"

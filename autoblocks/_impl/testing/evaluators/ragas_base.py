@@ -1,4 +1,5 @@
 import abc
+from typing import Any
 from typing import Generic
 from typing import List
 from typing import Optional
@@ -15,6 +16,24 @@ class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
     Base class for Ragas Metrics
     """
+
+    @property
+    def llm(self) -> Optional[Any]:
+        """
+        Custom LLM for the evaluation
+
+        See: https://docs.ragas.io/en/stable/howtos/customisations/bring-your-own-llm-or-embs.html
+        """
+        return None
+
+    @property
+    def embeddings(self) -> Optional[Any]:
+        """
+        Custom embeddings model for the evaluation
+
+        See: https://docs.ragas.io/en/stable/howtos/customisations/bring-your-own-llm-or-embs.html
+        """
+        return None
 
     @property
     @abc.abstractmethod
@@ -80,7 +99,9 @@ class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     def get_ragas(self):  # type: ignore[no-untyped-def]
         # We try to get the openai client first, so that if it doesn't exist we can raise a more informative error
         # Ragas throws a more generic error if the client or OpenAI api key is not found
-        get_openai_client(evaluator_id=self.id)
+        # We only need to do this if the user isn't using a custom llm and embeddings
+        if self.llm is None or self.embeddings is None:
+            get_openai_client(evaluator_id=self.id)
         try:
             import ragas  # type: ignore[import-untyped]
         except (ImportError, AssertionError):
@@ -91,5 +112,10 @@ class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
         dataset = self.make_dataset(test_case=test_case, output=output)
         ragas = self.get_ragas()  # type: ignore[no-untyped-call]
-        result = ragas.evaluate(dataset=dataset, metrics=[getattr(ragas.metrics, self.metric_name)])
+        result = ragas.evaluate(
+            dataset=dataset,
+            metrics=[getattr(ragas.metrics, self.metric_name)],
+            llm=self.llm,
+            embeddings=self.embeddings,
+        )
         return Evaluation(score=result[self.metric_name], threshold=self.threshold)
