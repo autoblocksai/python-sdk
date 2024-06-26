@@ -190,6 +190,36 @@ def test_is_equals_evaluator(httpx_mock):
     )
     expect_cli_post_request(
         httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hi world",
+            testCaseBody=dict(input="hi world", expected_substrings=["hello", "world"]),
+            testCaseOutput="hello world",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hi world",
+            evaluatorExternalId="is-equals",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                expected_output="hi world",
+                actual_output="hello world",
+            ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
         path="/end",
         body=dict(
             testExternalId="my-test-id",
@@ -197,7 +227,7 @@ def test_is_equals_evaluator(httpx_mock):
     )
 
     def test_fn(test_case: MyTestCase) -> str:
-        return test_case.input
+        return "hello world"
 
     class IsEquals(BaseIsEquals[MyTestCase, str]):
         id = "is-equals"
@@ -212,6 +242,7 @@ def test_is_equals_evaluator(httpx_mock):
         id="my-test-id",
         test_cases=[
             MyTestCase(input="hello world", expected_substrings=["hello", "world"]),
+            MyTestCase(input="hi world", expected_substrings=["hello", "world"]),
         ],
         evaluators=[
             IsEquals(),
