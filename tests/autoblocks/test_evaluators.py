@@ -181,10 +181,7 @@ def test_is_equals_evaluator(httpx_mock):
             evaluatorExternalId="is-equals",
             score=1,
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
-            metadata=dict(
-                expected_output="hello world",
-                actual_output="hello world",
-            ),
+            metadata=None,
             revisionUsage=None,
         ),
     )

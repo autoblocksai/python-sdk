@@ -18,7 +18,7 @@ class BaseIsValidJson(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputTy
     @abc.abstractmethod
     def output_mapper(self, output: OutputType) -> str:
         """
-        Map your output to a string for comparison
+        Map your output to the string that you want to check is valid JSON.
         """
         pass
 
