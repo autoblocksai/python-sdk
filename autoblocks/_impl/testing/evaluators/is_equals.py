@@ -17,7 +17,7 @@ class BaseIsEquals(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
     @abc.abstractmethod
     def test_case_mapper(self, test_case: TestCaseType) -> str:
         """
-        Map your test_case to a string for comparison.
+        Map your test case to a string for comparison.
         """
         pass
 

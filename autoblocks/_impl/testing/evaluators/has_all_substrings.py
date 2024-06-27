@@ -19,14 +19,14 @@ class BaseHasAllSubstrings(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, Out
     @abc.abstractmethod
     def test_case_mapper(self, test_case: TestCaseType) -> List[str]:
         """
-        Map your test_case to a list of strings to check for in the output
+        Map your test case to a list of strings to check for in the output.
         """
         pass
 
     @abc.abstractmethod
     def output_mapper(self, output: OutputType) -> str:
         """
-        Map your output to a string for comparison
+        Map your output to a string for comparison.
         """
         pass
 
