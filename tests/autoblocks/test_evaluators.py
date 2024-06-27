@@ -9,7 +9,7 @@ from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks.testing.evaluators import BaseAutomaticBattle
 from autoblocks.testing.evaluators import BaseHasAllSubstrings
 from autoblocks.testing.evaluators import BaseIsEquals
-from autoblocks.testing.evaluators import BaseIsValidJson
+from autoblocks.testing.evaluators import BaseIsValidJSON
 from autoblocks.testing.evaluators import BaseManualBattle
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.run import run_test_suite
@@ -321,7 +321,7 @@ def test_is_valid_json_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
-    class IsValidJSON(BaseIsValidJson[MyTestCase, str]):
+    class IsValidJSON(BaseIsValidJSON[MyTestCase, str]):
         id = "is-valid-json"
 
         def output_mapper(self, output: str) -> str:
