@@ -9,7 +9,7 @@ from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
 
 
-class BaseIsValidJson(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
+class BaseIsValidJSON(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
     The IsValidJson evaluator checks if the output is valid JSON.
     Scores 1 if it is valid, 0 otherwise.
