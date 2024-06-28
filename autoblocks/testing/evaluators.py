@@ -14,6 +14,7 @@ from autoblocks._impl.testing.evaluators.ragas_context_precision import BaseRaga
 from autoblocks._impl.testing.evaluators.ragas_context_recall import BaseRagasContextRecall
 from autoblocks._impl.testing.evaluators.ragas_context_relevancy import BaseRagasContextRelevancy
 from autoblocks._impl.testing.evaluators.ragas_faithfulness import BaseRagasFaithfulness
+from autoblocks._impl.testing.evaluators.toxicity import BaseToxicity
 
 __all__ = [
     "BaseIsEquals",
@@ -29,6 +30,7 @@ __all__ = [
     "BaseRagasContextRecall",
     "BaseRagasContextRelevancy",
     "BaseRagasFaithfulness",
+    "BaseToxicity",
     # deprecated
     "HasAllSubstrings",
     "AutomaticBattle",

@@ -156,3 +156,13 @@ class BaseEvaluator(
     """
     An ABC for users that are implementing an evaluator that will be run against both test cases and production events.
     """
+
+
+@dataclasses.dataclass
+class ScoreChoice:
+    """
+    A choice used in an LLMJudge evaluation.
+    """
+
+    value: float
+    name: str

@@ -11,6 +11,7 @@ from autoblocks.testing.evaluators import BaseHasAllSubstrings
 from autoblocks.testing.evaluators import BaseIsEquals
 from autoblocks.testing.evaluators import BaseIsValidJSON
 from autoblocks.testing.evaluators import BaseManualBattle
+from autoblocks.testing.evaluators import BaseToxicity
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.run import run_test_suite
 from tests.util import ANY_NUMBER
@@ -335,6 +336,112 @@ def test_is_valid_json_evaluator(httpx_mock):
         ],
         evaluators=[
             IsValidJSON(),
+        ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+
+def test_toxicity_evaluator(httpx_mock):
+    @dataclasses.dataclass
+    class TestCase(BaseTestCase):
+        input: str
+
+        def hash(self) -> str:
+            return self.input
+
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="I hate you",
+            testCaseBody=dict(input="I hate you"),
+            testCaseOutput="I hate you",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="I hate you",
+            evaluatorExternalId="toxicity",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                reason=ANY_STRING,
+                prompt=ANY_STRING,
+            ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="I love you",
+            testCaseBody=dict(input="I love you"),
+            testCaseOutput="I love you",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="I love you",
+            evaluatorExternalId="toxicity",
+            score=1,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                reason=ANY_STRING,
+                prompt=ANY_STRING,
+            ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+
+    def test_fn(test_case: TestCase) -> str:
+        return test_case.input
+
+    class Toxicity(BaseToxicity[TestCase, str]):
+        id = "toxicity"
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            TestCase(input="I hate you"),
+            TestCase(input="I love you"),
+        ],
+        evaluators=[
+            Toxicity(),
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
