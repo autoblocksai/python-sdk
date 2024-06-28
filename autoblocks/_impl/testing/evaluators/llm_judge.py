@@ -1,106 +1,136 @@
 import abc
 import json
-import re
 from textwrap import dedent
+from typing import Any
 from typing import Generic
 from typing import List
+from typing import Optional
 
+from autoblocks._impl import global_state
+from autoblocks._impl.config.constants import API_ENDPOINT
+from autoblocks._impl.testing.evaluators.util import get_autoblocks_api_key
 from autoblocks._impl.testing.evaluators.util import get_openai_client
+from autoblocks._impl.testing.evaluators.util import get_test_id
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import Evaluation
+from autoblocks._impl.testing.models import EvaluatorOverride
+from autoblocks._impl.testing.models import HumanReviewCommentOverride
+from autoblocks._impl.testing.models import HumanReviewFieldOverride
 from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import ScoreChoice
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
 
-override_template = """
-================
-Example:
-Output: {{ output }}
-Answer: {{ answer }}
-"""
-
-
-def replace_with_values(template: str, replacements: dict[str, str]) -> str:
-    # Regex to find {{ key }} even with irregular spaces
-    pattern = r"\{\{\s*(\w+)\s*\}\}"
-    # Replace each found key with the corresponding value from the replacements dictionary
-    result = re.sub(pattern, lambda match: replacements.get(match.group(1), match.group(0)), template)
-    return result
+function_name = "select_answer"
 
 
 class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
-
     @property
     @abc.abstractmethod
-    def threshold(self) -> Threshold:
+    def threshold(self) -> Optional[Threshold]:
+        """
+        The threshold for the evaluator.
+        """
         pass
 
     @property
-    @abc.abstractmethod
-    def prompt(self) -> str:
-        pass
+    def no_of_overrides(self) -> int:
+        """
+        The number of recent overrides to fetch for the evaluator and pass to make_prompt.
+        """
+        return 0
 
-    @property
-    def use_overrides(self) -> bool:
-        return False
+    @abc.abstractmethod
+    def make_prompt(
+        self, test_case: TestCaseType, output: OutputType, recent_overrides: List[EvaluatorOverride]
+    ) -> str:
+        """
+        The prompt passed to the LLM judge. Should be poised as a question.
+        """
+        pass
 
     @property
     @abc.abstractmethod
     def score_choices(self) -> List[ScoreChoice]:
+        """
+        The choices for the LLM judge to use when answering.
+        """
         pass
 
-    @abc.abstractmethod
-    def variable_mapper(self, test_case: TestCaseType, output: OutputType) -> dict[str, str]:
-        pass
+    def _make_score_choice(self, value: float) -> Optional[ScoreChoice]:
+        return next((score for score in self.score_choices if score.value == value), None)
 
-    async def make_prompt(self, test_case: TestCaseType, output: OutputType) -> str:
-        replacements = self.variable_mapper(test_case=test_case, output=output)
-        template_with_values = replace_with_values(template=self.prompt, replacements=replacements)
-        if self.use_overrides:
-            overrides = await self.get_recent_overrides()
-            if overrides is not None:
-                override_choice = next(
-                    (score for score in self.score_choices if score.value == overrides.override_score), None
+    async def _get_recent_overrides(self) -> List[EvaluatorOverride]:
+        if self.no_of_overrides == 0:
+            # don't fetch if they haven't enabled overrides
+            return []
+        test_id = get_test_id(evaluator_id=self.id)
+        resp = await global_state.http_client().get(
+            f"{API_ENDPOINT}/test-suites/{test_id}/evaluators/{self.id}/human-reviews?n={self.no_of_overrides}",
+            headers={"Authorization": f"Bearer {get_autoblocks_api_key(self.id)}"},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        overrides = []
+        for eval_data in data:
+            override_score = self._make_score_choice(eval_data["overrideScore"])
+            original_score = self._make_score_choice(eval_data["originalScore"])
+            if override_score is None or original_score is None:
+                # If for some reason we can't find the score choice, skip this override
+                # Could happen if the score choices have changed since the override was created
+                continue
+
+            overrides.append(
+                EvaluatorOverride(
+                    original_score=original_score,
+                    override_score=override_score,
+                    output_fields=[HumanReviewFieldOverride(**field) for field in eval_data["outputFields"]],
+                    input_fields=[HumanReviewFieldOverride(**field) for field in eval_data["inputFields"]],
+                    comments=[
+                        HumanReviewCommentOverride(
+                            field_id=comment["fieldId"],
+                            quoted_text=comment["quotedText"],
+                            comment_text=comment["commentText"],
+                        )
+                        for comment in eval_data["comments"]
+                    ],
                 )
-                if override_choice is not None:
-                    template_with_values += replace_with_values(
-                        template=override_template,
-                        replacements={"output": overrides.output_fields[0].value, "answer": override_choice.name},
-                    )
+            )
 
-        return dedent(template_with_values)
+        return overrides
 
-    async def execute_prompt(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
-        prompt = await self.make_prompt(test_case=test_case, output=output)
+    def _make_tool(self) -> dict[str, Any]:
+        return {
+            "type": "function",
+            "function": {
+                "name": function_name,
+                "description": "Call this function to select an answer",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "reason": {
+                            "type": "string",
+                            "description": "The reason for the answer",
+                        },
+                        "answer": {
+                            "type": "string",
+                            "description": "The answer to select",
+                            "enum": [score.name for score in self.score_choices],
+                        },
+                    },
+                    "required": ["reason", "answer"],
+                },
+            },
+        }
+
+    async def _execute_prompt(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
+        recent_overrides = await self._get_recent_overrides()
+        prompt = self.make_prompt(test_case=test_case, output=output, recent_overrides=recent_overrides)
         response = await get_openai_client(evaluator_id=self.id).chat.completions.create(
             model="gpt-4-turbo",
             temperature=0.0,
-            tool_choice={"type": "function", "function": {"name": "select_answer"}},
-            tools=[
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "select_answer",
-                        "description": "Call this function to select an answer",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "reason": {
-                                    "type": "string",
-                                    "description": "The reason for the answer",
-                                },
-                                "answer": {
-                                    "type": "string",
-                                    "description": "The answer to select",
-                                    "enum": [score.name for score in self.score_choices],
-                                },
-                            },
-                            "required": ["reason", "answer"],
-                        },
-                    },
-                }
-            ],
+            tool_choice={"type": "function", "function": {"name": function_name}},
+            tools=[self._make_tool()],
             messages=[
                 dict(
                     role="system",
@@ -113,13 +143,13 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
             ],
         )
         tool_call = response.choices[0].message.tool_calls[0]
-        if tool_call.function.name != "select_answer":
+        if tool_call.function.name != function_name:
             raise ValueError(f"Unexpected tool call: {tool_call}")
 
         function_args = json.loads(tool_call.function.arguments)
         score = next((score for score in self.score_choices if score.name == function_args["answer"]), None)
         if score is None:
-            raise ValueError(f"Unexpected score: {function_args['answer']}")
+            raise ValueError(f"Unexpected answer: {function_args['answer']}")
 
         return Evaluation(
             score=score.value,
@@ -131,4 +161,4 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         )
 
     async def evaluate_test_case(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
-        return await self.execute_prompt(test_case=test_case, output=output)
+        return await self._execute_prompt(test_case=test_case, output=output)
