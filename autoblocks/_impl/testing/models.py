@@ -112,7 +112,7 @@ class HumanReviewFieldOverride:
 
 @dataclasses.dataclass
 class HumanReviewComment:
-    fieldId: str
+    field_id: str
     quoted_text: str
     comment_text: str
 
@@ -159,16 +159,23 @@ class BaseTestEvaluator(abc.ABC):
         )
         resp.raise_for_status()
         # convert to EvaluatorOverride by checking self.id for the name in automatedEvals
-        data = resp.json()
-        outputFields = [HumanReviewFieldOverride(**field) for field in data["outputFields"]]
+        data = resp.json()[0]
+        output_fields = [HumanReviewFieldOverride(**field) for field in data["outputFields"]]
 
         for eval_data in data["automatedEvals"]:
             if eval_data["name"] == self.id:
                 return EvaluatorOverride(
-                    original_score=eval_data["originalGrade"][0],
-                    override_score=eval_data["overrideGrade"][0],
-                    output_fields=outputFields,
-                    comments=[HumanReviewComment(**comment) for comment in eval_data["comments"]],
+                    original_score=eval_data["grades"][0]["originalGrade"],
+                    override_score=eval_data["grades"][0]["overrideGrade"],
+                    output_fields=output_fields,
+                    comments=[
+                        HumanReviewComment(
+                            field_id=comment["fieldId"],
+                            quoted_text=comment["quotedText"],
+                            comment_text=comment["commentText"],
+                        )
+                        for comment in eval_data["comments"]
+                    ],
                 )
 
         return None
