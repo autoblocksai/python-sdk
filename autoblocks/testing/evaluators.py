@@ -6,6 +6,7 @@ from autoblocks._impl.testing.evaluators.has_all_substrings import BaseHasAllSub
 from autoblocks._impl.testing.evaluators.has_all_substrings import BaseHasAllSubstrings as HasAllSubstrings
 from autoblocks._impl.testing.evaluators.is_equals import BaseIsEquals
 from autoblocks._impl.testing.evaluators.is_valid_json import BaseIsValidJSON
+from autoblocks._impl.testing.evaluators.llm_judge import BaseLLMJudge
 from autoblocks._impl.testing.evaluators.ragas_answer_correctness import BaseRagasAnswerCorrectness
 from autoblocks._impl.testing.evaluators.ragas_answer_relevancy import BaseRagasAnswerRelevancy
 from autoblocks._impl.testing.evaluators.ragas_answer_semantic_similarity import BaseRagasAnswerSemanticSimilarity
@@ -31,6 +32,7 @@ __all__ = [
     "BaseRagasContextRelevancy",
     "BaseRagasFaithfulness",
     "BaseToxicity",
+    "BaseLLMJudge",
     # deprecated
     "HasAllSubstrings",
     "AutomaticBattle",
