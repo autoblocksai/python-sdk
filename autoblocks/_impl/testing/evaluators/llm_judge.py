@@ -7,7 +7,6 @@ from typing import List
 from typing import Optional
 
 from autoblocks._impl import global_state
-from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.testing.evaluators.util import get_autoblocks_api_key
 from autoblocks._impl.testing.evaluators.util import get_openai_client
 from autoblocks._impl.testing.evaluators.util import get_test_id
@@ -66,7 +65,7 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
             return []
         test_id = get_test_id(evaluator_id=self.id)
         resp = await global_state.http_client().get(
-            f"{API_ENDPOINT}/test-suites/{test_id}/evaluators/{self.id}/human-reviews?n={self.no_of_overrides}",
+            f"https://adamnolte-public-api.autoblocksinternal.com/test-suites/{test_id}/evaluators/{self.id}/human-reviews?n={self.no_of_overrides}",
             headers={"Authorization": f"Bearer {get_autoblocks_api_key(self.id)}"},
         )
         resp.raise_for_status()
