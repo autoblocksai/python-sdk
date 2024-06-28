@@ -9,6 +9,11 @@ from typing import Optional
 from typing import TypeVar
 from typing import Union
 
+from autoblocks._impl import global_state
+from autoblocks._impl.config.constants import API_ENDPOINT
+from autoblocks._impl.testing.evaluators.util import get_autoblocks_api_key
+from autoblocks._impl.testing.evaluators.util import get_test_id
+
 
 @dataclasses.dataclass
 class TracerEvent:
@@ -98,6 +103,28 @@ class TestCaseContext(Generic[TestCaseType]):
         return self._cached_hash
 
 
+@dataclasses.dataclass
+class HumanReviewFieldOverride:
+    id: str
+    name: str
+    value: str
+
+
+@dataclasses.dataclass
+class HumanReviewComment:
+    fieldId: str
+    quoted_text: str
+    comment_text: str
+
+
+@dataclasses.dataclass
+class EvaluatorOverride:
+    original_score: float
+    override_score: float
+    output_fields: list[HumanReviewFieldOverride]
+    comments: list[HumanReviewComment]
+
+
 class BaseTestEvaluator(abc.ABC):
     """
     An ABC for users that are implementing an evaluator that will only be run against test cases.
@@ -123,6 +150,28 @@ class BaseTestEvaluator(abc.ABC):
         **kwargs: Any,
     ) -> Union[Optional[Evaluation], Awaitable[Optional[Evaluation]]]:
         pass
+
+    async def get_recent_overrides(self) -> Optional[EvaluatorOverride]:
+        test_id = get_test_id(evaluator_id=self.id)
+        resp = await global_state.http_client().get(
+            f"{API_ENDPOINT}/test-suites/{test_id}/human-reviews",
+            headers={"Authorization": f"Bearer {get_autoblocks_api_key(self.id)}"},
+        )
+        resp.raise_for_status()
+        # convert to EvaluatorOverride by checking self.id for the name in automatedEvals
+        data = resp.json()
+        outputFields = [HumanReviewFieldOverride(**field) for field in data["outputFields"]]
+
+        for eval_data in data["automatedEvals"]:
+            if eval_data["name"] == self.id:
+                return EvaluatorOverride(
+                    original_score=eval_data["originalGrade"][0],
+                    override_score=eval_data["overrideGrade"][0],
+                    output_fields=outputFields,
+                    comments=[HumanReviewComment(**comment) for comment in eval_data["comments"]],
+                )
+
+        return None
 
 
 class BaseEventEvaluator(abc.ABC):

@@ -13,6 +13,13 @@ from autoblocks._impl.testing.models import ScoreChoice
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
 
+override_template = """
+================
+Example:
+Output: {{ output }}
+Answer: {{ answer }}
+"""
+
 
 def replace_with_values(template: str, replacements: dict[str, str]) -> str:
     # Regex to find {{ key }} even with irregular spaces
@@ -33,6 +40,10 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
     @abc.abstractmethod
     def prompt(self) -> str:
         pass
+
+    @property
+    def use_overrides(self) -> bool:
+        return False
 
     @property
     @abc.abstractmethod
@@ -57,7 +68,7 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         """
         return ""
 
-    def make_prompt(self, test_case: TestCaseType, output: OutputType) -> str:
+    async def make_prompt(self, test_case: TestCaseType, output: OutputType) -> str:
         input_str = self.input_mapper(test_case)
         expected_str = self.expected_mapper(test_case)
         output_str = self.output_mapper(output)
@@ -66,10 +77,23 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
             "expected": expected_str,
             "output": output_str,
         }
-        return dedent(replace_with_values(template=self.prompt, replacements=replacements))
+        template_with_values = replace_with_values(template=self.prompt, replacements=replacements)
+        if self.use_overrides:
+            overrides = await self.get_recent_overrides()
+            if overrides is not None:
+                override_choice = next(
+                    (score for score in self.score_choices if score.value == overrides.override_score), None
+                )
+                if override_choice is not None:
+                    template_with_values += replace_with_values(
+                        template=override_template,
+                        replacements={"output": overrides.output_fields[0].value, "answer": override_choice.name},
+                    )
+
+        return dedent(template_with_values)
 
     async def execute_prompt(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
-        prompt = self.make_prompt(test_case=test_case, output=output)
+        prompt = await self.make_prompt(test_case=test_case, output=output)
         response = await get_openai_client(evaluator_id=self.id).chat.completions.create(
             model="gpt-4-turbo",
             temperature=0.0,
