@@ -50,33 +50,12 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
     def score_choices(self) -> List[ScoreChoice]:
         pass
 
-    def input_mapper(self, test_case: TestCaseType) -> str:
-        """
-        Map your input to a string for the prompt.
-        """
-        return ""
-
-    def expected_mapper(self, test_case: TestCaseType) -> str:
-        """
-        Map your expected output to a string for the prompt.
-        """
-        return ""
-
-    def output_mapper(self, output: OutputType) -> str:
-        """
-        Map your output to a string for the prompt.
-        """
-        return ""
+    @abc.abstractmethod
+    def variable_mapper(self, test_case: TestCaseType, output: OutputType) -> dict[str, str]:
+        pass
 
     async def make_prompt(self, test_case: TestCaseType, output: OutputType) -> str:
-        input_str = self.input_mapper(test_case)
-        expected_str = self.expected_mapper(test_case)
-        output_str = self.output_mapper(output)
-        replacements = {
-            "input": input_str,
-            "expected": expected_str,
-            "output": output_str,
-        }
+        replacements = self.variable_mapper(test_case=test_case, output=output)
         template_with_values = replace_with_values(template=self.prompt, replacements=replacements)
         if self.use_overrides:
             overrides = await self.get_recent_overrides()
