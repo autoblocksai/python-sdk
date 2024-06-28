@@ -130,7 +130,7 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
                             Always provide a reason for your answer."""
                     ),
                 ),
-                dict(role="user", content=self.make_prompt(test_case=test_case, output=output)),
+                dict(role="user", content=prompt),
             ],
         )
         tool_call = response.choices[0].message.tool_calls[0]
