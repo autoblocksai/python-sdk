@@ -26,7 +26,7 @@ function_name = "select_answer"
 
 class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
-    Base evaluator for creating a LLM judge.
+    Base evaluator for creating an LLM judge.
     """
 
     @property

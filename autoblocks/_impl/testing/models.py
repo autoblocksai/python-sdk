@@ -185,7 +185,7 @@ class HumanReviewCommentOverride:
 @dataclasses.dataclass
 class EvaluatorOverride:
     """
-    An override for an evaluator. Used to give examples to a LLM judge.
+    An override for an evaluator. Used to give examples to an LLM judge.
     """
 
     original_score: ScoreChoice
