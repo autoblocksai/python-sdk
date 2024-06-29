@@ -14,8 +14,8 @@ from autoblocks._impl.testing.evaluators.util import get_test_id
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import EvaluatorOverride
-from autoblocks._impl.testing.models import HumanReviewCommentOverride
-from autoblocks._impl.testing.models import HumanReviewFieldOverride
+from autoblocks._impl.testing.models import EvaluatorOverrideComment
+from autoblocks._impl.testing.models import EvaluatorOverrideField
 from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import ScoreChoice
 from autoblocks._impl.testing.models import TestCaseType
@@ -98,10 +98,10 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
                 EvaluatorOverride(
                     original_score=original_score,
                     override_score=override_score,
-                    output_fields=[HumanReviewFieldOverride(**field) for field in eval_data["outputFields"]],
-                    input_fields=[HumanReviewFieldOverride(**field) for field in eval_data["inputFields"]],
+                    output_fields=[EvaluatorOverrideField(**field) for field in eval_data["outputFields"]],
+                    input_fields=[EvaluatorOverrideField(**field) for field in eval_data["inputFields"]],
                     comments=[
-                        HumanReviewCommentOverride(
+                        EvaluatorOverrideComment(
                             field_id=comment["fieldId"],
                             quoted_text=comment["quotedText"],
                             comment_text=comment["commentText"],

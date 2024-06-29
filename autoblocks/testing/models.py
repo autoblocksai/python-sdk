@@ -4,6 +4,8 @@ from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import EvaluatorOverride
+from autoblocks._impl.testing.models import EvaluatorOverrideComment
+from autoblocks._impl.testing.models import EvaluatorOverrideField
 from autoblocks._impl.testing.models import HumanReviewField
 from autoblocks._impl.testing.models import ScoreChoice
 from autoblocks._impl.testing.models import TestCaseConfig
@@ -16,10 +18,12 @@ __all__ = [
     "BaseTestCase",
     "BaseTestEvaluator",
     "Evaluation",
+    "EvaluatorOverride",
+    "EvaluatorOverrideComment",
+    "EvaluatorOverrideField",
     "HumanReviewField",
     "TestCaseConfig",
     "Threshold",
     "TracerEvent",
     "ScoreChoice",
-    "EvaluatorOverride",
 ]

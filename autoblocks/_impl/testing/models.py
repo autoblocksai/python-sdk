@@ -169,14 +169,14 @@ class ScoreChoice:
 
 
 @dataclasses.dataclass
-class HumanReviewFieldOverride:
+class EvaluatorOverrideField:
     id: str
     name: str
     value: str
 
 
 @dataclasses.dataclass
-class HumanReviewCommentOverride:
+class EvaluatorOverrideComment:
     field_id: str
     quoted_text: str
     comment_text: str
@@ -190,6 +190,6 @@ class EvaluatorOverride:
 
     original_score: ScoreChoice
     override_score: ScoreChoice
-    input_fields: list[HumanReviewFieldOverride]
-    output_fields: list[HumanReviewFieldOverride]
-    comments: list[HumanReviewCommentOverride]
+    input_fields: list[EvaluatorOverrideField]
+    output_fields: list[EvaluatorOverrideField]
+    comments: list[EvaluatorOverrideComment]
