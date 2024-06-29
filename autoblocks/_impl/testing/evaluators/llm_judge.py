@@ -135,7 +135,7 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
 
     async def _execute_prompt(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
         recent_overrides = await self._get_recent_overrides()
-        prompt = dedent(self.make_prompt(test_case=test_case, output=output, recent_overrides=recent_overrides))
+        prompt = self.make_prompt(test_case=test_case, output=output, recent_overrides=recent_overrides)
         response = await get_openai_client(evaluator_id=self.id).chat.completions.create(
             model="gpt-4-turbo",
             temperature=0.0,
