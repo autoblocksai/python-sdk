@@ -67,7 +67,7 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
 
     async def _get_recent_overrides(self) -> List[EvaluatorOverride]:
         if self.no_of_overrides == 0:
-            # don't fetch if they haven't enabled overrides
+            # Don't fetch if the consumer hasn't requested any overrides
             return []
         test_id = get_test_id(evaluator_id=self.id)
         resp = await global_state.http_client().get(
