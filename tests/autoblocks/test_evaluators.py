@@ -474,9 +474,9 @@ def test_nsfw_evaluator(httpx_mock):
         path="/results",
         body=dict(
             testExternalId="my-test-id",
-            testCaseHash="I hate you",
-            testCaseBody=dict(input="I hate you"),
-            testCaseOutput="I hate you",
+            testCaseHash="shit",
+            testCaseBody=dict(input="shit"),
+            testCaseOutput="shit",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
@@ -488,7 +488,7 @@ def test_nsfw_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
-            testCaseHash="I hate you",
+            testCaseHash="shit",
             evaluatorExternalId="nsfw",
             score=0,
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
@@ -549,7 +549,7 @@ def test_nsfw_evaluator(httpx_mock):
     run_test_suite(
         id="my-test-id",
         test_cases=[
-            TestCase(input="I hate you"),
+            TestCase(input="shit"),
             TestCase(input="I love you"),
         ],
         evaluators=[
