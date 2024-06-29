@@ -30,12 +30,11 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
     """
 
     @property
-    @abc.abstractmethod
     def threshold(self) -> Optional[Threshold]:
         """
         The threshold for the evaluator.
         """
-        pass
+        return None
 
     @property
     def no_of_overrides(self) -> int:

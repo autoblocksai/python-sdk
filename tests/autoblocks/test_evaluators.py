@@ -1,5 +1,6 @@
 import dataclasses
 import os
+from textwrap import dedent
 from unittest import mock
 
 import pytest
@@ -10,9 +11,14 @@ from autoblocks.testing.evaluators import BaseAutomaticBattle
 from autoblocks.testing.evaluators import BaseHasAllSubstrings
 from autoblocks.testing.evaluators import BaseIsEquals
 from autoblocks.testing.evaluators import BaseIsValidJSON
+from autoblocks.testing.evaluators import BaseLLMJudge
 from autoblocks.testing.evaluators import BaseManualBattle
+from autoblocks.testing.evaluators import BaseNSFW
 from autoblocks.testing.evaluators import BaseToxicity
 from autoblocks.testing.models import BaseTestCase
+from autoblocks.testing.models import EvaluatorOverride
+from autoblocks.testing.models import ScoreChoice
+from autoblocks.testing.models import Threshold
 from autoblocks.testing.run import run_test_suite
 from tests.util import ANY_NUMBER
 from tests.util import ANY_STRING
@@ -442,6 +448,236 @@ def test_toxicity_evaluator(httpx_mock):
         ],
         evaluators=[
             Toxicity(),
+        ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+
+def test_nsfw_evaluator(httpx_mock):
+    @dataclasses.dataclass
+    class TestCase(BaseTestCase):
+        input: str
+
+        def hash(self) -> str:
+            return self.input
+
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="I hate you",
+            testCaseBody=dict(input="I hate you"),
+            testCaseOutput="I hate you",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="I hate you",
+            evaluatorExternalId="nsfw",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                reason=ANY_STRING,
+                prompt=ANY_STRING,
+            ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="I love you",
+            testCaseBody=dict(input="I love you"),
+            testCaseOutput="I love you",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="I love you",
+            evaluatorExternalId="nsfw",
+            score=1,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                reason=ANY_STRING,
+                prompt=ANY_STRING,
+            ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+
+    def test_fn(test_case: TestCase) -> str:
+        return test_case.input
+
+    class NSFW(BaseNSFW[TestCase, str]):
+        id = "nsfw"
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            TestCase(input="I hate you"),
+            TestCase(input="I love you"),
+        ],
+        evaluators=[
+            NSFW(),
+        ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+
+def test_llm_judge_evaluator(httpx_mock):
+    @dataclasses.dataclass
+    class TestCase(BaseTestCase):
+        input: str
+
+        def hash(self) -> str:
+            return self.input
+
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="70",
+            testCaseBody=dict(input="70"),
+            testCaseOutput="70",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="70",
+            evaluatorExternalId="contains-zero",
+            score=1,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                reason=ANY_STRING,
+                prompt=ANY_STRING,
+            ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="5",
+            testCaseBody=dict(input="5"),
+            testCaseOutput="5",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="5",
+            evaluatorExternalId="contains-zero",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                reason=ANY_STRING,
+                prompt=ANY_STRING,
+            ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+
+    def test_fn(test_case: TestCase) -> str:
+        return test_case.input
+
+    class ContainsZero(BaseLLMJudge[TestCase, str]):
+        id = "contains-zero"
+        threshold = Threshold(gte=1)
+        score_choices = [
+            ScoreChoice(
+                value=1,
+                name="Contains Zero",
+            ),
+            ScoreChoice(
+                value=0,
+                name="Does Not Contain Zero",
+            ),
+        ]
+
+        def make_prompt(self, test_case: TestCase, output: str, recent_overrides: list[EvaluatorOverride]) -> str:
+            return dedent(
+                f"""
+            Does this output contain a zero?
+
+            [Output]
+            {output}
+            """
+            ).strip()
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            TestCase(input="70"),
+            TestCase(input="5"),
+        ],
+        evaluators=[
+            ContainsZero(),
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
