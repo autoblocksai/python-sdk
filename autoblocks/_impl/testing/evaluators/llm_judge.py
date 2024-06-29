@@ -24,6 +24,10 @@ function_name = "select_answer"
 
 
 class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
+    """
+    Base evaluator for creating a LLM judge.
+    """
+
     @property
     @abc.abstractmethod
     def threshold(self) -> Optional[Threshold]:
@@ -36,6 +40,8 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
     def no_of_overrides(self) -> int:
         """
         The number of recent overrides to fetch for the evaluator and pass to make_prompt.
+
+        Defaults to 0.
         """
         return 0
 
@@ -99,6 +105,11 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         return overrides
 
     def _make_tool(self) -> dict[str, Any]:
+        """
+        We use function calling to force the LLM to return structured JSON.
+
+        See https://platform.openai.com/docs/guides/function-callinghttps://platform.openai.com/docs/guides/function-calling
+        """
         return {
             "type": "function",
             "function": {
@@ -124,7 +135,7 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
 
     async def _execute_prompt(self, test_case: TestCaseType, output: OutputType) -> Evaluation:
         recent_overrides = await self._get_recent_overrides()
-        prompt = self.make_prompt(test_case=test_case, output=output, recent_overrides=recent_overrides)
+        prompt = dedent(self.make_prompt(test_case=test_case, output=output, recent_overrides=recent_overrides))
         response = await get_openai_client(evaluator_id=self.id).chat.completions.create(
             model="gpt-4-turbo",
             temperature=0.0,
@@ -143,9 +154,12 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         )
         tool_call = response.choices[0].message.tool_calls[0]
         if tool_call.function.name != function_name:
+            # This shouldn't happen since we force the LLM to call our function, but we check just in case
             raise ValueError(f"Unexpected tool call: {tool_call}")
 
         function_args = json.loads(tool_call.function.arguments)
+
+        # We should always be able to find the score choice since we set the scores as an enum in the tool
         score = next((score for score in self.score_choices if score.name == function_args["answer"]), None)
         if score is None:
             raise ValueError(f"Unexpected answer: {function_args['answer']}")
