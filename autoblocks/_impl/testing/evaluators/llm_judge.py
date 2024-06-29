@@ -37,6 +37,15 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         return None
 
     @property
+    def model(self) -> str:
+        """
+        The model to use for the evaluator.
+        It must be an OpenAI model that supports tools.
+        Defaults to "gpt-4-turbo".
+        """
+        return "gpt-4-turbo"
+
+    @property
     def no_of_overrides(self) -> int:
         """
         The number of recent overrides to fetch for the evaluator and pass to make_prompt.
@@ -137,7 +146,7 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         recent_overrides = await self._get_recent_overrides()
         prompt = self.make_prompt(test_case=test_case, output=output, recent_overrides=recent_overrides)
         response = await get_openai_client(evaluator_id=self.id).chat.completions.create(
-            model="gpt-4-turbo",
+            model=self.model,
             temperature=0.0,
             tool_choice={"type": "function", "function": {"name": function_name}},
             tools=[self._make_tool()],
