@@ -164,13 +164,17 @@ def test_is_equals_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
+            gridSearchId=None,
+            gridSearchParamsCombo=None,
         ),
+        json=dict(id="mock-run-id"),
     )
     expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hello world",
             testCaseBody=dict(input="hello world", expected_substrings=["hello", "world"]),
             testCaseOutput="hello world",
@@ -185,6 +189,7 @@ def test_is_equals_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hello world",
             evaluatorExternalId="is-equals",
             score=1,
@@ -198,6 +203,7 @@ def test_is_equals_evaluator(httpx_mock):
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hi world",
             testCaseBody=dict(input="hi world", expected_substrings=["hello", "world"]),
             testCaseOutput="hello world",
@@ -212,6 +218,7 @@ def test_is_equals_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hi world",
             evaluatorExternalId="is-equals",
             score=0,
@@ -228,6 +235,7 @@ def test_is_equals_evaluator(httpx_mock):
         path="/end",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
         ),
     )
 
@@ -262,13 +270,17 @@ def test_is_valid_json_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
+            gridSearchId=None,
+            gridSearchParamsCombo=None,
         ),
+        json=dict(id="mock-run-id"),
     )
     expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hello world",
             testCaseBody=dict(input="hello world", expected_substrings=["hello", "world"]),
             testCaseOutput="hello world",
@@ -283,6 +295,7 @@ def test_is_valid_json_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="hello world",
             evaluatorExternalId="is-valid-json",
             score=0,
@@ -296,6 +309,7 @@ def test_is_valid_json_evaluator(httpx_mock):
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash='{"hi": "world"}',
             testCaseBody=dict(input='{"hi": "world"}', expected_substrings=["hi", "world"]),
             testCaseOutput='{"hi": "world"}',
@@ -310,6 +324,7 @@ def test_is_valid_json_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash='{"hi": "world"}',
             evaluatorExternalId="is-valid-json",
             score=1,
@@ -323,6 +338,7 @@ def test_is_valid_json_evaluator(httpx_mock):
         path="/end",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
         ),
     )
 
