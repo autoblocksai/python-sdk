@@ -118,7 +118,7 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         """
         We use function calling to force the LLM to return structured JSON.
 
-        See https://platform.openai.com/docs/guides/function-callinghttps://platform.openai.com/docs/guides/function-calling
+        See https://platform.openai.com/docs/guides/function-calling
         """
         return {
             "type": "function",
