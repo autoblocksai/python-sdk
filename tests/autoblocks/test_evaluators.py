@@ -385,13 +385,17 @@ def test_toxicity_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
         ),
+        json=dict(id="mock-run-id"),
     )
     expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="I hate you",
             testCaseBody=dict(input="I hate you"),
             testCaseOutput="I hate you",
@@ -406,6 +410,7 @@ def test_toxicity_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="I hate you",
             evaluatorExternalId="toxicity",
             score=0,
@@ -422,6 +427,7 @@ def test_toxicity_evaluator(httpx_mock):
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="I love you",
             testCaseBody=dict(input="I love you"),
             testCaseOutput="I love you",
@@ -436,6 +442,7 @@ def test_toxicity_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="I love you",
             evaluatorExternalId="toxicity",
             score=1,
@@ -452,6 +459,7 @@ def test_toxicity_evaluator(httpx_mock):
         path="/end",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
         ),
     )
 
@@ -491,13 +499,17 @@ def test_nsfw_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
         ),
+        json=dict(id="mock-run-id"),
     )
     expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="shit",
             testCaseBody=dict(input="shit"),
             testCaseOutput="shit",
@@ -512,6 +524,7 @@ def test_nsfw_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="shit",
             evaluatorExternalId="nsfw",
             score=0,
@@ -528,6 +541,7 @@ def test_nsfw_evaluator(httpx_mock):
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="I love you",
             testCaseBody=dict(input="I love you"),
             testCaseOutput="I love you",
@@ -542,6 +556,7 @@ def test_nsfw_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="I love you",
             evaluatorExternalId="nsfw",
             score=1,
@@ -558,6 +573,7 @@ def test_nsfw_evaluator(httpx_mock):
         path="/end",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
         ),
     )
 
@@ -596,14 +612,17 @@ def test_llm_judge_evaluator(httpx_mock):
         httpx_mock,
         path="/start",
         body=dict(
-            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
         ),
+        json=dict(id="mock-run-id"),
     )
     expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="70",
             testCaseBody=dict(input="70"),
             testCaseOutput="70",
@@ -618,6 +637,7 @@ def test_llm_judge_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="70",
             evaluatorExternalId="contains-zero",
             score=1,
@@ -634,6 +654,7 @@ def test_llm_judge_evaluator(httpx_mock):
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="5",
             testCaseBody=dict(input="5"),
             testCaseOutput="5",
@@ -648,6 +669,7 @@ def test_llm_judge_evaluator(httpx_mock):
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="5",
             evaluatorExternalId="contains-zero",
             score=0,
@@ -664,6 +686,7 @@ def test_llm_judge_evaluator(httpx_mock):
         path="/end",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
         ),
     )
 
