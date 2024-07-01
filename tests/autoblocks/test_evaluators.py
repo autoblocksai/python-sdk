@@ -6,16 +6,17 @@ import pytest
 
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
-from autoblocks._impl.util import ThirdPartyEnvVar
-from autoblocks.testing.evaluators import AutomaticBattle
-from autoblocks.testing.evaluators import HasAllSubstrings
-from autoblocks.testing.evaluators import ManualBattle
+from autoblocks.testing.evaluators import BaseAutomaticBattle
+from autoblocks.testing.evaluators import BaseHasAllSubstrings
+from autoblocks.testing.evaluators import BaseIsEquals
+from autoblocks.testing.evaluators import BaseIsValidJSON
+from autoblocks.testing.evaluators import BaseManualBattle
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.run import run_test_suite
 from tests.util import ANY_NUMBER
+from tests.util import ANY_STRING
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import expect_cli_post_request
-from tests.util import expect_openai_post_request
 
 
 @pytest.fixture(autouse=True)
@@ -30,6 +31,11 @@ def mock_cli_server_address_env_var():
         yield
 
 
+@pytest.fixture(autouse=True)
+def non_mocked_hosts() -> list[str]:
+    return ["api.openai.com"]
+
+
 @dataclasses.dataclass
 class MyTestCase(BaseTestCase):
     input: str
@@ -37,6 +43,15 @@ class MyTestCase(BaseTestCase):
 
     def hash(self) -> str:
         return self.input
+
+
+@dataclasses.dataclass
+class RagasTestCase(BaseTestCase):
+    question: str
+    expected_answer: str
+
+    def hash(self) -> str:
+        return self.question
 
 
 def test_has_all_substrings_evaluator(httpx_mock):
@@ -120,7 +135,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
-    class MyHasAllSubstrings(HasAllSubstrings[MyTestCase, str]):
+    class HasAllSubstrings(BaseHasAllSubstrings[MyTestCase, str]):
         id = "has-all-substrings"
 
         def test_case_mapper(self, test_case: MyTestCase) -> list[str]:
@@ -136,19 +151,204 @@ def test_has_all_substrings_evaluator(httpx_mock):
             MyTestCase(input="foo", expected_substrings=["bar"]),
         ],
         evaluators=[
-            MyHasAllSubstrings(),
+            HasAllSubstrings(),
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
     )
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
-    },
-)
+def test_is_equals_evaluator(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hello world",
+            testCaseBody=dict(input="hello world", expected_substrings=["hello", "world"]),
+            testCaseOutput="hello world",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hello world",
+            evaluatorExternalId="is-equals",
+            score=1,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=None,
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hi world",
+            testCaseBody=dict(input="hi world", expected_substrings=["hello", "world"]),
+            testCaseOutput="hello world",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hi world",
+            evaluatorExternalId="is-equals",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                expected_output="hi world",
+                actual_output="hello world",
+            ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+
+    def test_fn(test_case: MyTestCase) -> str:
+        return "hello world"
+
+    class IsEquals(BaseIsEquals[MyTestCase, str]):
+        id = "is-equals"
+
+        def test_case_mapper(self, test_case: MyTestCase) -> str:
+            return test_case.input
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="hello world", expected_substrings=["hello", "world"]),
+            MyTestCase(input="hi world", expected_substrings=["hello", "world"]),
+        ],
+        evaluators=[
+            IsEquals(),
+        ],
+        fn=test_fn,
+    )
+
+
+def test_is_valid_json_evaluator(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hello world",
+            testCaseBody=dict(input="hello world", expected_substrings=["hello", "world"]),
+            testCaseOutput="hello world",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="hello world",
+            evaluatorExternalId="is-valid-json",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(error="Expecting value: line 1 column 1 (char 0)"),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash='{"hi": "world"}',
+            testCaseBody=dict(input='{"hi": "world"}', expected_substrings=["hi", "world"]),
+            testCaseOutput='{"hi": "world"}',
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash='{"hi": "world"}',
+            evaluatorExternalId="is-valid-json",
+            score=1,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=None,
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+        ),
+    )
+
+    def test_fn(test_case: MyTestCase) -> str:
+        return test_case.input
+
+    class IsValidJSON(BaseIsValidJSON[MyTestCase, str]):
+        id = "is-valid-json"
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="hello world", expected_substrings=["hello", "world"]),
+            MyTestCase(input='{"hi": "world"}', expected_substrings=["hi", "world"]),
+        ],
+        evaluators=[
+            IsValidJSON(),
+        ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+
 def test_manual_battle_evaluator(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
@@ -175,11 +375,6 @@ def test_manual_battle_evaluator(httpx_mock):
             testCaseHumanReviewOutputFields=None,
         ),
     )
-    expect_openai_post_request(
-        httpx_mock,
-        response_message_content='{"reason": "This is the reason.", "result": "1"}',
-        status_code=200,
-    )
     expect_cli_post_request(
         httpx_mock,
         path="/evals",
@@ -188,10 +383,10 @@ def test_manual_battle_evaluator(httpx_mock):
             runId="mock-run-id",
             testCaseHash="hello world",
             evaluatorExternalId="battle",
-            score=0,
+            score=1,
             threshold=dict(lt=None, lte=None, gt=None, gte=0.5),
             metadata=dict(
-                reason="This is the reason.",
+                reason=ANY_STRING,
                 baseline="goodbye",
                 challenger="hello world",
                 criteria="Choose the best greeting.",
@@ -211,7 +406,7 @@ def test_manual_battle_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
-    class Battle(ManualBattle[MyTestCase, str]):
+    class Battle(BaseManualBattle[MyTestCase, str]):
         id = "battle"
         criteria = "Choose the best greeting."
 
@@ -234,12 +429,6 @@ def test_manual_battle_evaluator(httpx_mock):
     )
 
 
-@mock.patch.dict(
-    os.environ,
-    {
-        ThirdPartyEnvVar.OPENAI_API_KEY.value: "mock-openai-api-key",
-    },
-)
 def test_automatic_battle_evaluator(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
@@ -272,11 +461,6 @@ def test_automatic_battle_evaluator(httpx_mock):
         status_code=200,
         json={"baseline": "goodbye"},
     )
-    expect_openai_post_request(
-        httpx_mock,
-        response_message_content='{"reason": "This is the reason.", "result": "2"}',
-        status_code=200,
-    )
     httpx_mock.add_response(
         url=f"{API_ENDPOINT}/test-suites/my-test-id/test-cases/hello%20world/baseline",
         method="POST",
@@ -294,7 +478,7 @@ def test_automatic_battle_evaluator(httpx_mock):
             score=1,
             threshold=dict(lt=None, lte=None, gt=None, gte=0.5),
             metadata=dict(
-                reason="This is the reason.",
+                reason=ANY_STRING,
                 baseline="goodbye",
                 challenger="hello world",
                 criteria="Choose the best greeting.",
@@ -314,7 +498,7 @@ def test_automatic_battle_evaluator(httpx_mock):
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input
 
-    class Battle(AutomaticBattle[MyTestCase, str]):
+    class Battle(BaseAutomaticBattle[MyTestCase, str]):
         id = "battle"
         criteria = "Choose the best greeting."
 
