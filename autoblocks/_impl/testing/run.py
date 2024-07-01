@@ -7,6 +7,7 @@ import logging
 import os
 import time
 import traceback
+from json import JSONDecodeError
 from typing import Any
 from typing import Awaitable
 from typing import Callable
@@ -431,7 +432,12 @@ async def run_test_suite_for_grid_combo(
 
     reset_token = grid_search_context_var.set(grid_search_params_combo) if grid_search_params_combo else None
 
-    run_id = start_resp.json()["id"]
+    try:
+        run_id = start_resp.json()["id"]
+    except (JSONDecodeError, KeyError):
+        # We can drop this try-catch once everyone has updated their CLI
+        # to the version that returns the run ID in the /start response.
+        run_id = None
     try:
         await all_settled(
             [
