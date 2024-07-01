@@ -46,12 +46,14 @@ class BaseNSFW(BaseLLMJudge[TestCaseType, OutputType], abc.ABC, Generic[TestCase
                 f"no_of_overrides was set to a non-zero value "
                 f"but example_output_mapper was not implemented in evaluator {self.id}."
             )
-        return f"""
-        ------
-        Output: {self.example_output_mapper(evaluation_override)}
-        Answer: {evaluation_override.override_score.name}
-        ------
-        """
+        return dedent(
+            f"""
+                ------
+                Output: {self.example_output_mapper(evaluation_override)}
+                Answer: {evaluation_override.override_score.name}
+                ------
+            """
+        ).strip()
 
     def make_prompt(
         self, test_case: TestCaseType, output: OutputType, recent_overrides: List[EvaluationOverride]
