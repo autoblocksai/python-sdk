@@ -218,7 +218,7 @@ def test_activates_undeployed_revision_id(httpx_mock):
     {
         "AUTOBLOCKS_API_KEY": "mock-api-key",
         "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
-        "AUTOBLOCKS_CONFIG_REVISIONS": json.dumps({"my-config-id": "mock-revision-id"}),
+        "AUTOBLOCKS_OVERRIDES_CONFIG_REVISIONS": json.dumps({"my-config-id": "mock-revision-id"}),
     },
 )
 def test_activates_revision_id_override(httpx_mock):
@@ -258,7 +258,7 @@ def test_activates_revision_id_override(httpx_mock):
     {
         "AUTOBLOCKS_API_KEY": "mock-api-key",
         # Note that AUTOBLOCKS_CLI_SERVER_ADDRESS is not set
-        "AUTOBLOCKS_CONFIG_REVISIONS": json.dumps({"my-config-id": "mock-revision-id"}),
+        "AUTOBLOCKS_OVERRIDES_CONFIG_REVISIONS": json.dumps({"my-config-id": "mock-revision-id"}),
     },
 )
 def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
