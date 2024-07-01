@@ -427,7 +427,7 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),

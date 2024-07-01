@@ -137,7 +137,7 @@ def test_error_in_test_fn(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -208,7 +208,7 @@ def test_error_in_async_test_fn(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -279,7 +279,7 @@ def test_error_in_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -424,7 +424,7 @@ def test_no_evaluators(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -488,7 +488,7 @@ def test_with_evaluators(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -624,7 +624,7 @@ def test_concurrency(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -670,7 +670,7 @@ def test_concurrency(httpx_mock):
             "/start",
             dict(
                 testExternalId="my-test-id",
-                gridSearchId=None,
+                gridSearchRunGroupId=None,
                 gridSearchParamsCombo=None,
             ),
         ),
@@ -770,7 +770,7 @@ def test_async_test_fn(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -835,7 +835,7 @@ def test_async_evaluators(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -971,7 +971,7 @@ def test_serializes(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -1048,7 +1048,7 @@ def test_logs_errors_from_our_code(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -1108,7 +1108,7 @@ def test_skips_non_serializable_test_case_attributes(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -1181,7 +1181,7 @@ def test_sends_tracer_events(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -1289,7 +1289,7 @@ def test_repeated_test_cases(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -1495,7 +1495,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -1709,7 +1709,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -1871,7 +1871,7 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
         path="/start",
         body=dict(
             testExternalId=test_id,
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id=run_id),
@@ -1913,7 +1913,7 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
             path="/start",
             body=dict(
                 testExternalId=test_id,
-                gridSearchId=None,
+                gridSearchRunGroupId=None,
                 gridSearchParamsCombo=None,
             ),
         ),
@@ -1955,7 +1955,7 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
         path="/start",
         body=dict(
             testExternalId=test_id,
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id=run_id),
@@ -1999,7 +1999,7 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
             path="/start",
             body=dict(
                 testExternalId=test_id,
-                gridSearchId=None,
+                gridSearchRunGroupId=None,
                 gridSearchParamsCombo=None,
             ),
         ),
@@ -2038,7 +2038,7 @@ def test_run_stops_if_start_fails(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         status_code=403,
@@ -2065,7 +2065,7 @@ def test_sync_before_evaluators_hook(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -2193,7 +2193,7 @@ def test_async_before_evaluators_hook(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -2411,7 +2411,7 @@ def test_prompt_manager_revision_usage(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -2544,7 +2544,7 @@ def test_serialize_for_human_review(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -2701,7 +2701,7 @@ def test_grid_search_params(httpx_mock):
             path="/start",
             body=dict(
                 testExternalId="my-test-id",
-                gridSearchId="mock-grid-id",
+                gridSearchRunGroupId="mock-grid-id",
                 gridSearchParamsCombo=combo,
             ),
             json=dict(id=mock_run_id),
@@ -2760,7 +2760,7 @@ def test_run_id_not_returned_from_cli(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         # json=dict(id="mock-run-id"),

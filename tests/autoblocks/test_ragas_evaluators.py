@@ -45,7 +45,7 @@ def make_expected_requests(evaluator_id: str, httpx_mock: Any) -> None:
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),

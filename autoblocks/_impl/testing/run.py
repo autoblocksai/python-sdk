@@ -410,14 +410,14 @@ async def run_test_suite_for_grid_combo(
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
-    grid_search_id: Optional[str],
+    grid_search_run_group_id: Optional[str],
     grid_search_params_combo: Optional[GridSearchParamsCombo],
 ) -> None:
     start_resp = await post_to_cli(
         "/start",
         json=dict(
             testExternalId=test_id,
-            gridSearchId=grid_search_id,
+            gridSearchRunGroupId=grid_search_run_group_id,
             gridSearchParamsCombo=grid_search_params_combo,
         ),
     )
@@ -528,7 +528,7 @@ async def async_run_test_suite(
                 evaluators=evaluators,
                 fn=fn,
                 before_evaluators_hook=before_evaluators_hook,
-                grid_search_id=None,
+                grid_search_run_group_id=None,
                 grid_search_params_combo=None,
             )
         except Exception as err:
@@ -542,7 +542,7 @@ async def async_run_test_suite(
         return
 
     grid_resp = await post_to_cli(
-        "/grid",
+        "/grids",
         json=dict(testExternalId=test_id, gridSearchParams=grid_search_params),
     )
     try:
@@ -555,7 +555,7 @@ async def async_run_test_suite(
         return
 
     try:
-        grid_id = grid_resp.json()["id"]
+        grid_search_run_group_id = grid_resp.json()["id"]
         await all_settled(
             [
                 run_test_suite_for_grid_combo(
@@ -564,7 +564,7 @@ async def async_run_test_suite(
                     evaluators=evaluators,
                     fn=fn,
                     before_evaluators_hook=before_evaluators_hook,
-                    grid_search_id=grid_id,
+                    grid_search_run_group_id=grid_search_run_group_id,
                     grid_search_params_combo=grid_params_combo,
                 )
                 for grid_params_combo in yield_grid_search_param_combos(grid_search_params)

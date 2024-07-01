@@ -67,7 +67,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -171,7 +171,7 @@ def test_is_equals_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -277,7 +277,7 @@ def test_is_valid_json_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -714,7 +714,7 @@ def test_manual_battle_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
@@ -794,7 +794,7 @@ def test_automatic_battle_evaluator(httpx_mock):
         path="/start",
         body=dict(
             testExternalId="my-test-id",
-            gridSearchId=None,
+            gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
