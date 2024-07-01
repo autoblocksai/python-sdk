@@ -612,6 +612,7 @@ def test_llm_judge_evaluator(httpx_mock):
         httpx_mock,
         path="/start",
         body=dict(
+            testExternalId="my-test-id",
             gridSearchRunGroupId=None,
             gridSearchParamsCombo=None,
         ),
