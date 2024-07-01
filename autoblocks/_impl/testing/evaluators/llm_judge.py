@@ -13,9 +13,9 @@ from autoblocks._impl.testing.evaluators.util import get_openai_client
 from autoblocks._impl.testing.evaluators.util import get_test_id
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import Evaluation
-from autoblocks._impl.testing.models import EvaluatorOverride
-from autoblocks._impl.testing.models import EvaluatorOverrideComment
-from autoblocks._impl.testing.models import EvaluatorOverrideField
+from autoblocks._impl.testing.models import EvaluationOverride
+from autoblocks._impl.testing.models import EvaluationOverrideComment
+from autoblocks._impl.testing.models import EvaluationOverrideField
 from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import ScoreChoice
 from autoblocks._impl.testing.models import TestCaseType
@@ -46,22 +46,13 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         return "gpt-4-turbo"
 
     @property
-    def no_of_overrides(self) -> int:
+    def num_overrides(self) -> int:
         """
-        The number of recent overrides to fetch for the evaluator and pass to make_prompt.
+        The number of recent evaluation overrides to fetch for the evaluator and pass to make_prompt.
 
         Defaults to 0.
         """
         return 0
-
-    @abc.abstractmethod
-    def make_prompt(
-        self, test_case: TestCaseType, output: OutputType, recent_overrides: List[EvaluatorOverride]
-    ) -> str:
-        """
-        The prompt passed to the LLM judge. Should be poised as a question.
-        """
-        pass
 
     @property
     @abc.abstractmethod
@@ -71,16 +62,25 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         """
         pass
 
+    @abc.abstractmethod
+    def make_prompt(
+        self, test_case: TestCaseType, output: OutputType, recent_overrides: List[EvaluationOverride]
+    ) -> str:
+        """
+        The prompt passed to the LLM judge. Should be poised as a question.
+        """
+        pass
+
     def _make_score_choice(self, value: float) -> Optional[ScoreChoice]:
         return next((score for score in self.score_choices if score.value == value), None)
 
-    async def _get_recent_overrides(self) -> List[EvaluatorOverride]:
-        if self.no_of_overrides == 0:
+    async def _get_recent_overrides(self) -> List[EvaluationOverride]:
+        if self.num_overrides == 0:
             # Don't fetch if the consumer hasn't requested any overrides
             return []
         test_id = get_test_id(evaluator_id=self.id)
         resp = await global_state.http_client().get(
-            f"https://{API_ENDPOINT}/test-suites/{test_id}/evaluators/{self.id}/human-reviews?n={self.no_of_overrides}",
+            f"https://{API_ENDPOINT}/test-suites/{test_id}/evaluators/{self.id}/human-reviews?n={self.num_overrides}",
             headers={"Authorization": f"Bearer {get_autoblocks_api_key(self.id)}"},
         )
         resp.raise_for_status()
@@ -95,13 +95,13 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
                 continue
 
             overrides.append(
-                EvaluatorOverride(
+                EvaluationOverride(
                     original_score=original_score,
                     override_score=override_score,
-                    output_fields=[EvaluatorOverrideField(**field) for field in eval_data["outputFields"]],
-                    input_fields=[EvaluatorOverrideField(**field) for field in eval_data["inputFields"]],
+                    output_fields=[EvaluationOverrideField(**field) for field in eval_data["outputFields"]],
+                    input_fields=[EvaluationOverrideField(**field) for field in eval_data["inputFields"]],
                     comments=[
-                        EvaluatorOverrideComment(
+                        EvaluationOverrideComment(
                             field_id=comment["fieldId"],
                             quoted_text=comment["quotedText"],
                             comment_text=comment["commentText"],

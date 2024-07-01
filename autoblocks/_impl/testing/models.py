@@ -169,27 +169,27 @@ class ScoreChoice:
 
 
 @dataclasses.dataclass
-class EvaluatorOverrideField:
+class EvaluationOverrideField:
     id: str
     name: str
     value: str
 
 
 @dataclasses.dataclass
-class EvaluatorOverrideComment:
+class EvaluationOverrideComment:
     field_id: str
     quoted_text: str
     comment_text: str
 
 
 @dataclasses.dataclass
-class EvaluatorOverride:
+class EvaluationOverride:
     """
     An override for an evaluator. Used to give examples to an LLM judge.
     """
 
     original_score: ScoreChoice
     override_score: ScoreChoice
-    input_fields: list[EvaluatorOverrideField]
-    output_fields: list[EvaluatorOverrideField]
-    comments: list[EvaluatorOverrideComment]
+    input_fields: list[EvaluationOverrideField]
+    output_fields: list[EvaluationOverrideField]
+    comments: list[EvaluationOverrideComment]

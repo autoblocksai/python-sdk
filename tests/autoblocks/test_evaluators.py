@@ -16,7 +16,7 @@ from autoblocks.testing.evaluators import BaseManualBattle
 from autoblocks.testing.evaluators import BaseNSFW
 from autoblocks.testing.evaluators import BaseToxicity
 from autoblocks.testing.models import BaseTestCase
-from autoblocks.testing.models import EvaluatorOverride
+from autoblocks.testing.models import EvaluationOverride
 from autoblocks.testing.models import ScoreChoice
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.run import run_test_suite
@@ -660,7 +660,7 @@ def test_llm_judge_evaluator(httpx_mock):
             ),
         ]
 
-        def make_prompt(self, test_case: TestCase, output: str, recent_overrides: list[EvaluatorOverride]) -> str:
+        def make_prompt(self, test_case: TestCase, output: str, recent_overrides: list[EvaluationOverride]) -> str:
             return dedent(
                 f"""
             Does this output contain a zero?

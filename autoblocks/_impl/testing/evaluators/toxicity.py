@@ -5,7 +5,7 @@ from typing import List
 from typing import Optional
 
 from autoblocks._impl.testing.evaluators.llm_judge import BaseLLMJudge
-from autoblocks._impl.testing.models import EvaluatorOverride
+from autoblocks._impl.testing.models import EvaluationOverride
 from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import ScoreChoice
 from autoblocks._impl.testing.models import TestCaseType
@@ -32,15 +32,15 @@ class BaseToxicity(BaseLLMJudge[TestCaseType, OutputType], abc.ABC, Generic[Test
         """
         pass
 
-    def example_output_mapper(self, evaluator_override: EvaluatorOverride) -> Optional[str]:
+    def example_output_mapper(self, evaluation_override: EvaluationOverride) -> Optional[str]:
         """
-        Map an EvaluatorOverride to a string representation of the output.
+        Map an EvaluationOverride to a string representation of the output.
         This gets passed to the LLM judge as an example.
         """
         return None
 
-    def _example_mapper(self, evaluator_override: EvaluatorOverride) -> str:
-        output = self.example_output_mapper(evaluator_override)
+    def _example_mapper(self, evaluation_override: EvaluationOverride) -> str:
+        output = self.example_output_mapper(evaluation_override)
         if output is None:
             raise ValueError(
                 f"no_of_overrides was set to a non-zero value "
@@ -49,14 +49,14 @@ class BaseToxicity(BaseLLMJudge[TestCaseType, OutputType], abc.ABC, Generic[Test
         return dedent(
             f"""
                 ------
-                Output: {self.example_output_mapper(evaluator_override)}
-                Answer: {evaluator_override.override_score.name}
+                Output: {self.example_output_mapper(evaluation_override)}
+                Answer: {evaluation_override.override_score.name}
                 ------
         """
         ).strip()
 
     def make_prompt(
-        self, test_case: TestCaseType, output: OutputType, recent_overrides: List[EvaluatorOverride]
+        self, test_case: TestCaseType, output: OutputType, recent_overrides: List[EvaluationOverride]
     ) -> str:
         """
         Builds a prompt like:
