@@ -78,13 +78,20 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         """
         return next((score for score in self.score_choices if score.value == value), None)
 
+    def _make_recent_overrides_url(self) -> str:
+        test_id = get_test_id(evaluator_id=self.id)
+        encoded_test_id = encode_uri_component(test_id)
+        encoded_evaluator_id = encode_uri_component(self.id)
+        url = f"{API_ENDPOINT}/test-suites/{encoded_test_id}/evaluators/{encoded_evaluator_id}/human-reviews"
+        return f"{url}?n={self.num_overrides}"
+
     async def _get_recent_overrides(self) -> List[EvaluationOverride]:
         if self.num_overrides == 0:
             # Don't fetch if the consumer hasn't requested any overrides
             return []
-        test_id = get_test_id(evaluator_id=self.id)
+
         resp = await global_state.http_client().get(
-            f"https://{API_ENDPOINT}/test-suites/{encode_uri_component(test_id)}/evaluators/{encode_uri_component(self.id)}/human-reviews?n={self.num_overrides}",
+            self._make_recent_overrides_url(),
             headers={"Authorization": f"Bearer {get_autoblocks_api_key(self.id)}"},
         )
         resp.raise_for_status()
