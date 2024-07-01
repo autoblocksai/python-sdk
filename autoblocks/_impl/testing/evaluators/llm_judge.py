@@ -72,7 +72,10 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         """
         pass
 
-    def _make_score_choice(self, value: float) -> Optional[ScoreChoice]:
+    def _find_score_choice_from_value(self, value: float) -> Optional[ScoreChoice]:
+        """
+        Find the score choice from choices based the float value.
+        """
         return next((score for score in self.score_choices if score.value == value), None)
 
     async def _get_recent_overrides(self) -> List[EvaluationOverride]:
@@ -88,8 +91,8 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         data = resp.json()
         overrides = []
         for eval_data in data:
-            override_score = self._make_score_choice(eval_data["overrideScore"])
-            original_score = self._make_score_choice(eval_data["originalScore"])
+            override_score = self._find_score_choice_from_value(eval_data["overrideScore"])
+            original_score = self._find_score_choice_from_value(eval_data["originalScore"])
             if override_score is None or original_score is None:
                 # If for some reason we can't find the score choice, skip this override
                 # Could happen if the score choices have changed since the override was created
