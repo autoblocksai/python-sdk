@@ -2678,7 +2678,7 @@ def test_serialize_for_human_review(httpx_mock):
 def test_grid_search_params(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
-        path="/grid",
+        path="/grids",
         body=dict(
             testExternalId="my-test-id",
             gridSearchParams=dict(
