@@ -156,3 +156,40 @@ class BaseEvaluator(
     """
     An ABC for users that are implementing an evaluator that will be run against both test cases and production events.
     """
+
+
+@dataclasses.dataclass
+class ScoreChoice:
+    """
+    A choice used in an LLM judge evaluator.
+    """
+
+    value: float
+    name: str
+
+
+@dataclasses.dataclass
+class EvaluationOverrideField:
+    id: str
+    name: str
+    value: str
+
+
+@dataclasses.dataclass
+class EvaluationOverrideComment:
+    field_id: str
+    quoted_text: str
+    comment_text: str
+
+
+@dataclasses.dataclass
+class EvaluationOverride:
+    """
+    An override for an evaluator. Used to give examples to an LLM judge.
+    """
+
+    original_score: ScoreChoice
+    override_score: ScoreChoice
+    input_fields: list[EvaluationOverrideField]
+    output_fields: list[EvaluationOverrideField]
+    comments: list[EvaluationOverrideComment]
