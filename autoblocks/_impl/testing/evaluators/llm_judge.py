@@ -20,6 +20,7 @@ from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import ScoreChoice
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
+from autoblocks._impl.util import encode_uri_component
 
 function_name = "select_answer"
 
@@ -80,7 +81,7 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
             return []
         test_id = get_test_id(evaluator_id=self.id)
         resp = await global_state.http_client().get(
-            f"https://{API_ENDPOINT}/test-suites/{test_id}/evaluators/{self.id}/human-reviews?n={self.num_overrides}",
+            f"https://{API_ENDPOINT}/test-suites/{encode_uri_component(test_id)}/evaluators/{encode_uri_component(self.id)}/human-reviews?n={self.num_overrides}",
             headers={"Authorization": f"Bearer {get_autoblocks_api_key(self.id)}"},
         )
         resp.raise_for_status()
