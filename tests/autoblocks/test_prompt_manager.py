@@ -145,7 +145,7 @@ Thanks!
     {
         "AUTOBLOCKS_API_KEY": "mock-api-key",
         "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
-        "AUTOBLOCKS_PROMPT_REVISIONS": json.dumps({MyPromptManager.__prompt_id__: "mock-revision-id"}),
+        "AUTOBLOCKS_OVERRIDES_PROMPT_REVISIONS": json.dumps({MyPromptManager.__prompt_id__: "mock-revision-id"}),
     },
 )
 def test_uses_prompt_revision(httpx_mock):
@@ -184,7 +184,7 @@ def test_uses_prompt_revision(httpx_mock):
     {
         "AUTOBLOCKS_API_KEY": "mock-api-key",
         "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
-        "AUTOBLOCKS_PROMPT_REVISIONS": json.dumps({MyPromptManager.__prompt_id__: "mock-revision-id"}),
+        "AUTOBLOCKS_OVERRIDES_PROMPT_REVISIONS": json.dumps({MyPromptManager.__prompt_id__: "mock-revision-id"}),
     },
 )
 def test_uses_prompt_revision_when_version_is_latest(httpx_mock):
@@ -223,7 +223,7 @@ def test_uses_prompt_revision_when_version_is_latest(httpx_mock):
     {
         "AUTOBLOCKS_API_KEY": "mock-api-key",
         "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
-        "AUTOBLOCKS_PROMPT_REVISIONS": json.dumps({"some-other-prompt-id": "mock-revision-id"}),
+        "AUTOBLOCKS_OVERRIDES_PROMPT_REVISIONS": json.dumps({"some-other-prompt-id": "mock-revision-id"}),
     },
 )
 def test_uses_configured_version_if_revision_is_for_different_prompt(httpx_mock):
@@ -257,7 +257,7 @@ def test_uses_configured_version_if_revision_is_for_different_prompt(httpx_mock)
     {
         "AUTOBLOCKS_API_KEY": "mock-api-key",
         "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
-        "AUTOBLOCKS_PROMPT_REVISIONS": json.dumps({MyPromptManager.__prompt_id__: "mock-revision-id"}),
+        "AUTOBLOCKS_OVERRIDES_PROMPT_REVISIONS": json.dumps({MyPromptManager.__prompt_id__: "mock-revision-id"}),
     },
 )
 def test_raises_if_prompt_is_incompatible(httpx_mock):
@@ -291,7 +291,7 @@ def test_raises_if_prompt_is_incompatible(httpx_mock):
     {
         "AUTOBLOCKS_API_KEY": "mock-api-key",
         # Note that AUTOBLOCKS_CLI_SERVER_ADDRESS is not set
-        "AUTOBLOCKS_PROMPT_REVISIONS": json.dumps({MyPromptManager.__prompt_id__: "mock-revision-id"}),
+        "AUTOBLOCKS_OVERRIDES_PROMPT_REVISIONS": json.dumps({MyPromptManager.__prompt_id__: "mock-revision-id"}),
     },
 )
 def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):

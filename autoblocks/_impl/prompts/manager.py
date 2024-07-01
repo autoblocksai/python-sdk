@@ -48,14 +48,14 @@ def is_testing_context() -> bool:
 
 def prompt_revisions_map() -> dict[str, str]:
     """
-    The AUTOBLOCKS_PROMPT_REVISIONS environment variable is a JSON-stringified
+    The AUTOBLOCKS_OVERRIDES_PROMPT_REVISIONS environment variable is a JSON-stringified
     map of prompt IDs to revision IDs. This is set in CI test runs triggered
     from the UI.
     """
     if not is_testing_context():
         return {}
 
-    prompt_revisions_raw = AutoblocksEnvVar.PROMPT_REVISIONS.get()
+    prompt_revisions_raw = AutoblocksEnvVar.OVERRIDES_PROMPT_REVISIONS.get()
     if not prompt_revisions_raw:
         return {}
     return json.loads(prompt_revisions_raw)  # type: ignore
