@@ -264,6 +264,7 @@ class AutoblocksTracer:
             url=f"{self._cli_server_address}/events",
             json=dict(
                 testExternalId=test_case_run.test_id,
+                runId=test_case_run.run_id,
                 testCaseHash=test_case_run.test_case_hash,
                 event=payload.to_json(),
             ),

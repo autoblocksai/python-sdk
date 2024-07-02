@@ -31,7 +31,7 @@ def is_testing_context() -> bool:
     Note that we check for the presence of the CLI environment
     variable and not the test case contextvars because the
     contextvars aren't set until run_test_suite is called,
-    whereas a prompt manager might have already been imported
+    whereas a config manager might have already been imported
     and initialized by the time run_test_suite is called.
     """
     return bool(AutoblocksEnvVar.CLI_SERVER_ADDRESS.get())
@@ -39,14 +39,14 @@ def is_testing_context() -> bool:
 
 def config_revisions_map() -> dict[str, str]:
     """
-    The AUTOBLOCKS_CONFIG_REVISIONS environment variable is a JSON-stringified
+    The AUTOBLOCKS_OVERRIDES_CONFIG_REVISIONS environment variable is a JSON-stringified
     map of config IDs to revision IDs. This is set in CI test runs triggered
     from the UI.
     """
     if not is_testing_context():
         return {}
 
-    config_revisions_raw = AutoblocksEnvVar.CONFIG_REVISIONS.get()
+    config_revisions_raw = AutoblocksEnvVar.OVERRIDES_CONFIG_REVISIONS.get()
     if not config_revisions_raw:
         return {}
     return json.loads(config_revisions_raw)  # type: ignore
