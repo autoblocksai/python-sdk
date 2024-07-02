@@ -124,7 +124,7 @@ class BaseRagas(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
         ragas = self.get_ragas()  # type: ignore[no-untyped-call]
         result = ragas.evaluate(
             dataset=dataset,
-            metrics=[getattr(ragas.metrics, self.metric_name)],
+            metrics=[getattr(ragas.metrics, self.metric_name).__class__()],
             llm=self.llm,
             embeddings=self.embeddings,
         )
