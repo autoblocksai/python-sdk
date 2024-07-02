@@ -71,7 +71,7 @@ def serialize_test_case(test_case: BaseTestCase) -> Any:
 def serialize_output(output: Any) -> Any:
     if callable(getattr(output, "serialize", None)):
         return serialize(output.serialize())
-    return None
+    return serialize(output)
 
 
 def serialize_human_review_fields(fields: Optional[list[HumanReviewField]]) -> Optional[list[dict[str, str]]]:
