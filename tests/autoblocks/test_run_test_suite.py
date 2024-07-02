@@ -6,6 +6,7 @@ import json
 import os
 import uuid
 from typing import Optional
+from typing import Union
 from unittest import mock
 
 import pydantic
@@ -30,6 +31,7 @@ from autoblocks.testing.run import run_test_suite
 from autoblocks.testing.util import md5
 from autoblocks.tracer import AutoblocksTracer
 from tests.util import ANY_NUMBER
+from tests.util import ANY_STRING
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import decode_request_body
 from tests.util import expect_cli_post_request
@@ -2954,3 +2956,52 @@ def test_run_id_not_returned_from_cli(httpx_mock):
         fn=test_fn,
         max_test_case_concurrency=1,
     )
+
+
+def test_exceptions_as_outputs(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(testExternalId="my-test-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput=ANY_STRING,
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(testExternalId="my-test-id"),
+    )
+
+    def test_fn(test_case: MyTestCase) -> Union[Exception, float]:
+        try:
+            return 1 / 0
+        except Exception as err:
+            return err
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        fn=test_fn,
+    )
+
+    # Get the testCaseOutput field from the /results request and
+    # check it has the expected traceback
+    requests = [dict(path=req.url.path, body=decode_request_body(req)) for req in httpx_mock.get_requests()]
+    results_req = [r for r in requests if r["path"] == "/results"][0]
+    output = results_req["body"]["testCaseOutput"]
+    assert output.startswith("Traceback (most recent call last):")
+    assert "ZeroDivisionError: division by zero" in output

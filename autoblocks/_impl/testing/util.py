@@ -1,6 +1,7 @@
 import dataclasses
 import hashlib
 import itertools
+import traceback
 from typing import Any
 from typing import Generator
 from typing import Optional
@@ -32,6 +33,14 @@ def orjson_default(o: Any) -> Any:
     elif hasattr(o, "json") and callable(o.json):
         # pydantic v1
         return orjson.loads(o.json())
+    elif isinstance(o, Exception):
+        return "".join(
+            traceback.format_exception(
+                type(o),
+                o,
+                o.__traceback__,
+            )
+        )
     raise TypeError
 
 
