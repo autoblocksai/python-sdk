@@ -52,20 +52,6 @@ evaluator_semaphore_registry: dict[str, dict[str, asyncio.Semaphore]] = {}  # te
 DEFAULT_MAX_TEST_CASE_CONCURRENCY = 10
 
 
-def cli() -> str:
-    """
-    Returns the CLI server address, which is required to send results and errors to the CLI.
-    """
-    cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
-    if not cli_server_address:
-        raise RuntimeError(
-            "Autoblocks tests must be run within the context of the testing CLI.\n"
-            "Make sure you are running your test command with:\n"
-            "$ npx autoblocks testing exec -- <your test command>"
-        )
-    return cli_server_address
-
-
 def tests_and_hashes_overrides_map() -> Optional[dict[str, list[str]]]:
     """
     AUTOBLOCKS_OVERRIDES_TESTS_AND_HASHES is a JSON string that maps test suite IDs to a list of test case hashes.
@@ -81,12 +67,20 @@ def tests_and_hashes_overrides_map() -> Optional[dict[str, list[str]]]:
 async def post_to_cli(
     path: str,
     json: dict[str, Any],
-) -> Response:
-    return await global_state.http_client().post(
-        f"{cli()}{path}",
-        json=json,
-        timeout=15,  # seconds
-    )
+) -> Optional[Response]:
+    cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
+    if cli_server_address:
+        return await global_state.http_client().post(
+            f"{cli_server_address}{path}",
+            json=json,
+            timeout=30,  # seconds
+        )
+
+    # If the CLI server address is not set then the tests are being run
+    # directly. In this case we just log the request that would have been
+    # sent to the CLI.
+    log.debug(f"{path}: {json}")
+    return None
 
 
 async def send_error(
@@ -114,7 +108,7 @@ async def send_error(
 
 async def run_evaluator_unsafe(
     test_id: str,
-    run_id: str,
+    run_id: Optional[str],
     test_case_ctx: TestCaseContext[TestCaseType],
     output: Any,
     hook_results: Any,
@@ -168,7 +162,7 @@ async def run_evaluator_unsafe(
 
 async def run_evaluator(
     test_id: str,
-    run_id: str,
+    run_id: Optional[str],
     test_case_ctx: TestCaseContext[TestCaseType],
     output: Any,
     hook_results: Any,
@@ -200,7 +194,7 @@ async def run_evaluator(
 
 async def run_test_case_unsafe(
     test_id: str,
-    run_id: str,
+    run_id: Optional[str],
     test_case_ctx: TestCaseContext[TestCaseType],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
@@ -276,7 +270,7 @@ async def run_test_case_unsafe(
 
 async def run_test_case(
     test_id: str,
-    run_id: str,
+    run_id: Optional[str],
     test_case_ctx: TestCaseContext[TestCaseType],
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
@@ -434,23 +428,27 @@ async def run_test_suite_for_grid_combo(
             gridSearchParamsCombo=grid_search_params_combo,
         ),
     )
-    try:
-        start_resp.raise_for_status()
-    except HTTPStatusError:
-        # Don't allow the run to continue if /start failed, since all subsequent
-        # requests will fail if the CLI was not able to start the run.
-        # Also note we don't need to send_error here, since the CLI will
-        # have reported the HTTP error itself.
-        return
+
+    run_id = None
+    if start_resp:
+        try:
+            start_resp.raise_for_status()
+        except HTTPStatusError:
+            # Don't allow the run to continue if /start failed, since all subsequent
+            # requests will fail if the CLI was not able to start the run.
+            # Also note we don't need to send_error here, since the CLI will
+            # have reported the HTTP error itself.
+            return
+
+        try:
+            run_id = start_resp.json()["id"]
+        except (JSONDecodeError, KeyError):
+            # We can drop this try-catch once everyone has updated their CLI
+            # to the version that returns the run ID in the /start response.
+            pass
 
     reset_token = grid_search_context_var.set(grid_search_params_combo) if grid_search_params_combo else None
 
-    try:
-        run_id = start_resp.json()["id"]
-    except (JSONDecodeError, KeyError):
-        # We can drop this try-catch once everyone has updated their CLI
-        # to the version that returns the run ID in the /start response.
-        run_id = None
     try:
         await all_settled(
             [
@@ -493,6 +491,13 @@ async def async_run_test_suite(
     caller_filepath: Optional[str],
     grid_search_params: Optional[GridSearchParams],
 ) -> None:
+    if not AutoblocksEnvVar.CLI_SERVER_ADDRESS.get():
+        log.warning(
+            "\nRunning in debug mode since your tests are not being run within the context of the testing CLI; "
+            "results will not be sent to Autoblocks.\n"
+            "Make sure you are running your test command with:\n"
+            "$ npx autoblocks testing exec -- <your test command>\n"
+        )
     # Handle alignment mode
     align_test_id = AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get()
     if align_test_id:
@@ -572,17 +577,21 @@ async def async_run_test_suite(
         "/grids",
         json=dict(testExternalId=test_id, gridSearchParams=grid_search_params),
     )
-    try:
-        grid_resp.raise_for_status()
-    except HTTPStatusError:
-        # Don't allow the run to continue if /grid failed, since all subsequent
-        # requests will fail if the CLI was not able to create the grid.
-        # Also note we don't need to send_error here, since the CLI will
-        # have reported the HTTP error itself.
-        return
+
+    grid_search_run_group_id = None
+    if grid_resp:
+        try:
+            grid_resp.raise_for_status()
+        except HTTPStatusError:
+            # Don't allow the run to continue if /grid failed, since all subsequent
+            # requests will fail if the CLI was not able to create the grid.
+            # Also note we don't need to send_error here, since the CLI will
+            # have reported the HTTP error itself.
+            return
+
+        grid_search_run_group_id = grid_resp.json()["id"]
 
     try:
-        grid_search_run_group_id = grid_resp.json()["id"]
         await all_settled(
             [
                 run_test_suite_for_grid_combo(
