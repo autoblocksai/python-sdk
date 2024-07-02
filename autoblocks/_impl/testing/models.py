@@ -59,6 +59,12 @@ class BaseTestCase(abc.ABC):
         """
         pass
 
+    def serialize(self) -> Any:
+        """
+        Override this method to customize how the test case is serialized before being sent to Autoblocks.
+        """
+        return self
+
     def serialize_for_human_review(self) -> Optional[list[HumanReviewField]]:
         """
         Can be overridden to customize how the test case is displayed in Autoblocks Human Review,
