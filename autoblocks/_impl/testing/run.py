@@ -8,7 +8,6 @@ import logging
 import os
 import time
 import traceback
-from json import JSONDecodeError
 from typing import Any
 from typing import Awaitable
 from typing import Callable
@@ -442,7 +441,7 @@ async def run_test_suite_for_grid_combo(
 
         try:
             run_id = start_resp.json()["id"]
-        except (JSONDecodeError, KeyError):
+        except Exception:
             # We can drop this try-catch once everyone has updated their CLI
             # to the version that returns the run ID in the /start response.
             pass
