@@ -2,6 +2,7 @@ import abc
 import asyncio
 import dataclasses
 import datetime
+import json
 import os
 import uuid
 from typing import Optional
@@ -2030,6 +2031,142 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
     assert requests[0]["body"]["runTestSuiteCalledFromDirectory"].endswith(
         "/python-sdk/tests/autoblocks",
     )
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        AutoblocksEnvVar.OVERRIDES_TESTS_AND_HASHES.value: json.dumps({"another-test-id": []}),
+    },
+)
+def test_tests_and_hashes_overrides_skips_test(httpx_mock):
+    def test_fn(test_case: MyTestCase) -> str:
+        return test_case.input + "!"
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+            MyTestCase(input="b"),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+    # Nothing should have happened because this test suite
+    # should have been skipped
+    assert len(httpx_mock.get_requests()) == 0
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        # Only test case a should be run
+        AutoblocksEnvVar.OVERRIDES_TESTS_AND_HASHES.value: json.dumps({"my-test-id": []}),
+    },
+)
+def test_tests_and_hashes_overrides_with_empty_value(httpx_mock):
+    httpx_mock.add_response()
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+            MyTestCase(input="b"),
+        ],
+        evaluators=[],
+        fn=lambda t: t.input + "!",
+        max_test_case_concurrency=1,
+    )
+
+    requests = [dict(path=req.url.path, body=decode_request_body(req)) for req in httpx_mock.get_requests()]
+
+    assert requests == [
+        dict(
+            path="/start",
+            body=dict(testExternalId="my-test-id"),
+        ),
+        dict(
+            path="/results",
+            body=dict(
+                testExternalId="my-test-id",
+                testCaseHash="a",
+                testCaseBody=dict(input="a"),
+                testCaseOutput="a!",
+                testCaseDurationMs=ANY_NUMBER,
+                testCaseRevisionUsage=None,
+                testCaseHumanReviewInputFields=None,
+                testCaseHumanReviewOutputFields=None,
+            ),
+        ),
+        dict(
+            path="/results",
+            body=dict(
+                testExternalId="my-test-id",
+                testCaseHash="b",
+                testCaseBody=dict(input="b"),
+                testCaseOutput="b!",
+                testCaseDurationMs=ANY_NUMBER,
+                testCaseRevisionUsage=None,
+                testCaseHumanReviewInputFields=None,
+                testCaseHumanReviewOutputFields=None,
+            ),
+        ),
+        dict(
+            path="/end",
+            body=dict(testExternalId="my-test-id"),
+        ),
+    ]
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        # Only test case a should be run
+        AutoblocksEnvVar.OVERRIDES_TESTS_AND_HASHES.value: json.dumps({"my-test-id": ["a"]}),
+    },
+)
+def test_tests_and_hashes_overrides_with_non_empty_value(httpx_mock):
+    httpx_mock.add_response()
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+            # Test case b will be skipped
+            MyTestCase(input="b"),
+        ],
+        evaluators=[],
+        fn=lambda t: t.input + "!",
+        max_test_case_concurrency=1,
+    )
+
+    requests = [dict(path=req.url.path, body=decode_request_body(req)) for req in httpx_mock.get_requests()]
+
+    assert requests == [
+        dict(
+            path="/start",
+            body=dict(testExternalId="my-test-id"),
+        ),
+        dict(
+            path="/results",
+            body=dict(
+                testExternalId="my-test-id",
+                testCaseHash="a",
+                testCaseBody=dict(input="a"),
+                testCaseOutput="a!",
+                testCaseDurationMs=ANY_NUMBER,
+                testCaseRevisionUsage=None,
+                testCaseHumanReviewInputFields=None,
+                testCaseHumanReviewOutputFields=None,
+            ),
+        ),
+        dict(
+            path="/end",
+            body=dict(testExternalId="my-test-id"),
+        ),
+    ]
 
 
 def test_run_stops_if_start_fails(httpx_mock):

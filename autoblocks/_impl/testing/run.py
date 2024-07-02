@@ -3,6 +3,7 @@ import contextvars
 import dataclasses
 import functools
 import inspect
+import json
 import logging
 import os
 import time
@@ -63,6 +64,18 @@ def cli() -> str:
             "$ npx autoblocks testing exec -- <your test command>"
         )
     return cli_server_address
+
+
+def tests_and_hashes_overrides_map() -> Optional[dict[str, list[str]]]:
+    """
+    AUTOBLOCKS_OVERRIDES_TESTS_AND_HASHES is a JSON string that maps test suite IDs to a list of test case hashes.
+    This is set when a user triggers a test run from the UI so that we only run the given test suite, and,
+    if applicable, only the given test cases.
+    """
+    raw = AutoblocksEnvVar.OVERRIDES_TESTS_AND_HASHES.get()
+    if not raw:
+        return None
+    return json.loads(raw)  # type: ignore
 
 
 async def post_to_cli(
@@ -496,6 +509,20 @@ async def async_run_test_suite(
             test_id=test_id,
             test_cases=test_cases,
         )
+
+    # This will be set if a user has triggered a run from the UI for a particular test suite.
+    # If it is not this test suite, then we skip it.
+    tests_and_hashes = tests_and_hashes_overrides_map()
+    if tests_and_hashes:
+        if test_id not in tests_and_hashes:
+            log.info(f"Skipping test suite '{test_id}' because it is not in the list of test suites to run.")
+            return
+
+        # If the value for this test suite is non-empty, then it is a list of test case
+        # hashes to run. We filter the test cases to only run those.
+        hashes_to_run = set(tests_and_hashes[test_id] or [])
+        if hashes_to_run:
+            test_cases = [tc for tc in test_cases if tc.hash() in hashes_to_run]
 
     try:
         validate_test_suite_inputs(

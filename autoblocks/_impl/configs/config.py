@@ -39,14 +39,14 @@ def is_testing_context() -> bool:
 
 def config_revisions_map() -> dict[str, str]:
     """
-    The AUTOBLOCKS_CONFIG_REVISIONS environment variable is a JSON-stringified
+    The AUTOBLOCKS_OVERRIDES_CONFIG_REVISIONS environment variable is a JSON-stringified
     map of config IDs to revision IDs. This is set in CI test runs triggered
     from the UI.
     """
     if not is_testing_context():
         return {}
 
-    config_revisions_raw = AutoblocksEnvVar.CONFIG_REVISIONS.get()
+    config_revisions_raw = AutoblocksEnvVar.OVERRIDES_CONFIG_REVISIONS.get()
     if not config_revisions_raw:
         return {}
     return json.loads(config_revisions_raw)  # type: ignore
