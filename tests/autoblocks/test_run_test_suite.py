@@ -2716,6 +2716,85 @@ def test_prompt_manager_revision_usage(httpx_mock):
     )
 
 
+def test_serialize(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="1-2",
+            testCaseBody=dict(
+                x=1,
+                y=2,
+                prod=2,
+            ),
+            testCaseOutput=dict(
+                x=1,
+                y=2,
+                sum=3,
+            ),
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+        ),
+    )
+
+    @dataclasses.dataclass
+    class MyCustomTestCase(BaseTestCase):
+        x: int
+        y: int
+
+        def hash(self):
+            return f"{self.x}-{self.y}"
+
+        def serialize(self):
+            return dict(
+                x=self.x,
+                y=self.y,
+                prod=self.x * self.y,
+            )
+
+    @dataclasses.dataclass
+    class MyCustomOutput:
+        x: int
+        y: int
+
+        def serialize(self):
+            return dict(
+                x=self.x,
+                y=self.y,
+                sum=self.x + self.y,
+            )
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyCustomTestCase(x=1, y=2),
+        ],
+        fn=lambda test_case: MyCustomOutput(x=test_case.x, y=test_case.y),
+    )
+
+
 def test_serialize_for_human_review(httpx_mock):
     expect_cli_post_request(
         httpx_mock,

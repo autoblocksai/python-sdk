@@ -33,7 +33,7 @@ from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.util import GridSearchParams
 from autoblocks._impl.testing.util import GridSearchParamsCombo
-from autoblocks._impl.testing.util import serialize
+from autoblocks._impl.testing.util import serialize_output
 from autoblocks._impl.testing.util import serialize_output_for_human_review
 from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.util import serialize_test_case_for_human_review
@@ -257,7 +257,7 @@ async def run_test_case_unsafe(
             runId=run_id,
             testCaseHash=test_case_ctx.hash(),
             testCaseBody=serialize_test_case(test_case_ctx.test_case),
-            testCaseOutput=serialize(output),
+            testCaseOutput=serialize_output(output),
             testCaseDurationMs=test_case_duration_ms,
             testCaseRevisionUsage=[usage.serialize() for usage in revision_usage] if revision_usage else None,
             testCaseHumanReviewInputFields=serialize_test_case_for_human_review(test_case_ctx.test_case),
