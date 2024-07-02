@@ -1,5 +1,6 @@
 import dataclasses
 import hashlib
+import itertools
 import traceback
 from typing import Any
 from typing import Generator
@@ -14,7 +15,7 @@ from autoblocks._impl.testing.models import TestCaseConfig
 from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
 
-# This attribute name might sound redundant but it is named this
+# This attribute name might sound redundant, but it is named this
 # way (as opposed to just `config`) to decrease the likelihood
 # our config attr name conflicts with the name of an attr the user
 # wants to use on their test case.
@@ -105,3 +106,14 @@ def yield_test_case_contexts_from_test_cases(
                     test_case=test_case,
                     repetition_idx=idx,
                 )
+
+
+GridSearchParams = dict[str, Sequence[Any]]
+GridSearchParamsCombo = dict[str, Any]
+
+
+def yield_grid_search_param_combos(params: GridSearchParams) -> Generator[GridSearchParamsCombo, None, None]:
+    keys = list(params.keys())
+    values = list(params.values())
+    for combo in itertools.product(*values):
+        yield dict(zip(keys, combo))

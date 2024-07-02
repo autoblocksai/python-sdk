@@ -1,8 +1,10 @@
 import dataclasses
 from contextvars import ContextVar
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 from autoblocks._impl.util import StrEnum
 from autoblocks._impl.util import now_iso_8601
@@ -31,6 +33,7 @@ class RevisionUsage:
 
 @dataclasses.dataclass
 class TestCaseRunContext:
+    run_id: str
     test_id: str
     test_case_hash: str
     revision_usage: List[RevisionUsage] = dataclasses.field(default_factory=list)
@@ -53,12 +56,19 @@ evaluator_run_context_var: ContextVar[Optional[EvaluatorRunContext]] = ContextVa
 )
 
 
+def get_current_run_context() -> Optional[Union[EvaluatorRunContext, TestCaseRunContext]]:
+    # Check the narrower evaluator_run_context first so that we can detect if a prompt
+    # is being used in the context of an evaluator. Otherwise, fall back to the wider
+    # test_case_run_context.
+    return evaluator_run_context_var.get() or test_case_run_context_var.get()
+
+
 def register_revision_usage(
     entity_id: str,
     entity_type: RevisionType,
     revision_id: str,
 ) -> None:
-    ctx = evaluator_run_context_var.get() or test_case_run_context_var.get()
+    ctx = get_current_run_context()
     if ctx is None:
         return
 
@@ -73,5 +83,15 @@ def register_revision_usage(
 
 
 def get_revision_usage() -> Optional[List[RevisionUsage]]:
-    ctx = evaluator_run_context_var.get() or test_case_run_context_var.get()
+    ctx = get_current_run_context()
     return ctx.revision_usage if ctx else None
+
+
+grid_search_context_var: ContextVar[Optional[dict[str, Any]]] = ContextVar(
+    "autoblocks_sdk_grid_search_context_var",
+    default=None,
+)
+
+
+def grid_search_ctx() -> Optional[dict[str, Any]]:
+    return grid_search_context_var.get()

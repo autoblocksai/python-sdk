@@ -23,6 +23,7 @@ def expect_cli_post_request(
     httpx_mock: Any,
     path: str,
     body: Optional[dict[str, Any]],
+    json: Optional[dict[str, Any]] = None,
     status_code: int = 200,
 ) -> None:
     httpx_mock.add_response(
@@ -30,6 +31,7 @@ def expect_cli_post_request(
         method="POST",
         status_code=status_code,
         match_json=body,
+        json=json,
     )
 
 

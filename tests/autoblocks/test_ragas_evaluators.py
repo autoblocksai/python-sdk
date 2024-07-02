@@ -45,13 +45,17 @@ def make_expected_requests(evaluator_id: str, httpx_mock: Any) -> None:
         path="/start",
         body=dict(
             testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
         ),
+        json=dict(id="mock-run-id"),
     )
     expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="How tall is the Eiffel tower?",
             testCaseBody=dict(question="How tall is the Eiffel tower?", expected_answer="300 meters"),
             testCaseOutput="300 meters",
@@ -66,6 +70,7 @@ def make_expected_requests(evaluator_id: str, httpx_mock: Any) -> None:
         path="/evals",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="How tall is the Eiffel tower?",
             evaluatorExternalId=evaluator_id,
             score=ANY_NUMBER,
@@ -79,6 +84,7 @@ def make_expected_requests(evaluator_id: str, httpx_mock: Any) -> None:
         path="/end",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
         ),
     )
 
