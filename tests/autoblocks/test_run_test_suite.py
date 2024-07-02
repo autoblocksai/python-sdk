@@ -2069,6 +2069,17 @@ def test_tests_and_hashes_overrides_skips_test(httpx_mock):
     },
 )
 def test_tests_and_hashes_overrides_with_empty_value(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
+    )
+
     httpx_mock.add_response()
 
     run_test_suite(
@@ -2087,12 +2098,17 @@ def test_tests_and_hashes_overrides_with_empty_value(httpx_mock):
     assert requests == [
         dict(
             path="/start",
-            body=dict(testExternalId="my-test-id"),
+            body=dict(
+                testExternalId="my-test-id",
+                gridSearchRunGroupId=None,
+                gridSearchParamsCombo=None,
+            ),
         ),
         dict(
             path="/results",
             body=dict(
                 testExternalId="my-test-id",
+                runId="mock-run-id",
                 testCaseHash="a",
                 testCaseBody=dict(input="a"),
                 testCaseOutput="a!",
@@ -2106,6 +2122,7 @@ def test_tests_and_hashes_overrides_with_empty_value(httpx_mock):
             path="/results",
             body=dict(
                 testExternalId="my-test-id",
+                runId="mock-run-id",
                 testCaseHash="b",
                 testCaseBody=dict(input="b"),
                 testCaseOutput="b!",
@@ -2117,7 +2134,10 @@ def test_tests_and_hashes_overrides_with_empty_value(httpx_mock):
         ),
         dict(
             path="/end",
-            body=dict(testExternalId="my-test-id"),
+            body=dict(
+                testExternalId="my-test-id",
+                runId="mock-run-id",
+            ),
         ),
     ]
 
@@ -2130,6 +2150,17 @@ def test_tests_and_hashes_overrides_with_empty_value(httpx_mock):
     },
 )
 def test_tests_and_hashes_overrides_with_non_empty_value(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
+    )
+
     httpx_mock.add_response()
 
     run_test_suite(
@@ -2149,12 +2180,17 @@ def test_tests_and_hashes_overrides_with_non_empty_value(httpx_mock):
     assert requests == [
         dict(
             path="/start",
-            body=dict(testExternalId="my-test-id"),
+            body=dict(
+                testExternalId="my-test-id",
+                gridSearchRunGroupId=None,
+                gridSearchParamsCombo=None,
+            ),
         ),
         dict(
             path="/results",
             body=dict(
                 testExternalId="my-test-id",
+                runId="mock-run-id",
                 testCaseHash="a",
                 testCaseBody=dict(input="a"),
                 testCaseOutput="a!",
@@ -2166,7 +2202,10 @@ def test_tests_and_hashes_overrides_with_non_empty_value(httpx_mock):
         ),
         dict(
             path="/end",
-            body=dict(testExternalId="my-test-id"),
+            body=dict(
+                testExternalId="my-test-id",
+                runId="mock-run-id",
+            ),
         ),
     ]
 
@@ -2962,13 +3001,19 @@ def test_exceptions_as_outputs(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
         path="/start",
-        body=dict(testExternalId="my-test-id"),
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
     )
     expect_cli_post_request(
         httpx_mock,
         path="/results",
         body=dict(
             testExternalId="my-test-id",
+            runId="mock-run-id",
             testCaseHash="a",
             testCaseBody=dict(input="a"),
             testCaseOutput=ANY_STRING,
@@ -2981,7 +3026,10 @@ def test_exceptions_as_outputs(httpx_mock):
     expect_cli_post_request(
         httpx_mock,
         path="/end",
-        body=dict(testExternalId="my-test-id"),
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+        ),
     )
 
     def test_fn(test_case: MyTestCase) -> Union[Exception, float]:
