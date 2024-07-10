@@ -576,3 +576,20 @@ def test_plain_script_flushes_on_exit():
     log.info(f"Process {process.pid} terminated with return code {process.returncode}.")
 
     wait_for_trace_to_exist(test_trace_id)
+
+
+def test_async_script_flushes_on_exit():
+    # Run the script
+    test_trace_id = str(uuid.uuid4())
+    sleep_seconds = 10
+    process = subprocess.Popen(
+        ["python", "async_script.py", test_trace_id, f"{sleep_seconds}"],
+        cwd="tests/e2e",
+        env=dict(os.environ, **{"PYTHONPATH": os.getcwd()}),
+    )
+
+    # Wait for the process to terminate
+    process.wait()
+    log.info(f"Process {process.pid} terminated with return code {process.returncode}.")
+
+    wait_for_trace_to_exist(test_trace_id)
