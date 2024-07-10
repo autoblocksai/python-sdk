@@ -3,8 +3,7 @@ import logging
 import sys
 
 from autoblocks.tracer import AutoblocksTracer
-from tests.e2e.slow_evaluators import SlowEvaluator1
-from tests.e2e.slow_evaluators import SlowEvaluator2
+from autoblocks.tracer import flush
 from tests.e2e.test_e2e import E2E_TESTS_EXPECTED_MESSAGE
 
 log = logging.getLogger(__name__)
@@ -22,7 +21,7 @@ async def my_send_event() -> None:
         properties=dict(
             sleep_seconds=sleep_seconds,
         ),
-        evaluators=[SlowEvaluator1(), SlowEvaluator2()],
+        evaluators=[],
     )
     log.info("Event fired")
 
@@ -33,3 +32,6 @@ if __name__ == "__main__":
         format="%(name)s %(asctime)s [%(levelname)s] %(message)s",
     )
     asyncio.run(my_send_event())
+    # TODO: Can we do the same thing in the plain script where we call flush behind the scenes?
+    # Currently have to call flush manually when using asyncio
+    flush()
