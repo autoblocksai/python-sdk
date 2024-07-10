@@ -2038,6 +2038,227 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
 @mock.patch.dict(
     os.environ,
     {
+        AutoblocksEnvVar.FILTERS_TEST_SUITES.value: json.dumps(["random"]),
+    },
+)
+def test_filters_test_suites_skips_test(httpx_mock):
+    def test_fn(test_case: MyTestCase) -> str:
+        return test_case.input + "!"
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+            MyTestCase(input="b"),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+    # Nothing should have happened because this test suite
+    # should have been skipped
+    assert len(httpx_mock.get_requests()) == 0
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        AutoblocksEnvVar.FILTERS_TEST_SUITES.value: json.dumps(["test"]),
+    },
+)
+def test_filters_test_suites_filters_tests(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
+    )
+
+    httpx_mock.add_response()
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[],
+        fn=lambda t: t.input + "!",
+        max_test_case_concurrency=1,
+    )
+
+    requests = [dict(path=req.url.path, body=decode_request_body(req)) for req in httpx_mock.get_requests()]
+
+    assert requests == [
+        dict(
+            path="/start",
+            body=dict(
+                testExternalId="my-test-id",
+                gridSearchRunGroupId=None,
+                gridSearchParamsCombo=None,
+            ),
+        ),
+        dict(
+            path="/results",
+            body=dict(
+                testExternalId="my-test-id",
+                runId="mock-run-id",
+                testCaseHash="a",
+                testCaseBody=dict(input="a"),
+                testCaseOutput="a!",
+                testCaseDurationMs=ANY_NUMBER,
+                testCaseRevisionUsage=None,
+                testCaseHumanReviewInputFields=None,
+                testCaseHumanReviewOutputFields=None,
+            ),
+        ),
+        dict(
+            path="/end",
+            body=dict(
+                testExternalId="my-test-id",
+                runId="mock-run-id",
+            ),
+        ),
+    ]
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        AutoblocksEnvVar.FILTERS_TEST_SUITES.value: json.dumps(["random", "test"]),
+    },
+)
+def test_filters_test_suites_filters_tests_multiple_filters(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
+    )
+
+    httpx_mock.add_response()
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[],
+        fn=lambda t: t.input + "!",
+        max_test_case_concurrency=1,
+    )
+
+    requests = [dict(path=req.url.path, body=decode_request_body(req)) for req in httpx_mock.get_requests()]
+
+    assert requests == [
+        dict(
+            path="/start",
+            body=dict(
+                testExternalId="my-test-id",
+                gridSearchRunGroupId=None,
+                gridSearchParamsCombo=None,
+            ),
+        ),
+        dict(
+            path="/results",
+            body=dict(
+                testExternalId="my-test-id",
+                runId="mock-run-id",
+                testCaseHash="a",
+                testCaseBody=dict(input="a"),
+                testCaseOutput="a!",
+                testCaseDurationMs=ANY_NUMBER,
+                testCaseRevisionUsage=None,
+                testCaseHumanReviewInputFields=None,
+                testCaseHumanReviewOutputFields=None,
+            ),
+        ),
+        dict(
+            path="/end",
+            body=dict(
+                testExternalId="my-test-id",
+                runId="mock-run-id",
+            ),
+        ),
+    ]
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        AutoblocksEnvVar.FILTERS_TEST_SUITES.value: json.dumps(["my-test-id"]),
+    },
+)
+def test_filters_test_suites_filters_tests_exact_match(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
+    )
+
+    httpx_mock.add_response()
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[],
+        fn=lambda t: t.input + "!",
+        max_test_case_concurrency=1,
+    )
+
+    requests = [dict(path=req.url.path, body=decode_request_body(req)) for req in httpx_mock.get_requests()]
+
+    assert requests == [
+        dict(
+            path="/start",
+            body=dict(
+                testExternalId="my-test-id",
+                gridSearchRunGroupId=None,
+                gridSearchParamsCombo=None,
+            ),
+        ),
+        dict(
+            path="/results",
+            body=dict(
+                testExternalId="my-test-id",
+                runId="mock-run-id",
+                testCaseHash="a",
+                testCaseBody=dict(input="a"),
+                testCaseOutput="a!",
+                testCaseDurationMs=ANY_NUMBER,
+                testCaseRevisionUsage=None,
+                testCaseHumanReviewInputFields=None,
+                testCaseHumanReviewOutputFields=None,
+            ),
+        ),
+        dict(
+            path="/end",
+            body=dict(
+                testExternalId="my-test-id",
+                runId="mock-run-id",
+            ),
+        ),
+    ]
+
+
+@mock.patch.dict(
+    os.environ,
+    {
         AutoblocksEnvVar.OVERRIDES_TESTS_AND_HASHES.value: json.dumps({"another-test-id": []}),
     },
 )

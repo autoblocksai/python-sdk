@@ -63,6 +63,17 @@ def tests_and_hashes_overrides_map() -> Optional[dict[str, list[str]]]:
     return json.loads(raw)  # type: ignore
 
 
+def filters_test_suites_list() -> list[str]:
+    """
+    AUTOBLOCKS_FILTERS_TEST_SUITES is a list of test suite IDs that should be run.
+    This is set from the CLI, and we fuzzy match the test suite IDs to determine which test suites to run.
+    """
+    raw = AutoblocksEnvVar.FILTERS_TEST_SUITES.get()
+    if not raw:
+        return []
+    return json.loads(raw)  # type: ignore
+
+
 async def post_to_cli(
     path: str,
     json: dict[str, Any],
@@ -513,6 +524,14 @@ async def async_run_test_suite(
             test_id=test_id,
             test_cases=test_cases,
         )
+
+    # This will be set if the user passed filters to the CLI
+    # we do a substring match to allow for fuzzy matching
+    # For example a filter of "ell" would match a test suite of "hello"
+    filters_test_suites = filters_test_suites_list()
+    if len(filters_test_suites) > 0 and not any(filter_id in test_id for filter_id in filters_test_suites):
+        log.info(f"Skipping test suite '{test_id}' because it is not in the list of test suites to run.")
+        return
 
     # This will be set if a user has triggered a run from the UI for a particular test suite.
     # If it is not this test suite, then we skip it.
