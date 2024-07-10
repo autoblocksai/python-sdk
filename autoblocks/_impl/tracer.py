@@ -220,6 +220,8 @@ class AutoblocksTracer:
             if global_state.main_thread_has_finished():
                 # If we're in a shutdown state, we need to use the sync client
                 # to avoid scheduling new futures after the interpreter has shut down.
+                # There is a race condition that can happen where the main thread finishes right as we check
+                # This happens in our async_script e2e test, so we call flush() after the event is sent
                 # See https://github.com/boto/boto3/issues/3113
                 log.debug("Sending event with SYNC client because interpreter has shut down")
                 req = global_state.sync_http_client().post(

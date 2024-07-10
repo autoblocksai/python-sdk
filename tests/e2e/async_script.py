@@ -32,6 +32,6 @@ if __name__ == "__main__":
         format="%(name)s %(asctime)s [%(levelname)s] %(message)s",
     )
     asyncio.run(my_send_event())
-    # TODO: Can we do the same thing in the plain script where we call flush behind the scenes?
-    # Currently have to call flush manually when using asyncio
+    # Currently have to call flush manually
+    # because of a race condition in our logic to check if the main thread has finished
     flush()
