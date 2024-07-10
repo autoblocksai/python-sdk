@@ -21,8 +21,10 @@ from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import HumanReviewField
 from autoblocks._impl.testing.models import TracerEvent
 from autoblocks._impl.testing.util import serialize_human_review_fields
+from autoblocks._impl.util import AnyTask
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
+from autoblocks._impl.util import get_running_loop
 from autoblocks._impl.util import now_iso_8601
 
 log = logging.getLogger(__name__)
@@ -313,14 +315,26 @@ class AutoblocksTracer:
         payload: Payload,
         evaluators: Optional[Sequence[BaseEventEvaluator]],
     ) -> None:
-        # Send the task to our background loop
-        task = asyncio.run_coroutine_threadsafe(
-            self._async_send_event(
-                payload=payload,
-                evaluators=evaluators,
-            ),
-            global_state.event_loop(),
-        )
+        task: AnyTask
+
+        # Check if we're already in a running event loop
+        if running_loop := get_running_loop():
+            # If we are, execute the task on that loop
+            task = running_loop.create_task(
+                self._async_send_event(
+                    payload=payload,
+                    evaluators=evaluators,
+                ),
+            )
+        else:
+            # Otherwise, send the task to our background loop
+            task = asyncio.run_coroutine_threadsafe(
+                self._async_send_event(
+                    payload=payload,
+                    evaluators=evaluators,
+                ),
+                global_state.event_loop(),
+            )
 
         # Add the task to the set of tasks the
         # global state will wait to complete
