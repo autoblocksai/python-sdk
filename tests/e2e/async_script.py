@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 tracer = AutoblocksTracer()
 
 
-async def async_fun() -> None:
+async def my_send_event() -> None:
     trace_id = sys.argv[1]
     sleep_seconds = int(sys.argv[2])
     log.info(f"Sending event with trace ID {trace_id}")
@@ -32,4 +32,4 @@ if __name__ == "__main__":
         level=logging.DEBUG,
         format="%(name)s %(asctime)s [%(levelname)s] %(message)s",
     )
-    asyncio.run(async_fun())
+    asyncio.run(my_send_event())
