@@ -243,7 +243,7 @@ def make_prompts_from_config(
                 f"Error in {prompt.id} config: "
                 f"Either `major_version` or `dangerously_use_undeployed_revision` must be specified"
             )
-        prompt_id = encode_uri_component(encode_uri_component(prompt.id))
+        prompt_id = encode_uri_component(prompt.id)
         major_version = encode_uri_component(major)
         minor_version = encode_uri_component(minor)
         resp = httpx.get(
