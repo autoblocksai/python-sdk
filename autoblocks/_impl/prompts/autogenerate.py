@@ -14,6 +14,7 @@ from autoblocks._impl.prompts.models import FrozenModel
 from autoblocks._impl.prompts.placeholders import TemplatePlaceholder
 from autoblocks._impl.prompts.placeholders import parse_placeholders_from_template
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks._impl.util import encode_uri_component
 
 
 class Template(FrozenModel):
@@ -242,9 +243,11 @@ def make_prompts_from_config(
                 f"Error in {prompt.id} config: "
                 f"Either `major_version` or `dangerously_use_undeployed_revision` must be specified"
             )
-
+        prompt_id = encode_uri_component(prompt.id)
+        major_version = encode_uri_component(major)
+        minor_version = encode_uri_component(minor)
         resp = httpx.get(
-            url=f"{API_ENDPOINT}/prompts/{prompt.id}/major/{major}/minor/{minor}",
+            url=f"{API_ENDPOINT}/prompts/{prompt_id}/major/{major_version}/minor/{minor_version}",
             headers={"Authorization": f"Bearer {AutoblocksEnvVar.API_KEY.get()}"},
         )
         resp.raise_for_status()
