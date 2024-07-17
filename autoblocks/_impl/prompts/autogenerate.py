@@ -230,8 +230,8 @@ def generate_tool_renderer_class_code(prompt: PromptCodegen) -> str:
     # The name mapper maps the original tool placeholder name
     # to the snake case name of the corresponding keyword argument
     name_mapper = {}
-    for tool_params in prompt.tools:
-        for placeholder in tool_params.placeholders:
+    for tool in prompt.tools:
+        for placeholder in tool.placeholders:
             name_mapper[placeholder] = to_snake_case(placeholder)
 
     if name_mapper:
