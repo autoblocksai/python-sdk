@@ -10,7 +10,7 @@ from autoblocks._impl.prompts.placeholders import make_placeholder_from_match
 
 
 class TemplateRenderer(abc.ABC):
-    # Map of param names in template to the names of the corresponding kwargs
+    # Map of placeholder names in template to the names of the corresponding kwargs
     __name_mapper__: Dict[str, str]
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
@@ -38,7 +38,7 @@ class TemplateRenderer(abc.ABC):
 
 
 class ToolRenderer(abc.ABC):
-    # Map of param names in tool to the names of the corresponding kwargs
+    # Map of placeholder names in tool to the names of the corresponding kwargs
     __name_mapper__: Dict[str, str]
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
