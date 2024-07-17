@@ -392,7 +392,6 @@ def test_prompt_manager_with_tools():
     )
 
     with mgr.exec() as prompt:
-
         assert prompt.render_tool.my_tool(description="my description") == dict(
             type="function",
             function=dict(
