@@ -50,7 +50,7 @@ class Prompt(FrozenModel):
     revision_id: str = pydantic.Field(..., alias="revisionId")
     params: Optional[PromptParams] = None
     templates: List[PromptTemplate]
-    tools: Optional[List[dict[str, Any]]] = None
+    tools: Optional[List[Dict[str, Any]]] = None
 
     @functools.cached_property
     def tracking(self) -> dict[str, Any]:
