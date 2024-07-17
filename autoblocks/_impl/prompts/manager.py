@@ -32,7 +32,7 @@ from autoblocks._impl.util import get_running_loop
 
 log = logging.getLogger(__name__)
 
-ExecutionContextType = TypeVar("ExecutionContextType", bound=PromptExecutionContext[Any, Any])
+ExecutionContextType = TypeVar("ExecutionContextType", bound=PromptExecutionContext[Any, Any, Any])
 
 
 def is_testing_context() -> bool:

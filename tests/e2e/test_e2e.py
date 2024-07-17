@@ -369,7 +369,7 @@ def test_prompt_manager_no_model_params():
     with mgr.exec() as prompt:
         with pytest.raises(AttributeError):
             # This should raise an AttributeError because the prompt has no params
-            prompt.params.model  # type: ignore
+            prompt.params.model  # type: ignore[attr-defined]
 
         assert prompt.track() == dict(
             id="used-by-ci-dont-delete-no-params",

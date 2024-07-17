@@ -26,11 +26,21 @@ class Template(FrozenModel):
         return to_snake_case(self.id)
 
 
+class ToolParams(FrozenModel):
+    name: str
+    placeholders: List[str]
+
+    @property
+    def snake_case_name(self) -> str:
+        return to_snake_case(self.name)
+
+
 class PromptCodegen(FrozenModel):
     id: str
     major_version: str
     params: Dict[str, Any]
     templates: List[Template]
+    tools_params: List[ToolParams]
 
     @property
     def title_case_id(self) -> str:
@@ -45,6 +55,10 @@ class PromptCodegen(FrozenModel):
         return f"{self.title_case_id}TemplateRenderer"
 
     @property
+    def tool_renderer_class_name(self) -> str:
+        return f"{self.title_case_id}ToolRenderer"
+
+    @property
     def execution_context_class_name(self) -> str:
         return f"{self.title_case_id}ExecutionContext"
 
@@ -57,6 +71,8 @@ HEADER = """####################################################################
 # This file was generated automatically by Autoblocks. Do not edit directly.
 ############################################################################
 
+from typing import Any  # noqa: F401
+from typing import Dict  # noqa: F401
 from typing import Union  # noqa: F401
 
 import pydantic  # noqa: F401
@@ -65,6 +81,7 @@ from autoblocks.prompts.context import PromptExecutionContext
 from autoblocks.prompts.manager import AutoblocksPromptManager
 from autoblocks.prompts.models import FrozenModel
 from autoblocks.prompts.renderer import TemplateRenderer
+from autoblocks.prompts.renderer import ToolRenderer
 
 """
 
@@ -184,15 +201,65 @@ def generate_template_renderer_class_code(prompt: PromptCodegen) -> str:
     return auto
 
 
+def generate_tool_render_method_code(tool_params: ToolParams) -> str:
+    auto = f"{indent()}def {tool_params.snake_case_name}(\n{indent(2)}self,\n"
+
+    if tool_params.placeholders:
+        # Require all params to be passed in as keyword arguments
+        auto += f"{indent(2)}*,\n"
+
+    for placeholder in tool_params.placeholders:
+        auto += f"{indent(2)}{to_snake_case(placeholder)}: str,\n"
+
+    auto += f"{indent()}) -> Dict[str, Any]:\n"
+    auto += f'{indent(2)}return self._render(\n{indent(3)}"{tool_params.name}",\n'
+
+    for placeholder in tool_params.placeholders:
+        kwarg_name = to_snake_case(placeholder)
+        auto += f"{indent(3)}{kwarg_name}={kwarg_name},\n"
+
+    auto += f"{indent(2)})\n"
+
+    return auto
+
+
+def generate_tool_renderer_class_code(prompt: PromptCodegen) -> str:
+    auto = f"class {prompt.tool_renderer_class_name}(ToolRenderer):\n"
+
+    # Add name mapper class attribute
+    # The name mapper maps the original template placeholder name
+    # to the snake case name of the corresponding keyword argument
+    name_mapper = {}
+    for tool_params in prompt.tools_params:
+        for placeholder in tool_params.placeholders:
+            name_mapper[placeholder] = to_snake_case(placeholder)
+
+    if name_mapper:
+        auto += f"{indent()}__name_mapper__ = {{\n"
+
+        for key in sorted(name_mapper.keys()):
+            auto += f'{indent(2)}"{key}": "{name_mapper[key]}",\n'
+
+        auto += f"{indent()}}}\n\n"
+    else:
+        auto += f"{indent()}__name_mapper__ = {{}}\n\n"
+
+    auto += "\n".join(generate_tool_render_method_code(tool_params) for tool_params in prompt.tools_params)
+
+    return auto
+
+
 def generate_execution_context_class_code(prompt: PromptCodegen) -> str:
     auto = f"class {prompt.execution_context_class_name}(\n"
     auto += f"{indent()}PromptExecutionContext[\n"
     auto += f"{indent(2)}{prompt.params_class_name},\n"
     auto += f"{indent(2)}{prompt.template_renderer_class_name},\n"
+    auto += f"{indent(2)}{prompt.tool_renderer_class_name},\n"
     auto += f"{indent()}],\n"
     auto += "):\n"
     auto += f"{indent()}__params_class__ = {prompt.params_class_name}\n"
     auto += f"{indent()}__template_renderer_class__ = {prompt.template_renderer_class_name}\n"
+    auto += f"{indent()}__tool_renderer_class__ = {prompt.tool_renderer_class_name}\n"
 
     return auto
 
@@ -214,6 +281,7 @@ def generate_code_for_prompt(prompt: PromptCodegen) -> str:
             for x in [
                 generate_params_class_code(prompt),
                 generate_template_renderer_class_code(prompt),
+                generate_tool_renderer_class_code(prompt),
                 generate_execution_context_class_code(prompt),
                 generate_prompt_manager_class_code(prompt),
             ]
@@ -269,12 +337,22 @@ def make_prompts_from_config(
                 ),
             )
 
+        tools_params = []
+        for toolParams in data["toolsParams"]:
+            tools_params.append(
+                ToolParams(
+                    name=toolParams["name"],
+                    placeholders=toolParams["params"],
+                ),
+            )
+
         prompts.append(
             PromptCodegen(
                 id=prompt.id,
                 major_version=major,
                 params=params,
                 templates=sorted(templates, key=lambda t: t.snake_case_id),
+                tools_params=sorted(tools_params, key=lambda t: t.snake_case_name),
             )
         )
 
