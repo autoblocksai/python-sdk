@@ -5,6 +5,8 @@
   # This file was generated automatically by Autoblocks. Do not edit directly.
   ############################################################################
   
+  from typing import Any  # noqa: F401
+  from typing import Dict  # noqa: F401
   from typing import Union  # noqa: F401
   
   import pydantic  # noqa: F401
@@ -13,6 +15,7 @@
   from autoblocks.prompts.manager import AutoblocksPromptManager
   from autoblocks.prompts.models import FrozenModel
   from autoblocks.prompts.renderer import TemplateRenderer
+  from autoblocks.prompts.renderer import ToolRenderer
   
   
   class PromptAParams(FrozenModel):
@@ -57,14 +60,21 @@
           )
   
   
+  class PromptAToolRenderer(ToolRenderer):
+      __name_mapper__ = {}
+  
+  
+  
   class PromptAExecutionContext(
       PromptExecutionContext[
           PromptAParams,
           PromptATemplateRenderer,
+          PromptAToolRenderer,
       ],
   ):
       __params_class__ = PromptAParams
       __template_renderer_class__ = PromptATemplateRenderer
+      __tool_renderer_class__ = PromptAToolRenderer
   
   
   class PromptAPromptManager(
@@ -103,14 +113,32 @@
           )
   
   
+  class PromptBToolRenderer(ToolRenderer):
+      __name_mapper__ = {
+          "description": "description",
+      }
+  
+      def tool_b(
+          self,
+          *,
+          description: str,
+      ) -> Dict[str, Any]:
+          return self._render(
+              "tool-b",
+              description=description,
+          )
+  
+  
   class PromptBExecutionContext(
       PromptExecutionContext[
           PromptBParams,
           PromptBTemplateRenderer,
+          PromptBToolRenderer,
       ],
   ):
       __params_class__ = PromptBParams
       __template_renderer_class__ = PromptBTemplateRenderer
+      __tool_renderer_class__ = PromptBToolRenderer
   
   
   class PromptBPromptManager(
@@ -144,14 +172,21 @@
           )
   
   
+  class PromptCToolRenderer(ToolRenderer):
+      __name_mapper__ = {}
+  
+  
+  
   class PromptCExecutionContext(
       PromptExecutionContext[
           PromptCParams,
           PromptCTemplateRenderer,
+          PromptCToolRenderer,
       ],
   ):
       __params_class__ = PromptCParams
       __template_renderer_class__ = PromptCTemplateRenderer
+      __tool_renderer_class__ = PromptCToolRenderer
   
   
   class PromptCPromptManager(
@@ -185,14 +220,21 @@
           )
   
   
+  class PromptDToolRenderer(ToolRenderer):
+      __name_mapper__ = {}
+  
+  
+  
   class PromptDExecutionContext(
       PromptExecutionContext[
           PromptDParams,
           PromptDTemplateRenderer,
+          PromptDToolRenderer,
       ],
   ):
       __params_class__ = PromptDParams
       __template_renderer_class__ = PromptDTemplateRenderer
+      __tool_renderer_class__ = PromptDToolRenderer
   
   
   class PromptDPromptManager(

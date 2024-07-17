@@ -16,6 +16,7 @@ from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.prompts.context import PromptExecutionContext
 from autoblocks._impl.prompts.manager import AutoblocksPromptManager
 from autoblocks._impl.prompts.renderer import TemplateRenderer
+from autoblocks._impl.prompts.renderer import ToolRenderer
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import StrEnum
 from autoblocks.testing.models import BaseEvaluator
@@ -2728,14 +2729,19 @@ def test_prompt_manager_revision_usage(httpx_mock):
     class MyTemplateRenderer(TemplateRenderer):
         __name_mapper__ = {}
 
+    class MyToolRenderer(ToolRenderer):
+        __name_mapper__ = {}
+
     class MyExecutionContext(
         PromptExecutionContext[
             MyPromptParams,
             MyTemplateRenderer,
+            MyToolRenderer,
         ],
     ):
         __params_class__ = MyPromptParams
         __template_renderer_class__ = MyTemplateRenderer
+        __tool_renderer_class__ = MyToolRenderer
 
     class PromptManagerA(
         AutoblocksPromptManager[MyExecutionContext],

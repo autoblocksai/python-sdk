@@ -6,6 +6,9 @@ autogenerate:
       - id: used-by-ci-dont-delete
         major_version: 4
 
+      - id: used-by-ci-dont-delete-with-tools
+        major_version: 1
+
       - id: used-by-ci-dont-delete-no-params
         major_version: 1
 

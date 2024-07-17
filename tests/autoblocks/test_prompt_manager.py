@@ -1,6 +1,7 @@
 import json
 import os
 from http import HTTPStatus
+from typing import Any
 from unittest import mock
 
 import pydantic
@@ -11,6 +12,7 @@ from autoblocks._impl.prompts.error import IncompatiblePromptRevisionError
 from autoblocks.prompts.context import PromptExecutionContext
 from autoblocks.prompts.manager import AutoblocksPromptManager
 from autoblocks.prompts.renderer import TemplateRenderer
+from autoblocks.prompts.renderer import ToolRenderer
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import make_expected_body
 
@@ -38,14 +40,28 @@ class MyTemplateRenderer(TemplateRenderer):
         )
 
 
+class MyToolRenderer(ToolRenderer):
+    __name_mapper__ = {
+        "description": "description",
+    }
+
+    def my_tool(
+        self,
+        *,
+        description: str,
+    ) -> dict[str, Any]:
+        return self._render(
+            "my-tool",
+            description=description,
+        )
+
+
 class MyExecutionContext(
-    PromptExecutionContext[
-        MyClassParams,
-        MyTemplateRenderer,
-    ],
+    PromptExecutionContext[MyClassParams, MyTemplateRenderer, MyToolRenderer],
 ):
     __params_class__ = MyClassParams
     __template_renderer_class__ = MyTemplateRenderer
+    __tool_renderer_class__ = MyToolRenderer
 
 
 class MyPromptManager(
@@ -83,7 +99,7 @@ def test_handles_escaped_template_params(httpx_mock):
 
     mgr = MyPromptManager(minor_version="0")
     with mgr.exec() as p:
-        rendered = p.render.my_template(name="Nicole", weather="sunny")
+        rendered = p.render_template.my_template(name="Nicole", weather="sunny")
         assert rendered == "Hello, Nicole! The weather is sunny and I am {{ escaped }} and should be rendered as-is."
 
 
@@ -123,7 +139,7 @@ Thanks!
 
     mgr = MyPromptManager(minor_version="0")
     with mgr.exec() as p:
-        rendered = p.render.my_template(name="Nicole", weather="sunny")
+        rendered = p.render_template.my_template(name="Nicole", weather="sunny")
         assert (
             rendered
             == """Hello, sunny Nicole!
@@ -168,13 +184,19 @@ def test_uses_prompt_revision(httpx_mock):
                     template="Hello, {{ name }}! The weather is {{ weather }} today!!!",
                 ),
             ],
+            tools=[dict(type="function", function=dict(name="my-tool", description="{{ description }}"))],
         ),
     )
 
     mgr = MyPromptManager(minor_version="0")
     with mgr.exec() as p:
-        rendered = p.render.my_template(name="Nicole", weather="sunny")
+        rendered = p.render_template.my_template(name="Nicole", weather="sunny")
         assert rendered == "Hello, Nicole! The weather is sunny today!!!"
+        rendered_tool = p.render_tool.my_tool(description="This is a description.")
+        assert rendered_tool == {
+            "type": "function",
+            "function": {"name": "my-tool", "description": "This is a description."},
+        }
 
     assert len(httpx_mock.get_requests()) == 1
 
@@ -212,7 +234,7 @@ def test_uses_prompt_revision_when_version_is_latest(httpx_mock):
 
     mgr = MyPromptManager(minor_version="latest")
     with mgr.exec() as p:
-        rendered = p.render.my_template(name="Nicole", weather="sunny")
+        rendered = p.render_template.my_template(name="Nicole", weather="sunny")
         assert rendered == "Hello, Nicole! The weather is sunny today!!!"
 
     assert len(httpx_mock.get_requests()) == 1
@@ -246,7 +268,7 @@ def test_uses_configured_version_if_revision_is_for_different_prompt(httpx_mock)
 
     mgr = MyPromptManager(minor_version="0")
     with mgr.exec() as p:
-        rendered = p.render.my_template(name="Nicole", weather="sunny")
+        rendered = p.render_template.my_template(name="Nicole", weather="sunny")
         assert rendered == "Hello, Nicole! The weather is sunny today."
 
     assert len(httpx_mock.get_requests()) == 1
@@ -314,7 +336,7 @@ def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
 
     mgr = MyPromptManager(minor_version="0")
     with mgr.exec() as p:
-        rendered = p.render.my_template(name="Nicole", weather="sunny")
+        rendered = p.render_template.my_template(name="Nicole", weather="sunny")
         assert rendered == "Hello, Nicole! The weather is sunny today."
 
     assert len(httpx_mock.get_requests()) == 1

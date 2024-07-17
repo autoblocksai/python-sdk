@@ -31,6 +31,7 @@ from tests.e2e.prompts import QuestionAnswererPromptManager
 from tests.e2e.prompts import TextSummarizationPromptManager
 from tests.e2e.prompts import UsedByCiDontDeleteNoParamsPromptManager
 from tests.e2e.prompts import UsedByCiDontDeletePromptManager
+from tests.e2e.prompts import UsedByCiDontDeleteWithToolsPromptManager
 from tests.util import ANY_NUMBER
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import expect_cli_post_request
@@ -235,7 +236,7 @@ def test_prompt_manager():
         assert ctx.params.top_k == 0
 
         assert (
-            ctx.render.template_a(
+            ctx.render_template.template_a(
                 name="Alice",
                 weather="sunny",
             )
@@ -243,13 +244,13 @@ def test_prompt_manager():
         )
 
         assert (
-            ctx.render.template_b(
+            ctx.render_template.template_b(
                 name="Alice",
             )
             == "My name is Alice."
         )
 
-        assert ctx.render.template_c() == "I am template c and I have no params"
+        assert ctx.render_template.template_c() == "I am template c and I have no params"
 
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
@@ -279,6 +280,7 @@ def test_prompt_manager():
                     "template": "I am template c and I have no params",
                 },
             ],
+            "tools": None,
         }
 
 
@@ -295,7 +297,7 @@ def test_prompt_manager_latest():
         assert ctx.params.top_k == 0
 
         assert (
-            ctx.render.template_a(
+            ctx.render_template.template_a(
                 name="Alice",
                 weather="sunny",
             )
@@ -303,13 +305,13 @@ def test_prompt_manager_latest():
         )
 
         assert (
-            ctx.render.template_b(
+            ctx.render_template.template_b(
                 name="Alice",
             )
             == "My name is Alice!"
         )
 
-        assert ctx.render.template_c() == "I am template c and I have no params"
+        assert ctx.render_template.template_c() == "I am template c and I have no params"
 
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
@@ -339,6 +341,7 @@ def test_prompt_manager_latest():
                     "template": "I am template c and I have no params",
                 },
             ],
+            "tools": None,
         }
 
 
@@ -369,7 +372,7 @@ def test_prompt_manager_no_model_params():
     with mgr.exec() as prompt:
         with pytest.raises(AttributeError):
             # This should raise an AttributeError because the prompt has no params
-            prompt.params.model  # type: ignore
+            prompt.params.model  # type: ignore[attr-defined]
 
         assert prompt.track() == dict(
             id="used-by-ci-dont-delete-no-params",
@@ -378,6 +381,54 @@ def test_prompt_manager_no_model_params():
             params=None,
             templates=[
                 dict(id="my-template-id", template="Hello, {{ name }}!"),
+            ],
+            tools=None,
+        )
+
+
+def test_prompt_manager_with_tools():
+    mgr = UsedByCiDontDeleteWithToolsPromptManager(
+        minor_version="0",
+    )
+
+    with mgr.exec() as prompt:
+        assert prompt.render_tool.my_tool(description="my description") == dict(
+            type="function",
+            function=dict(
+                name="MyTool",
+                description="This is the description",
+                parameters=dict(
+                    type="object",
+                    properties=dict(
+                        myParam=dict(type="string", description="my description"),
+                    ),
+                    required=["myParam"],
+                ),
+            ),
+        )
+        assert prompt.track() == dict(
+            id="used-by-ci-dont-delete-with-tools",
+            version="1.0",
+            revisionId="clyq8mdh90003ltgk9se55nxk",
+            params=None,
+            templates=[
+                dict(id="system", template="System Template"),
+            ],
+            tools=[
+                dict(
+                    type="function",
+                    function=dict(
+                        name="MyTool",
+                        description="This is the description",
+                        parameters=dict(
+                            type="object",
+                            properties=dict(
+                                myParam=dict(type="string", description="{{ description }}"),
+                            ),
+                            required=["myParam"],
+                        ),
+                    ),
+                )
             ],
         )
 
