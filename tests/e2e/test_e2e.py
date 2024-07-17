@@ -31,6 +31,7 @@ from tests.e2e.prompts import QuestionAnswererPromptManager
 from tests.e2e.prompts import TextSummarizationPromptManager
 from tests.e2e.prompts import UsedByCiDontDeleteNoParamsPromptManager
 from tests.e2e.prompts import UsedByCiDontDeletePromptManager
+from tests.e2e.prompts import UsedByCiDontDeleteWithToolsPromptManager
 from tests.util import ANY_NUMBER
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import expect_cli_post_request
@@ -378,6 +379,44 @@ def test_prompt_manager_no_model_params():
             params=None,
             templates=[
                 dict(id="my-template-id", template="Hello, {{ name }}!"),
+            ],
+        )
+
+
+def test_prompt_manager_with_tools():
+    mgr = UsedByCiDontDeleteWithToolsPromptManager(
+        minor_version="0",
+    )
+
+    with mgr.exec() as prompt:
+
+        assert prompt.render_tool.my_tool(description="my description") == dict(
+            type="function",
+            function=dict(
+                name="MyTool",
+                description="This is the description",
+                parameters=dict(myParam=dict(type="string", description="my description"), required=["myParam"]),
+            ),
+        )
+        assert prompt.track() == dict(
+            id="used-by-ci-dont-delete-no-params",
+            version="1.0",
+            revisionId="clvgwh7on003kkasy8cltjobg",
+            params=None,
+            templates=[
+                dict(id="my-template-id", template="Hello, {{ name }}!"),
+            ],
+            tools=[
+                dict(
+                    type="function",
+                    function=dict(
+                        name="MyTool",
+                        description="This is the description",
+                        parameters=dict(
+                            myParam=dict(type="string", description="my description"), required=["myParam"]
+                        ),
+                    ),
+                )
             ],
         )
 

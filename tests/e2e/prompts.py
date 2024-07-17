@@ -283,3 +283,54 @@ class UsedByCiDontDeleteNoParamsPromptManager(
     __prompt_id__ = "used-by-ci-dont-delete-no-params"
     __prompt_major_version__ = "1"
     __execution_context_class__ = UsedByCiDontDeleteNoParamsExecutionContext
+
+
+class UsedByCiDontDeleteWithToolsParams(FrozenModel):
+    pass
+
+
+class UsedByCiDontDeleteWithToolsTemplateRenderer(TemplateRenderer):
+    __name_mapper__ = {}
+
+    def system(
+        self,
+    ) -> str:
+        return self._render(
+            "system",
+        )
+
+
+class UsedByCiDontDeleteWithToolsToolRenderer(ToolRenderer):
+    __name_mapper__ = {
+        "description": "description",
+    }
+
+    def my_tool(
+        self,
+        *,
+        description: str,
+    ) -> Dict[str, Any]:
+        return self._render(
+            "MyTool",
+            description=description,
+        )
+
+
+class UsedByCiDontDeleteWithToolsExecutionContext(
+    PromptExecutionContext[
+        UsedByCiDontDeleteWithToolsParams,
+        UsedByCiDontDeleteWithToolsTemplateRenderer,
+        UsedByCiDontDeleteWithToolsToolRenderer,
+    ],
+):
+    __params_class__ = UsedByCiDontDeleteWithToolsParams
+    __template_renderer_class__ = UsedByCiDontDeleteWithToolsTemplateRenderer
+    __tool_renderer_class__ = UsedByCiDontDeleteWithToolsToolRenderer
+
+
+class UsedByCiDontDeleteWithToolsPromptManager(
+    AutoblocksPromptManager[UsedByCiDontDeleteWithToolsExecutionContext],
+):
+    __prompt_id__ = "used-by-ci-dont-delete-with-tools"
+    __prompt_major_version__ = "1"
+    __execution_context_class__ = UsedByCiDontDeleteWithToolsExecutionContext
