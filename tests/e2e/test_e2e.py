@@ -236,7 +236,7 @@ def test_prompt_manager():
         assert ctx.params.top_k == 0
 
         assert (
-            ctx.render.template_a(
+            ctx.render_template.template_a(
                 name="Alice",
                 weather="sunny",
             )
@@ -244,13 +244,13 @@ def test_prompt_manager():
         )
 
         assert (
-            ctx.render.template_b(
+            ctx.render_template.template_b(
                 name="Alice",
             )
             == "My name is Alice."
         )
 
-        assert ctx.render.template_c() == "I am template c and I have no params"
+        assert ctx.render_template.template_c() == "I am template c and I have no params"
 
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
@@ -297,7 +297,7 @@ def test_prompt_manager_latest():
         assert ctx.params.top_k == 0
 
         assert (
-            ctx.render.template_a(
+            ctx.render_template.template_a(
                 name="Alice",
                 weather="sunny",
             )
@@ -305,13 +305,13 @@ def test_prompt_manager_latest():
         )
 
         assert (
-            ctx.render.template_b(
+            ctx.render_template.template_b(
                 name="Alice",
             )
             == "My name is Alice!"
         )
 
-        assert ctx.render.template_c() == "I am template c and I have no params"
+        assert ctx.render_template.template_c() == "I am template c and I have no params"
 
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
