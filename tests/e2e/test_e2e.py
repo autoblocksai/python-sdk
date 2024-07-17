@@ -280,6 +280,7 @@ def test_prompt_manager():
                     "template": "I am template c and I have no params",
                 },
             ],
+            "tools": None,
         }
 
 
@@ -340,6 +341,7 @@ def test_prompt_manager_latest():
                     "template": "I am template c and I have no params",
                 },
             ],
+            "tools": None,
         }
 
 
@@ -380,6 +382,7 @@ def test_prompt_manager_no_model_params():
             templates=[
                 dict(id="my-template-id", template="Hello, {{ name }}!"),
             ],
+            tools=None,
         )
 
 
@@ -395,16 +398,22 @@ def test_prompt_manager_with_tools():
             function=dict(
                 name="MyTool",
                 description="This is the description",
-                parameters=dict(myParam=dict(type="string", description="my description"), required=["myParam"]),
+                parameters=dict(
+                    type="object",
+                    properties=dict(
+                        myParam=dict(type="string", description="my description"),
+                    ),
+                    required=["myParam"],
+                ),
             ),
         )
         assert prompt.track() == dict(
-            id="used-by-ci-dont-delete-no-params",
+            id="used-by-ci-dont-delete-with-tools",
             version="1.0",
-            revisionId="clvgwh7on003kkasy8cltjobg",
+            revisionId="clyq8mdh90003ltgk9se55nxk",
             params=None,
             templates=[
-                dict(id="my-template-id", template="Hello, {{ name }}!"),
+                dict(id="system", template="System Template"),
             ],
             tools=[
                 dict(
@@ -413,7 +422,11 @@ def test_prompt_manager_with_tools():
                         name="MyTool",
                         description="This is the description",
                         parameters=dict(
-                            myParam=dict(type="string", description="my description"), required=["myParam"]
+                            type="object",
+                            properties=dict(
+                                myParam=dict(type="string", description="{{ description }}"),
+                            ),
+                            required=["myParam"],
                         ),
                     ),
                 )

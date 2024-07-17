@@ -49,7 +49,10 @@ class ToolRenderer(abc.ABC):
     def __init__(self, prompt: Prompt) -> None:
         if prompt.tools is None:
             raise ValueError(f"Prompt {prompt.id} does not have any tools")
-        self.__tool_map = {tool["name"]: tool for tool in prompt.tools}
+        self.__tool_map = {}
+        for tool in prompt.tools:
+            if tool["type"] == "function":
+                self.__tool_map[tool["function"]["name"]] = tool
 
     def _render(self, tool_name: str, **kwargs: Any) -> dict[str, Any]:
         def replace(match: re.Match[str]) -> str:

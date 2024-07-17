@@ -184,12 +184,7 @@ def test_uses_prompt_revision(httpx_mock):
                     template="Hello, {{ name }}! The weather is {{ weather }} today!!!",
                 ),
             ],
-            tools=[
-                dict(
-                    name="my-tool",
-                    description="{{ description }}",
-                )
-            ],
+            tools=[dict(type="function", function=dict(name="my-tool", description="{{ description }}"))],
         ),
     )
 
@@ -198,7 +193,10 @@ def test_uses_prompt_revision(httpx_mock):
         rendered = p.render_template.my_template(name="Nicole", weather="sunny")
         assert rendered == "Hello, Nicole! The weather is sunny today!!!"
         rendered_tool = p.render_tool.my_tool(description="This is a description.")
-        assert rendered_tool == {"name": "my-tool", "description": "This is a description."}
+        assert rendered_tool == {
+            "type": "function",
+            "function": {"name": "my-tool", "description": "This is a description."},
+        }
 
     assert len(httpx_mock.get_requests()) == 1
 
