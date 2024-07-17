@@ -227,7 +227,7 @@ def generate_tool_renderer_class_code(prompt: PromptCodegen) -> str:
     auto = f"class {prompt.tool_renderer_class_name}(ToolRenderer):\n"
 
     # Add name mapper class attribute
-    # The name mapper maps the original template placeholder name
+    # The name mapper maps the original tool placeholder name
     # to the snake case name of the corresponding keyword argument
     name_mapper = {}
     for tool_params in prompt.tools:
