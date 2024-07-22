@@ -7,6 +7,7 @@ import pytest
 
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks.testing.evaluators import BaseAccuracy
 from autoblocks.testing.evaluators import BaseAutomaticBattle
 from autoblocks.testing.evaluators import BaseHasAllSubstrings
 from autoblocks.testing.evaluators import BaseIsEquals
@@ -594,6 +595,124 @@ def test_nsfw_evaluator(httpx_mock):
         ],
         evaluators=[
             NSFW(),
+        ],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+    )
+
+
+def test_accuracy_evaluator(httpx_mock):
+    @dataclasses.dataclass
+    class TestCase(BaseTestCase):
+        input: str
+        expected_output: str
+
+        def hash(self) -> str:
+            return self.input
+
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="hello",
+            testCaseBody=dict(input="hello", expected_output="hello"),
+            testCaseOutput="hello",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="hello",
+            evaluatorExternalId="accuracy",
+            score=1,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                reason=ANY_STRING,
+                prompt=ANY_STRING,
+            ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="How are you?",
+            testCaseBody=dict(input="How are you?", expected_output="hi"),
+            testCaseOutput="How are you?",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="How are you?",
+            evaluatorExternalId="accuracy",
+            score=0,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=dict(
+                reason=ANY_STRING,
+                prompt=ANY_STRING,
+            ),
+            revisionUsage=None,
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+        ),
+    )
+
+    def test_fn(test_case: TestCase) -> str:
+        return test_case.input
+
+    class Accuracy(BaseAccuracy[TestCase, str]):
+        id = "accuracy"
+
+        def output_mapper(self, output: str) -> str:
+            return output
+
+        def expected_output_mapper(self, test_case: TestCase) -> str:
+            return test_case.expected_output
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            TestCase(input="hello", expected_output="hello"),
+            TestCase(input="How are you?", expected_output="hi"),
+        ],
+        evaluators=[
+            Accuracy(),
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
