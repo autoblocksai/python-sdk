@@ -1,3 +1,4 @@
+from autoblocks._impl.testing.evaluators.accuracy import BaseAccuracy
 from autoblocks._impl.testing.evaluators.battle import BaseAutomaticBattle
 from autoblocks._impl.testing.evaluators.battle import BaseAutomaticBattle as AutomaticBattle
 from autoblocks._impl.testing.evaluators.battle import BaseManualBattle
@@ -33,6 +34,7 @@ __all__ = [
     "BaseRagasContextRelevancy",
     "BaseRagasFaithfulness",
     "BaseLLMJudge",
+    "BaseAccuracy",
     "BaseNSFW",
     "BaseToxicity",
     # deprecated
