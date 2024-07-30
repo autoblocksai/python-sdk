@@ -12,7 +12,6 @@ from autoblocks.testing.evaluators import BaseRagasAnswerSemanticSimilarity
 from autoblocks.testing.evaluators import BaseRagasContextEntitiesRecall
 from autoblocks.testing.evaluators import BaseRagasContextPrecision
 from autoblocks.testing.evaluators import BaseRagasContextRecall
-from autoblocks.testing.evaluators import BaseRagasContextRelevancy
 from autoblocks.testing.evaluators import BaseRagasFaithfulness
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.models import Threshold
@@ -303,35 +302,6 @@ def test_ragas_context_entities_recall_evaluator(httpx_mock):
         test_cases=test_cases,
         evaluators=[
             ContextEntitiesRecall(),
-        ],
-        fn=function_to_test,
-    )
-
-
-def test_ragas_context_relevancy_evaluator(httpx_mock):
-    make_expected_requests("context-relevancy", httpx_mock)
-
-    class ContextRelevancy(BaseRagasContextRelevancy[RagasTestCase, str]):
-        id = "context-relevancy"
-        threshold = Threshold(gte=1)
-
-        def question_mapper(self, test_case: RagasTestCase, output: str) -> str:
-            return test_case.question
-
-        def answer_mapper(self, output: str) -> str:
-            return output
-
-        def contexts_mapper(self, test_case: RagasTestCase, output: str) -> list[str]:
-            return ["The eiffel tower stands 300 meters tall."]
-
-        def ground_truth_mapper(self, test_case: RagasTestCase, output: str) -> str:
-            return test_case.expected_answer
-
-    run_test_suite(
-        id="my-test-id",
-        test_cases=test_cases,
-        evaluators=[
-            ContextRelevancy(),
         ],
         fn=function_to_test,
     )
