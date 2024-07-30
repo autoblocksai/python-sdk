@@ -1,21 +1,16 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "timezone": "America/Chicago",
-  "extends": [
-    "config:recommended",
-    "schedule:weekly"
-  ],
+  "extends": ["config:recommended", "schedule:weekly"],
   "reviewers": ["team:engineering"],
-  "pre-commit": {
-    "enabled": true
-  },
+  "pre-commit": { "enabled": true },
   "packageRules": [
     {
       "groupName": "all non-major dev dependencies",
       "groupSlug": "all-minor-patch-dev",
       "matchDepTypes": ["dev"],
-      "matchPackagePatterns": ["*"],
-      "matchUpdateTypes": ["minor", "patch"]
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": ["*"]
     }
   ]
 }
