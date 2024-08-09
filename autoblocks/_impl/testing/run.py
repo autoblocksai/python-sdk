@@ -400,12 +400,7 @@ async def async_run_test_suite(
     grid_search_params: Optional[GridSearchParams],
 ) -> None:
     if not AutoblocksEnvVar.CLI_SERVER_ADDRESS.get():
-        log.warning(
-            "\nRunning in debug mode since your tests are not being run within the context of the testing CLI; "
-            "results will not be sent to Autoblocks.\n"
-            "Make sure you are running your test command with:\n"
-            "$ npx autoblocks testing exec -- <your test command>\n"
-        )
+        log.info(f"Running test suite '{test_id}")
     # Handle alignment mode
     align_test_id = AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get()
     if align_test_id:
@@ -523,6 +518,9 @@ async def async_run_test_suite(
             evaluator_id=None,
             error=err,
         )
+
+    if not AutoblocksEnvVar.CLI_SERVER_ADDRESS.get():
+        log.info(f"Finished running test suite '{test_id}")
 
 
 # Sync fn

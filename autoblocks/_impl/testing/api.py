@@ -86,20 +86,23 @@ async def send_info_for_alignment_mode(
 async def send_error(
     test_id: str, run_id: Optional[str], test_case_hash: Optional[str], evaluator_id: Optional[str], error: Exception
 ) -> None:
-    await post_to_cli(
-        "/errors",
-        json=dict(
-            testExternalId=test_id,
-            runId=run_id,
-            testCaseHash=test_case_hash,
-            evaluatorExternalId=evaluator_id,
-            error=dict(
-                name=type(error).__name__,
-                message=str(error),
-                stacktrace=traceback.format_exc(),
+    if is_cli_running():
+        await post_to_cli(
+            "/errors",
+            json=dict(
+                testExternalId=test_id,
+                runId=run_id,
+                testCaseHash=test_case_hash,
+                evaluatorExternalId=evaluator_id,
+                error=dict(
+                    name=type(error).__name__,
+                    message=str(error),
+                    stacktrace=traceback.format_exc(),
+                ),
             ),
-        ),
-    )
+        )
+    else:
+        log.error(str(error))
 
 
 async def send_start_grid_search_run(
