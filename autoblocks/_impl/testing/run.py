@@ -400,10 +400,10 @@ async def async_run_test_suite(
     grid_search_params: Optional[GridSearchParams],
 ) -> None:
     if not AutoblocksEnvVar.CLI_SERVER_ADDRESS.get():
-        log.info(f"Running test suite '{test_id}")
+        log.info(f"Running test suite '{test_id}'")
     # Handle alignment mode
     align_test_id = AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get()
-    if align_test_id:
+    if align_test_id and AutoblocksEnvVar.CLI_SERVER_ADDRESS.get():
         if align_test_id != test_id:
             # Not the test suite in alignment mode
             return
@@ -520,7 +520,7 @@ async def async_run_test_suite(
         )
 
     if not AutoblocksEnvVar.CLI_SERVER_ADDRESS.get():
-        log.info(f"Finished running test suite '{test_id}")
+        log.info(f"Finished running test suite '{test_id}'")
 
 
 # Sync fn
