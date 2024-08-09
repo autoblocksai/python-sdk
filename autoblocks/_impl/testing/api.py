@@ -6,7 +6,6 @@ from typing import Any
 from typing import Optional
 from typing import Sequence
 
-from httpx import HTTPStatusError
 from httpx import Response
 
 from autoblocks._impl import global_state
@@ -156,13 +155,10 @@ async def send_start_test_run(
             gridSearchParamsCombo=grid_search_params_combo,
         ),
     )
-    if not start_resp:
-        raise Exception(f"Failed to start test run for {test_external_id}")
-    try:
-        start_resp.raise_for_status()
-    except HTTPStatusError:
-        raise Exception(f"Failed to start test run for {test_external_id}")
 
+    if not start_resp:
+        raise Exception(f"Failed to start test run for {test_external_id}.")
+    start_resp.raise_for_status()
     return start_resp.json()["id"]  # type: ignore [no-any-return]
 
 
@@ -186,9 +182,6 @@ async def send_start_grid_search_run(
     )
     if not grid_resp:
         raise Exception(f"Failed to start grid search run for {test_external_id}")
-    try:
-        grid_resp.raise_for_status()
-    except HTTPStatusError:
-        raise Exception(f"Failed to start grid search run for {test_external_id}")
 
+    grid_resp.raise_for_status()
     return grid_resp.json()["id"]  # type: ignore [no-any-return]
