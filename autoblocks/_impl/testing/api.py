@@ -53,10 +53,14 @@ async def post_to_api(
     json: dict[str, Any],
 ) -> Optional[Response]:
     sub_path = "/testing/local"
+    api_key = AutoblocksEnvVar.API_KEY.get()
+    if not api_key:
+        raise ValueError(f"You must set the {AutoblocksEnvVar.API_KEY} environment variable.")
     return await global_state.http_client().post(
         f"{API_ENDPOINT}{sub_path}{path}",
         json=json,
-        timeout=TIMEOUT_SECONDS,  # seconds
+        timeout=TIMEOUT_SECONDS,  # seconds,
+        headers={"Authorization": f"Bearer {api_key}"},
     )
 
 
