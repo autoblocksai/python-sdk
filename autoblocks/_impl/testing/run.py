@@ -76,6 +76,7 @@ async def run_evaluator_unsafe(
     output: Any,
     hook_results: Any,
     evaluator: BaseTestEvaluator,
+    test_case_result_id: str,
 ) -> None:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
@@ -111,6 +112,7 @@ async def run_evaluator_unsafe(
         test_case_hash=test_case_ctx.hash(),
         evaluator_external_id=evaluator.id,
         evaluation=evaluation,
+        test_case_result_id=test_case_result_id,
     )
 
 
@@ -121,6 +123,7 @@ async def run_evaluator(
     output: Any,
     hook_results: Any,
     evaluator: BaseTestEvaluator,
+    test_case_result_id: str,
 ) -> None:
     reset_token = evaluator_run_context_var.set(
         EvaluatorRunContext(),
@@ -133,6 +136,7 @@ async def run_evaluator(
             output=output,
             hook_results=hook_results,
             evaluator=evaluator,
+            test_case_result_id=test_case_result_id,
         )
     except Exception as err:
         await send_error(
@@ -152,7 +156,7 @@ async def run_test_case_unsafe(
     test_case_ctx: TestCaseContext[TestCaseType],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
-) -> Tuple[Any, Any]:
+) -> Tuple[Any, Any, str]:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
@@ -197,7 +201,7 @@ async def run_test_case_unsafe(
                     output,
                 )
 
-    await send_test_case_result(
+    test_case_result_id = await send_test_case_result(
         test_external_id=test_id,
         run_id=run_id,
         test_case_ctx=test_case_ctx,
@@ -205,7 +209,7 @@ async def run_test_case_unsafe(
         test_case_duration_ms=test_case_duration_ms,
     )
 
-    return output, hook_results
+    return output, hook_results, test_case_result_id
 
 
 async def run_test_case(
@@ -224,7 +228,7 @@ async def run_test_case(
         ),
     )
     try:
-        output, hook_results = await run_test_case_unsafe(
+        output, hook_results, test_case_result_id = await run_test_case_unsafe(
             test_id=test_id,
             run_id=run_id,
             test_case_ctx=test_case_ctx,
@@ -251,6 +255,7 @@ async def run_test_case(
                     output=output,
                     hook_results=hook_results,
                     evaluator=evaluator,
+                    test_case_result_id=test_case_result_id,
                 )
                 for evaluator in evaluators
             ],
@@ -486,7 +491,6 @@ async def async_run_test_suite(
 
     try:
         grid_search_run_group_id = await send_start_grid_search_run(
-            test_external_id=test_id,
             grid_search_params=grid_search_params,
         )
     except Exception:
