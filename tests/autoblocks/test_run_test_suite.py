@@ -35,6 +35,7 @@ from tests.util import ANY_NUMBER
 from tests.util import ANY_STRING
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import decode_request_body
+from tests.util import expect_api_post_request
 from tests.util import expect_cli_post_request
 
 
@@ -160,6 +161,7 @@ def test_error_in_test_fn(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -231,6 +233,7 @@ def test_error_in_async_test_fn(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -302,6 +305,7 @@ def test_error_in_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -345,6 +349,7 @@ def test_error_in_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -447,6 +452,7 @@ def test_no_evaluators(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -462,6 +468,7 @@ def test_no_evaluators(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -511,6 +518,7 @@ def test_with_evaluators(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -554,6 +562,7 @@ def test_with_evaluators(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -632,6 +641,38 @@ def test_concurrency(httpx_mock):
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-1"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="b",
+            testCaseBody=dict(input="b"),
+            testCaseOutput="b!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-2"),
     )
     httpx_mock.add_response()
 
@@ -793,6 +834,7 @@ def test_async_test_fn(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -808,6 +850,7 @@ def test_async_test_fn(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -858,6 +901,7 @@ def test_async_evaluators(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -901,6 +945,7 @@ def test_async_evaluators(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -1000,6 +1045,7 @@ def test_serializes(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -1134,6 +1180,7 @@ def test_skips_non_serializable_test_case_attributes(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -1177,6 +1224,12 @@ def test_skips_non_serializable_test_case_attributes(httpx_mock):
     )
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "AUTOBLOCKS_API_KEY": "mock-api-key",
+    },
+)
 def test_sends_tracer_events(httpx_mock):
     timestamp = datetime.datetime(2021, 1, 1, 1, 1, 1).isoformat()
 
@@ -1190,22 +1243,7 @@ def test_sends_tracer_events(httpx_mock):
         ),
         json=dict(id="mock-run-id"),
     )
-    expect_cli_post_request(
-        httpx_mock,
-        path="/events",
-        body=dict(
-            testExternalId="my-test-id",
-            runId="mock-run-id",
-            testCaseHash="a",
-            event=dict(
-                message="a",
-                traceId=None,
-                timestamp=timestamp,
-                properties=dict(),
-                systemProperties=None,
-            ),
-        ),
-    )
+
     expect_cli_post_request(
         httpx_mock,
         path="/results",
@@ -1220,21 +1258,21 @@ def test_sends_tracer_events(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
-    expect_cli_post_request(
+    expect_api_post_request(
         httpx_mock,
-        path="/events",
+        path="/testing/local/runs/mock-run-id/results/mock-result-id-1/events",
         body=dict(
-            testExternalId="my-test-id",
-            runId="mock-run-id",
-            testCaseHash="b",
-            event=dict(
-                message="b",
-                traceId=None,
-                timestamp=timestamp,
-                properties=dict(),
-                systemProperties=None,
-            ),
+            testCaseEvents=[
+                dict(
+                    message="a",
+                    traceId=None,
+                    timestamp=timestamp,
+                    properties=dict(),
+                    systemProperties=None,
+                )
+            ]
         ),
     )
     expect_cli_post_request(
@@ -1250,6 +1288,22 @@ def test_sends_tracer_events(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-2"),
+    )
+    expect_api_post_request(
+        httpx_mock,
+        path="/testing/local/runs/mock-run-id/results/mock-result-id-2/events",
+        body=dict(
+            testCaseEvents=[
+                dict(
+                    message="b",
+                    traceId=None,
+                    timestamp=timestamp,
+                    properties=dict(),
+                    systemProperties=None,
+                )
+            ]
         ),
     )
     expect_cli_post_request(
@@ -1315,6 +1369,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -1331,6 +1386,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -1347,6 +1403,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-3"),
     )
 
     # We should have one result for B
@@ -1364,6 +1421,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-4"),
     )
 
     # We should have 3 evals for A
@@ -1492,8 +1550,6 @@ def test_repeated_test_cases(httpx_mock):
 
 
 def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
-    timestamp = datetime.datetime(2021, 1, 1, 1, 1, 1).isoformat()
-
     expect_cli_post_request(
         httpx_mock,
         path="/start",
@@ -1503,22 +1559,6 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
-    )
-    expect_cli_post_request(
-        httpx_mock,
-        path="/events",
-        body=dict(
-            testExternalId="my-test-id",
-            runId="mock-run-id",
-            testCaseHash="0.5",
-            event=dict(
-                message="this is a test",
-                traceId=None,
-                timestamp=timestamp,
-                properties=dict(x=0.5),
-                systemProperties=None,
-            ),
-        ),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -1534,6 +1574,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -1583,15 +1624,6 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
             )
 
     def test_fn(test_case: SomeTestCase) -> str:
-        tracer = AutoblocksTracer("mock-ingestion-key")
-        tracer.send_event(
-            message="this is a test",
-            timestamp=timestamp,
-            properties=dict(x=test_case.x),
-            evaluators=[
-                MyCombinedEvaluator(),
-            ],
-        )
         return "whatever"
 
     run_test_suite(
@@ -1748,6 +1780,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -1771,6 +1804,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -1869,6 +1903,8 @@ def test_alignment_mode_skips_test_suite(httpx_mock):
 def test_alignment_mode_without_test_case_hash(httpx_mock):
     test_id = "my-test-id"
     run_id = "mock-run-id"
+    test_case_a = MyTestCase(input="a")
+    test_case_b = MyTestCase(input="b")
 
     expect_cli_post_request(
         httpx_mock,
@@ -1880,10 +1916,23 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
         ),
         json=dict(id=run_id),
     )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId=test_id,
+            runId=run_id,
+            testCaseHash=test_case_a.hash(),
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-1"),
+    )
     httpx_mock.add_response()
-
-    test_case_a = MyTestCase(input="a")
-    test_case_b = MyTestCase(input="b")
 
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
@@ -1903,7 +1952,7 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
         )
 
     requests = [dict(path=req.url.path, body=decode_request_body(req)) for req in httpx_mock.get_requests()]
-
+    print(requests)
     assert requests == [
         dict(
             path="/info",
@@ -1953,6 +2002,8 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
 def test_alignment_mode_with_test_case_hash(httpx_mock):
     test_id = "my-test-id"
     run_id = "mock-run-id"
+    test_case_a = MyTestCase(input="a")
+    test_case_b = MyTestCase(input="b")
 
     expect_cli_post_request(
         httpx_mock,
@@ -1964,11 +2015,23 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
         ),
         json=dict(id=run_id),
     )
-
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId=test_id,
+            runId=run_id,
+            testCaseHash=test_case_b.hash(),
+            testCaseBody=dict(input="b"),
+            testCaseOutput="b!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-2"),
+    )
     httpx_mock.add_response()
-
-    test_case_a = MyTestCase(input="a")
-    test_case_b = MyTestCase(input="b")
 
     def test_fn(test_case: MyTestCase) -> str:
         return test_case.input + "!"
@@ -2079,6 +2142,22 @@ def test_filters_test_suites_filters_tests(httpx_mock):
         ),
         json=dict(id="mock-run-id"),
     )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-1"),
+    )
 
     httpx_mock.add_response()
 
@@ -2144,6 +2223,22 @@ def test_filters_test_suites_filters_tests_multiple_filters(httpx_mock):
         ),
         json=dict(id="mock-run-id"),
     )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-1"),
+    )
 
     httpx_mock.add_response()
 
@@ -2208,6 +2303,22 @@ def test_filters_test_suites_filters_tests_exact_match(httpx_mock):
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-1"),
     )
 
     httpx_mock.add_response()
@@ -2301,6 +2412,38 @@ def test_tests_and_hashes_overrides_with_empty_value(httpx_mock):
         ),
         json=dict(id="mock-run-id"),
     )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-1"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="b",
+            testCaseBody=dict(input="b"),
+            testCaseOutput="b!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-2"),
+    )
 
     httpx_mock.add_response()
 
@@ -2381,6 +2524,22 @@ def test_tests_and_hashes_overrides_with_non_empty_value(httpx_mock):
             gridSearchParamsCombo=None,
         ),
         json=dict(id="mock-run-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-1"),
     )
 
     httpx_mock.add_response()
@@ -2484,6 +2643,7 @@ def test_sync_before_evaluators_hook(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -2612,6 +2772,7 @@ def test_async_before_evaluators_hook(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -2854,6 +3015,7 @@ def test_prompt_manager_revision_usage(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -2876,6 +3038,7 @@ def test_prompt_manager_revision_usage(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -2976,6 +3139,7 @@ def test_serialize(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -3087,6 +3251,7 @@ def test_serialize_for_human_review(httpx_mock):
                 ),
             ],
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -3164,7 +3329,6 @@ def test_grid_search_params(httpx_mock):
         httpx_mock,
         path="/grids",
         body=dict(
-            testExternalId="my-test-id",
             gridSearchParams=dict(
                 x=["x1", "x2"],
                 y=["y1", "y2"],
@@ -3204,6 +3368,7 @@ def test_grid_search_params(httpx_mock):
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
             ),
+            json=dict(id="mock-result-id-1"),
         )
         expect_cli_post_request(
             httpx_mock,
@@ -3260,6 +3425,7 @@ def test_exceptions_as_outputs(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,

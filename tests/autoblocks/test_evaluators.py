@@ -87,6 +87,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -116,6 +117,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -191,6 +193,7 @@ def test_is_equals_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -220,6 +223,7 @@ def test_is_equals_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -297,6 +301,7 @@ def test_is_valid_json_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -326,6 +331,7 @@ def test_is_valid_json_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -405,6 +411,7 @@ def test_toxicity_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -437,6 +444,7 @@ def test_toxicity_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -519,6 +527,7 @@ def test_nsfw_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -551,6 +560,7 @@ def test_nsfw_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -634,6 +644,7 @@ def test_accuracy_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -666,6 +677,7 @@ def test_accuracy_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -751,6 +763,7 @@ def test_llm_judge_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -783,6 +796,7 @@ def test_llm_judge_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-2"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -876,6 +890,7 @@ def test_manual_battle_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,
@@ -956,6 +971,7 @@ def test_automatic_battle_evaluator(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     httpx_mock.add_response(
         url=f"{API_ENDPOINT}/test-suites/my-test-id/test-cases/hello%20world/baseline",

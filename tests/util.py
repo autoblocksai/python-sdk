@@ -2,6 +2,8 @@ import json
 from typing import Any
 from typing import Optional
 
+from autoblocks._impl.config.constants import API_ENDPOINT
+
 
 def make_expected_body(data: dict[str, Any]) -> bytes:
     """
@@ -28,6 +30,22 @@ def expect_cli_post_request(
 ) -> None:
     httpx_mock.add_response(
         url=f"{MOCK_CLI_SERVER_ADDRESS}{path}",
+        method="POST",
+        status_code=status_code,
+        match_json=body,
+        json=json,
+    )
+
+
+def expect_api_post_request(
+    httpx_mock: Any,
+    path: str,
+    body: Optional[dict[str, Any]],
+    json: Optional[dict[str, Any]] = None,
+    status_code: int = 200,
+) -> None:
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}{path}",
         method="POST",
         status_code=status_code,
         match_json=body,
