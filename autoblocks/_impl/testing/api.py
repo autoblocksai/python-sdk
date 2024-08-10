@@ -49,6 +49,7 @@ async def post_to_api(
     path: str,
     json: dict[str, Any],
 ) -> Optional[Response]:
+    # TODO: Handle running on CI
     sub_path = "/testing/local"
     api_key = AutoblocksEnvVar.API_KEY.get()
     if not api_key:
