@@ -42,7 +42,7 @@ async def post_to_cli(
     return await global_state.http_client().post(
         f"{cli_server_address}{path}",
         json=json,
-        timeout=TIMEOUT_SECONDS,  # seconds
+        timeout=TIMEOUT_SECONDS,
     )
 
 
@@ -57,7 +57,7 @@ async def post_to_api(
     return await global_state.http_client().post(
         f"{API_ENDPOINT}{sub_path}{path}",
         json=json,
-        timeout=TIMEOUT_SECONDS,  # seconds,
+        timeout=TIMEOUT_SECONDS,
         headers={"Authorization": f"Bearer {api_key}"},
     )
 
