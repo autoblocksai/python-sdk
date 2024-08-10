@@ -32,6 +32,23 @@ class Evaluation:
     threshold: Optional[Threshold] = None
     metadata: Optional[Dict[str, Any]] = None
 
+    def passed(self) -> Optional[bool]:
+        if self.threshold is None:
+            return None
+
+        results = []
+        if self.threshold.lt is not None:
+            results.append(self.score < self.threshold.lt)
+        if self.threshold.lte is not None:
+            results.append(self.score <= self.threshold.lte)
+        if self.threshold.gt is not None:
+            results.append(self.score > self.threshold.gt)
+        if self.threshold.gte is not None:
+            results.append(self.score >= self.threshold.gte)
+
+        # If no comparisons were made, return None
+        return all(results) if results else None
+
 
 @dataclasses.dataclass
 class TestCaseConfig:

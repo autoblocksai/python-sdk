@@ -33,7 +33,7 @@ class RevisionUsage:
 
 @dataclasses.dataclass
 class TestCaseRunContext:
-    run_id: Optional[str]
+    run_id: str
     test_id: str
     test_case_hash: str
     revision_usage: List[RevisionUsage] = dataclasses.field(default_factory=list)

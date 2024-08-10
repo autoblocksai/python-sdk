@@ -504,6 +504,7 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,

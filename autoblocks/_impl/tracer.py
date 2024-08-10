@@ -27,8 +27,6 @@ from autoblocks._impl.util import now_iso_8601
 
 log = logging.getLogger(__name__)
 
-evaluator_semaphore_registry: dict[str, asyncio.Semaphore] = {}  # evaluator_id -> semaphore
-
 
 @dataclasses.dataclass(frozen=True)
 class Payload:
@@ -46,6 +44,10 @@ class Payload:
             "properties": self.properties,
             "systemProperties": self.system_properties or None,
         }
+
+
+evaluator_semaphore_registry: dict[str, asyncio.Semaphore] = {}  # evaluator_id -> semaphore
+test_events: dict[Tuple[str, str], List[Payload]] = {}  # run_id + test_case_hash -> list of events
 
 
 class AutoblocksTracer:
@@ -252,25 +254,15 @@ class AutoblocksTracer:
         payload: Payload,
     ) -> None:
         """Sends an event to the Autoblocks CLI in a testing environment."""
-        if not self._cli_server_address:
-            log.error("Failed to send test event to Autoblocks. CLI server address not set.")
-            return
         test_case_run = test_case_run_context_var.get()
         if not test_case_run:
             log.error("Failed to send test event to Autoblocks. No test ID set.")
             return
-
-        req = global_state.sync_http_client().post(
-            url=f"{self._cli_server_address}/events",
-            json=dict(
-                testExternalId=test_case_run.test_id,
-                runId=test_case_run.run_id,
-                testCaseHash=test_case_run.test_case_hash,
-                event=payload.to_json(),
-            ),
-            timeout=self._timeout_seconds,
-        )
-        req.raise_for_status()
+        # Initialize the list for this run id and test case hash if it doesn't exist
+        run_id_and_test_case_hash = (test_case_run.run_id, test_case_run.test_case_hash)
+        if run_id_and_test_case_hash not in test_events:
+            test_events[run_id_and_test_case_hash] = []
+        test_events[run_id_and_test_case_hash].append(payload)
 
     def _make_request_payload(
         self,

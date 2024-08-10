@@ -47,6 +47,10 @@ class ThirdPartyEnvVar(StrEnum):
         return os.environ.get(self.value)
 
 
+def is_ci() -> bool:
+    return os.environ.get("CI") == "true"
+
+
 def encode_uri_component(s: str) -> str:
     """
     This should have the same behavior as encodeURIComponent from JS.
@@ -79,3 +83,7 @@ def get_running_loop() -> Optional[asyncio.AbstractEventLoop]:
 
 def now_iso_8601() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def is_cli_running() -> bool:
+    return AutoblocksEnvVar.CLI_SERVER_ADDRESS.get() is not None

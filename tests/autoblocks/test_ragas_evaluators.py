@@ -63,6 +63,7 @@ def make_expected_requests(evaluator_id: str, httpx_mock: Any) -> None:
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
         ),
+        json=dict(id="mock-result-id-1"),
     )
     expect_cli_post_request(
         httpx_mock,

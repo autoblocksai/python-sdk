@@ -1,13 +1,10 @@
 import asyncio
 import contextvars
-import dataclasses
 import functools
 import inspect
 import json
 import logging
-import os
 import time
-import traceback
 from typing import Any
 from typing import Awaitable
 from typing import Callable
@@ -17,31 +14,30 @@ from typing import Tuple
 from typing import Union
 from typing import overload
 
-from httpx import HTTPStatusError
-from httpx import Response
-
 from autoblocks._impl import global_state
 from autoblocks._impl.context_vars import EvaluatorRunContext
 from autoblocks._impl.context_vars import TestCaseRunContext
 from autoblocks._impl.context_vars import evaluator_run_context_var
-from autoblocks._impl.context_vars import get_revision_usage
 from autoblocks._impl.context_vars import grid_search_context_var
 from autoblocks._impl.context_vars import test_case_run_context_var
+from autoblocks._impl.testing.api import send_end_test_run
+from autoblocks._impl.testing.api import send_error
+from autoblocks._impl.testing.api import send_eval
+from autoblocks._impl.testing.api import send_info_for_alignment_mode
+from autoblocks._impl.testing.api import send_start_grid_search_run
+from autoblocks._impl.testing.api import send_start_test_run
+from autoblocks._impl.testing.api import send_test_case_result
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.util import GridSearchParams
 from autoblocks._impl.testing.util import GridSearchParamsCombo
-from autoblocks._impl.testing.util import serialize_output
-from autoblocks._impl.testing.util import serialize_output_for_human_review
-from autoblocks._impl.testing.util import serialize_test_case
-from autoblocks._impl.testing.util import serialize_test_case_for_human_review
 from autoblocks._impl.testing.util import yield_grid_search_param_combos
 from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cases
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
-from autoblocks.tracer import flush
+from autoblocks._impl.util import is_cli_running
 
 log = logging.getLogger(__name__)
 
@@ -74,55 +70,14 @@ def filters_test_suites_list() -> list[str]:
     return json.loads(raw)  # type: ignore
 
 
-async def post_to_cli(
-    path: str,
-    json: dict[str, Any],
-) -> Optional[Response]:
-    cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
-    if cli_server_address:
-        return await global_state.http_client().post(
-            f"{cli_server_address}{path}",
-            json=json,
-            timeout=30,  # seconds
-        )
-
-    # If the CLI server address is not set then the tests are being run
-    # directly. In this case we just log the request that would have been
-    # sent to the CLI.
-    log.debug(f"{path}: {json}")
-    return None
-
-
-async def send_error(
-    test_id: str,
-    run_id: Optional[str],
-    test_case_hash: Optional[str],
-    evaluator_id: Optional[str],
-    error: Exception,
-) -> None:
-    await post_to_cli(
-        "/errors",
-        json=dict(
-            testExternalId=test_id,
-            runId=run_id,
-            testCaseHash=test_case_hash,
-            evaluatorExternalId=evaluator_id,
-            error=dict(
-                name=type(error).__name__,
-                message=str(error),
-                stacktrace=traceback.format_exc(),
-            ),
-        ),
-    )
-
-
 async def run_evaluator_unsafe(
     test_id: str,
-    run_id: Optional[str],
+    run_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
     output: Any,
     hook_results: Any,
     evaluator: BaseTestEvaluator,
+    test_case_result_id: str,
 ) -> None:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
@@ -152,31 +107,24 @@ async def run_evaluator_unsafe(
     if evaluation is None:
         return
 
-    # Revision usage is collected throughout an evaluator's evaluate_test_case call on a test case
-    revision_usage = get_revision_usage()
-
-    await post_to_cli(
-        "/evals",
-        json=dict(
-            testExternalId=test_id,
-            runId=run_id,
-            testCaseHash=test_case_ctx.hash(),
-            evaluatorExternalId=evaluator.id,
-            score=evaluation.score,
-            threshold=dataclasses.asdict(evaluation.threshold) if evaluation.threshold else None,
-            metadata=evaluation.metadata,
-            revisionUsage=[usage.serialize() for usage in revision_usage] if revision_usage else None,
-        ),
+    await send_eval(
+        test_external_id=test_id,
+        run_id=run_id,
+        test_case_hash=test_case_ctx.hash(),
+        evaluator_external_id=evaluator.id,
+        evaluation=evaluation,
+        test_case_result_id=test_case_result_id,
     )
 
 
 async def run_evaluator(
     test_id: str,
-    run_id: Optional[str],
+    run_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
     output: Any,
     hook_results: Any,
     evaluator: BaseTestEvaluator,
+    test_case_result_id: str,
 ) -> None:
     reset_token = evaluator_run_context_var.set(
         EvaluatorRunContext(),
@@ -189,6 +137,7 @@ async def run_evaluator(
             output=output,
             hook_results=hook_results,
             evaluator=evaluator,
+            test_case_result_id=test_case_result_id,
         )
     except Exception as err:
         await send_error(
@@ -204,11 +153,11 @@ async def run_evaluator(
 
 async def run_test_case_unsafe(
     test_id: str,
-    run_id: Optional[str],
+    run_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
-) -> Tuple[Any, Any]:
+) -> Tuple[Any, Any, str]:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
@@ -253,34 +202,20 @@ async def run_test_case_unsafe(
                     output,
                 )
 
-    # Revision usage is collected throughout a test case's run
-    revision_usage = get_revision_usage()
-
-    # Flush the logs before we send the result, since the CLI
-    # accumulates the events and sends them as a batch along
-    # with the result.
-    flush()
-
-    await post_to_cli(
-        "/results",
-        json=dict(
-            testExternalId=test_id,
-            runId=run_id,
-            testCaseHash=test_case_ctx.hash(),
-            testCaseBody=serialize_test_case(test_case_ctx.test_case),
-            testCaseOutput=serialize_output(output),
-            testCaseDurationMs=test_case_duration_ms,
-            testCaseRevisionUsage=[usage.serialize() for usage in revision_usage] if revision_usage else None,
-            testCaseHumanReviewInputFields=serialize_test_case_for_human_review(test_case_ctx.test_case),
-            testCaseHumanReviewOutputFields=serialize_output_for_human_review(output),
-        ),
+    test_case_result_id = await send_test_case_result(
+        test_external_id=test_id,
+        run_id=run_id,
+        test_case_ctx=test_case_ctx,
+        output=output,
+        test_case_duration_ms=test_case_duration_ms,
     )
-    return output, hook_results
+
+    return output, hook_results, test_case_result_id
 
 
 async def run_test_case(
     test_id: str,
-    run_id: Optional[str],
+    run_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
@@ -294,7 +229,7 @@ async def run_test_case(
         ),
     )
     try:
-        output, hook_results = await run_test_case_unsafe(
+        output, hook_results, test_case_result_id = await run_test_case_unsafe(
             test_id=test_id,
             run_id=run_id,
             test_case_ctx=test_case_ctx,
@@ -321,6 +256,7 @@ async def run_test_case(
                     output=output,
                     hook_results=hook_results,
                     evaluator=evaluator,
+                    test_case_result_id=test_case_result_id,
                 )
                 for evaluator in evaluators
             ],
@@ -371,29 +307,6 @@ def validate_test_suite_inputs(
             assert values, f"[{test_id}] grid_search_params values must not be empty."
 
 
-async def send_info_for_alignment_mode(
-    test_id: str,
-    test_cases: Sequence[TestCaseType],
-    caller_filepath: Optional[str],
-) -> None:
-    """
-    Notifies the CLI with metadata about this test suite when running in "alignment mode",
-    i.e. npx autoblocks testing align -- <cmd>
-    """
-    # Double check this is the correct test suite
-    assert AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get() == test_id
-
-    # Tells the CLI what it needs to know about this test suite
-    await post_to_cli(
-        "/info",
-        json=dict(
-            language="python",
-            runTestSuiteCalledFromDirectory=os.path.dirname(caller_filepath) if caller_filepath else None,
-            testCaseHashes=[test_case.hash() for test_case in test_cases],
-        ),
-    )
-
-
 def filter_test_cases_for_alignment_mode(
     test_id: str,
     test_cases: Sequence[TestCaseType],
@@ -430,32 +343,26 @@ async def run_test_suite_for_grid_combo(
     grid_search_run_group_id: Optional[str],
     grid_search_params_combo: Optional[GridSearchParamsCombo],
 ) -> None:
-    start_resp = await post_to_cli(
-        "/start",
-        json=dict(
-            testExternalId=test_id,
-            gridSearchRunGroupId=grid_search_run_group_id,
-            gridSearchParamsCombo=grid_search_params_combo,
-        ),
-    )
-
-    run_id = None
-    if start_resp:
-        try:
-            start_resp.raise_for_status()
-        except HTTPStatusError:
-            # Don't allow the run to continue if /start failed, since all subsequent
-            # requests will fail if the CLI was not able to start the run.
-            # Also note we don't need to send_error here, since the CLI will
-            # have reported the HTTP error itself.
-            return
-
-        try:
-            run_id = start_resp.json()["id"]
-        except Exception:
-            # We can drop this try-catch once everyone has updated their CLI
-            # to the version that returns the run ID in the /start response.
-            pass
+    try:
+        run_id = await send_start_test_run(
+            test_external_id=test_id,
+            grid_search_run_group_id=grid_search_run_group_id,
+            grid_search_params_combo=grid_search_params_combo,
+        )
+    except Exception as err:
+        # Don't allow the run to continue if /start failed, since all subsequent
+        # requests will fail if the CLI was not able to start the run.
+        # Also note we don't need to send_error here, since the CLI will
+        # have reported the HTTP error itself.
+        if not is_cli_running():
+            await send_error(
+                test_id=test_id,
+                run_id=None,
+                test_case_hash=None,
+                evaluator_id=None,
+                error=err,
+            )
+        return
 
     reset_token = grid_search_context_var.set(grid_search_params_combo) if grid_search_params_combo else None
 
@@ -485,9 +392,9 @@ async def run_test_suite_for_grid_combo(
         if reset_token:
             grid_search_context_var.reset(reset_token)
 
-    await post_to_cli(
-        "/end",
-        json=dict(testExternalId=test_id, runId=run_id),
+    await send_end_test_run(
+        test_external_id=test_id,
+        run_id=run_id,
     )
 
 
@@ -501,16 +408,9 @@ async def async_run_test_suite(
     caller_filepath: Optional[str],
     grid_search_params: Optional[GridSearchParams],
 ) -> None:
-    if not AutoblocksEnvVar.CLI_SERVER_ADDRESS.get():
-        log.warning(
-            "\nRunning in debug mode since your tests are not being run within the context of the testing CLI; "
-            "results will not be sent to Autoblocks.\n"
-            "Make sure you are running your test command with:\n"
-            "$ npx autoblocks testing exec -- <your test command>\n"
-        )
     # Handle alignment mode
     align_test_id = AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get()
-    if align_test_id:
+    if align_test_id and AutoblocksEnvVar.CLI_SERVER_ADDRESS.get():
         if align_test_id != test_id:
             # Not the test suite in alignment mode
             return
@@ -572,6 +472,7 @@ async def async_run_test_suite(
 
     if grid_search_params is None:
         try:
+            log.debug(f"No grid search params provided for test suite '{test_id}'")
             await run_test_suite_for_grid_combo(
                 test_id=test_id,
                 test_cases=test_cases,
@@ -591,23 +492,25 @@ async def async_run_test_suite(
             )
         return
 
-    grid_resp = await post_to_cli(
-        "/grids",
-        json=dict(testExternalId=test_id, gridSearchParams=grid_search_params),
-    )
-
-    grid_search_run_group_id = None
-    if grid_resp:
-        try:
-            grid_resp.raise_for_status()
-        except HTTPStatusError:
-            # Don't allow the run to continue if /grid failed, since all subsequent
-            # requests will fail if the CLI was not able to create the grid.
-            # Also note we don't need to send_error here, since the CLI will
-            # have reported the HTTP error itself.
-            return
-
-        grid_search_run_group_id = grid_resp.json()["id"]
+    try:
+        log.debug(f"Starting grid search run for test suite '{test_id}'")
+        grid_search_run_group_id = await send_start_grid_search_run(
+            grid_search_params=grid_search_params,
+        )
+    except Exception as err:
+        # Don't allow the run to continue if /grid failed, since all subsequent
+        # requests will fail if the CLI was not able to create the grid.
+        # Also note we don't need to send_error here, since the CLI will
+        # have reported the HTTP error itself.
+        if not is_cli_running():
+            await send_error(
+                test_id=test_id,
+                run_id=None,
+                test_case_hash=None,
+                evaluator_id=None,
+                error=err,
+            )
+        return
 
     try:
         await all_settled(
@@ -670,6 +573,8 @@ def run_test_suite(
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
     grid_search_params: Optional[GridSearchParams] = None,
 ) -> None:
+    if not is_cli_running():
+        log.info(f"Running test suite '{id}'")
     global_state.init()
 
     # Get the caller's filepath. Used in alignment mode to know where the test suite is located.
@@ -691,3 +596,5 @@ def run_test_suite(
         ),
         global_state.event_loop(),
     ).result()
+    if not is_cli_running():
+        log.info(f"Finished running test suite '{id}'")
