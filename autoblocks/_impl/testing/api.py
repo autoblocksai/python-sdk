@@ -288,15 +288,21 @@ async def send_eval(
             ),
         )
     else:
-        await post_to_api(
-            f"/runs/{run_id}/results/{test_case_result_id}/evals",
+        resp = await post_to_api(
+            f"/runs/{run_id}/results/{test_case_result_id}/evaluations",
             json=dict(
                 evaluatorExternalId=evaluator_external_id,
                 score=evaluation.score,
+                passed=evaluation.passed(),
                 threshold=threshold,
                 metadata=evaluation.metadata,
+                revisionUsage=eval_revision_usage,
             ),
         )
+        if resp:
+            resp.raise_for_status()
+        else:
+            raise Exception(f"Failed to send evaluation to Autoblocks for {test_external_id}.")
 
 
 async def send_end_test_run(

@@ -20,6 +20,7 @@ from autoblocks._impl.context_vars import TestCaseRunContext
 from autoblocks._impl.context_vars import evaluator_run_context_var
 from autoblocks._impl.context_vars import grid_search_context_var
 from autoblocks._impl.context_vars import test_case_run_context_var
+from autoblocks._impl.testing.api import is_cli_running
 from autoblocks._impl.testing.api import send_end_test_run
 from autoblocks._impl.testing.api import send_error
 from autoblocks._impl.testing.api import send_eval
@@ -348,11 +349,19 @@ async def run_test_suite_for_grid_combo(
             grid_search_run_group_id=grid_search_run_group_id,
             grid_search_params_combo=grid_search_params_combo,
         )
-    except Exception:
+    except Exception as err:
         # Don't allow the run to continue if /start failed, since all subsequent
         # requests will fail if the CLI was not able to start the run.
         # Also note we don't need to send_error here, since the CLI will
         # have reported the HTTP error itself.
+        if not is_cli_running():
+            await send_error(
+                test_id=test_id,
+                run_id=None,
+                test_case_hash=None,
+                evaluator_id=None,
+                error=err,
+            )
         return
 
     reset_token = grid_search_context_var.set(grid_search_params_combo) if grid_search_params_combo else None
@@ -488,11 +497,19 @@ async def async_run_test_suite(
         grid_search_run_group_id = await send_start_grid_search_run(
             grid_search_params=grid_search_params,
         )
-    except Exception:
+    except Exception as err:
         # Don't allow the run to continue if /grid failed, since all subsequent
         # requests will fail if the CLI was not able to create the grid.
         # Also note we don't need to send_error here, since the CLI will
         # have reported the HTTP error itself.
+        if not is_cli_running():
+            await send_error(
+                test_id=test_id,
+                run_id=None,
+                test_case_hash=None,
+                evaluator_id=None,
+                error=err,
+            )
         return
 
     try:
