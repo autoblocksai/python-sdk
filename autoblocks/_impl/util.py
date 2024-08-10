@@ -79,3 +79,7 @@ def get_running_loop() -> Optional[asyncio.AbstractEventLoop]:
 
 def now_iso_8601() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def is_cli_running() -> bool:
+    return AutoblocksEnvVar.CLI_SERVER_ADDRESS.get() is not None

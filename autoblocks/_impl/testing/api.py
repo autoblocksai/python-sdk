@@ -1,4 +1,3 @@
-import asyncio
 import dataclasses
 import logging
 import os
@@ -22,15 +21,13 @@ from autoblocks._impl.testing.util import serialize_output_for_human_review
 from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.util import serialize_test_case_for_human_review
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks._impl.util import all_settled
+from autoblocks._impl.util import is_cli_running
 from autoblocks.tracer import flush
 
 log = logging.getLogger(__name__)
 
 TIMEOUT_SECONDS = 30
-
-
-def is_cli_running() -> bool:
-    return AutoblocksEnvVar.CLI_SERVER_ADDRESS.get() is not None
 
 
 async def post_to_cli(
@@ -218,21 +215,22 @@ async def send_test_case_result(
             raise Exception(f"Failed to send test case result for {test_external_id}.")
         results_resp.raise_for_status()
         result_id: str = results_resp.json()["id"]
-        tasks = [
-            post_to_api(
-                f"/runs/{run_id}/results/{result_id}/body",
-                json=dict(
-                    testCaseBody=serialized_test_case,
+        results = await all_settled(
+            [
+                post_to_api(
+                    f"/runs/{run_id}/results/{result_id}/body",
+                    json=dict(
+                        testCaseBody=serialized_test_case,
+                    ),
                 ),
-            ),
-            post_to_api(
-                f"/runs/{run_id}/results/{result_id}/output",
-                json=dict(
-                    testCaseOutput=serialized_output,
+                post_to_api(
+                    f"/runs/{run_id}/results/{result_id}/output",
+                    json=dict(
+                        testCaseOutput=serialized_output,
+                    ),
                 ),
-            ),
-        ]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+            ]
+        )
         for result in results:
             if isinstance(result, Exception):
                 log.warn(

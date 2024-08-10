@@ -20,7 +20,6 @@ from autoblocks._impl.context_vars import TestCaseRunContext
 from autoblocks._impl.context_vars import evaluator_run_context_var
 from autoblocks._impl.context_vars import grid_search_context_var
 from autoblocks._impl.context_vars import test_case_run_context_var
-from autoblocks._impl.testing.api import is_cli_running
 from autoblocks._impl.testing.api import send_end_test_run
 from autoblocks._impl.testing.api import send_error
 from autoblocks._impl.testing.api import send_eval
@@ -38,6 +37,7 @@ from autoblocks._impl.testing.util import yield_grid_search_param_combos
 from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cases
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
+from autoblocks._impl.util import is_cli_running
 
 log = logging.getLogger(__name__)
 
