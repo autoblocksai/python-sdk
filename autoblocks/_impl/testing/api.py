@@ -165,8 +165,10 @@ async def send_test_events(
     test_case_hash: str,
     test_case_result_id: str,
 ) -> None:
+    if (run_id, test_case_hash) not in test_events:
+        return
     events = test_events[(run_id, test_case_hash)]
-    if not events or len(events) == 0:
+    if len(events) == 0:
         return
 
     await post_to_api(
