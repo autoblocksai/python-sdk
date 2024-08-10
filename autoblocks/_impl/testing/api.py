@@ -104,7 +104,7 @@ async def send_error(
             ),
         )
     else:
-        log.error(str(error))
+        log.exception(f"Error in test {test_id}", exc_info=error)
 
 
 async def send_start_grid_search_run(
