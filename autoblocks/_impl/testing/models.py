@@ -34,7 +34,7 @@ class Evaluation:
 
     def passed(self) -> Optional[bool]:
         if self.threshold is None:
-            return None  # If no threshold is set, consider it passed
+            return None
 
         results = []
         if self.threshold.lt is not None:
