@@ -47,6 +47,10 @@ class ThirdPartyEnvVar(StrEnum):
         return os.environ.get(self.value)
 
 
+def is_ci() -> bool:
+    return os.environ.get("CI") == "true"
+
+
 def encode_uri_component(s: str) -> str:
     """
     This should have the same behavior as encodeURIComponent from JS.

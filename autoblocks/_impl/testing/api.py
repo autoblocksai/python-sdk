@@ -23,6 +23,7 @@ from autoblocks._impl.testing.util import serialize_test_case_for_human_review
 from autoblocks._impl.tracer import test_events
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
+from autoblocks._impl.util import is_ci
 from autoblocks._impl.util import is_cli_running
 
 log = logging.getLogger(__name__)
@@ -49,8 +50,7 @@ async def post_to_api(
     path: str,
     json: dict[str, Any],
 ) -> Optional[Response]:
-    # TODO: Handle running on CI
-    sub_path = "/testing/local"
+    sub_path = "/testing/local" if is_ci() else "/testing/ci"
     api_key = AutoblocksEnvVar.API_KEY.get()
     if not api_key:
         raise ValueError(f"You must set the {AutoblocksEnvVar.API_KEY} environment variable.")
