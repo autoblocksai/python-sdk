@@ -171,10 +171,13 @@ async def send_test_events(
     # If the key exists, it means there are events to send
     events = test_events[(run_id, test_case_hash)]
 
-    await post_to_api(
+    events_resp = await post_to_api(
         f"/runs/{run_id}/results/{test_case_result_id}/events",
         json=dict(testCaseEvents=[event.to_json() for event in events]),
     )
+    if not events_resp:
+        raise Exception(f"Failed to send test events for {run_id} and {test_case_hash}.")
+    events_resp.raise_for_status()
 
     # Remove the events from the test_events dict after they have been sent
     del test_events[(run_id, test_case_hash)]
@@ -273,7 +276,14 @@ async def send_test_case_result(
                 "Failed to send human review fields to Autoblocks\n" f"test case hash: {test_case_ctx.hash()}\n" f"{e}"
             )
 
-        await post_to_api(f"/runs/{run_id}/results/{result_id}/ui-based-evaluations", json={})
+        ui_based_evals_resp = await post_to_api(f"/runs/{run_id}/results/{result_id}/ui-based-evaluations", json={})
+        try:
+            if not ui_based_evals_resp:
+                raise Exception(f"Failed to send ui-based evaluations to Autoblocks for {test_external_id}.")
+            ui_based_evals_resp.raise_for_status()
+        except Exception as e:
+            log.warn("Failed to run ui based evaluations\n" f"test case hash: {test_case_ctx.hash()}\n" f"{e}")
+
         return result_id  # type: ignore [no-any-return]
 
 
