@@ -50,7 +50,7 @@ async def post_to_api(
     path: str,
     json: dict[str, Any],
 ) -> Optional[Response]:
-    sub_path = "/testing/local" if is_ci() else "/testing/ci"
+    sub_path = "/testing/ci" if is_ci() else "/testing/local"
     api_key = AutoblocksEnvVar.API_KEY.get()
     if not api_key:
         raise ValueError(f"You must set the {AutoblocksEnvVar.API_KEY} environment variable.")
