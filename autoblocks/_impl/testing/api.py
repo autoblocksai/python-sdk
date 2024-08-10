@@ -20,10 +20,10 @@ from autoblocks._impl.testing.util import serialize_output
 from autoblocks._impl.testing.util import serialize_output_for_human_review
 from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.util import serialize_test_case_for_human_review
+from autoblocks._impl.tracer import test_events
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import is_cli_running
-from autoblocks.tracer import flush
 
 log = logging.getLogger(__name__)
 
@@ -160,6 +160,21 @@ async def send_start_test_run(
     return start_resp.json()["id"]  # type: ignore [no-any-return]
 
 
+async def send_test_events(
+    run_id: str,
+    test_case_hash: str,
+    test_case_result_id: str,
+) -> None:
+    events = test_events[(run_id, test_case_hash)]
+    if not events or len(events) == 0:
+        return
+
+    await post_to_api(
+        f"/runs/{run_id}/results/{test_case_result_id}/events",
+        json=dict(testCaseEvents=[event.to_json() for event in events]),
+    )
+
+
 async def send_test_case_result(
     test_external_id: str,
     run_id: str,
@@ -170,17 +185,12 @@ async def send_test_case_result(
     # Revision usage is collected throughout a test case's run
     revision_usage = get_revision_usage()
 
-    # Flush the logs before we send the result, since the CLI
-    # accumulates the events and sends them as a batch along
-    # with the result.
-    flush()
-
     serialized_test_case = serialize_test_case(test_case_ctx.test_case)
     serialized_output = serialize_output(output)
     test_case_revision_usage = [usage.serialize() for usage in revision_usage] if revision_usage else None
     serialized_test_case_human_review_input_fields = serialize_test_case_for_human_review(test_case_ctx.test_case)
     serialized_test_case_human_review_output_fields = serialize_output_for_human_review(output)
-
+    result_id = None
     if is_cli_running():
         results_resp = await post_to_cli(
             "/results",
@@ -199,7 +209,9 @@ async def send_test_case_result(
         if not results_resp:
             raise Exception(f"Failed to send test case result for {test_external_id}.")
         results_resp.raise_for_status()
-        return results_resp.json()["id"]  # type: ignore [no-any-return]
+        result_id = results_resp.json()["id"]
+        await send_test_events(run_id, test_case_ctx.hash(), result_id)
+        return result_id  # type: ignore [no-any-return]
     else:
         # results to the public api are split into multiple requests to avoid errors when sending large amounts of data
         # the CLI splits the results into the same way
@@ -214,7 +226,7 @@ async def send_test_case_result(
         if not results_resp:
             raise Exception(f"Failed to send test case result for {test_external_id}.")
         results_resp.raise_for_status()
-        result_id: str = results_resp.json()["id"]
+        result_id = results_resp.json()["id"]
         results = await all_settled(
             [
                 post_to_api(
@@ -229,6 +241,7 @@ async def send_test_case_result(
                         testCaseOutput=serialized_output,
                     ),
                 ),
+                send_test_events(run_id, test_case_ctx.hash(), result_id),
             ]
         )
         for result in results:
@@ -256,7 +269,7 @@ async def send_test_case_result(
             )
 
         await post_to_api(f"/runs/{run_id}/results/{result_id}/ui-based-evaluations", json={})
-        return result_id
+        return result_id  # type: ignore [no-any-return]
 
 
 async def send_eval(
