@@ -254,9 +254,6 @@ class AutoblocksTracer:
         payload: Payload,
     ) -> None:
         """Sends an event to the Autoblocks CLI in a testing environment."""
-        if not self._cli_server_address:
-            log.error("Failed to send test event to Autoblocks. CLI server address not set.")
-            return
         test_case_run = test_case_run_context_var.get()
         if not test_case_run:
             log.error("Failed to send test event to Autoblocks. No test ID set.")

@@ -167,14 +167,17 @@ async def send_test_events(
 ) -> None:
     if (run_id, test_case_hash) not in test_events:
         return
+
+    # If the key exists, it means there are events to send
     events = test_events[(run_id, test_case_hash)]
-    if len(events) == 0:
-        return
 
     await post_to_api(
         f"/runs/{run_id}/results/{test_case_result_id}/events",
         json=dict(testCaseEvents=[event.to_json() for event in events]),
     )
+
+    # Remove the events from the test_events dict after they have been sent
+    del test_events[(run_id, test_case_hash)]
 
 
 async def send_test_case_result(
