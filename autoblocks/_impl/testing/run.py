@@ -408,8 +408,6 @@ async def async_run_test_suite(
     caller_filepath: Optional[str],
     grid_search_params: Optional[GridSearchParams],
 ) -> None:
-    if not AutoblocksEnvVar.CLI_SERVER_ADDRESS.get():
-        log.info(f"Running test suite '{test_id}'")
     # Handle alignment mode
     align_test_id = AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get()
     if align_test_id and AutoblocksEnvVar.CLI_SERVER_ADDRESS.get():
@@ -474,6 +472,7 @@ async def async_run_test_suite(
 
     if grid_search_params is None:
         try:
+            log.debug(f"No grid search params provided for test suite '{test_id}'")
             await run_test_suite_for_grid_combo(
                 test_id=test_id,
                 test_cases=test_cases,
@@ -494,6 +493,7 @@ async def async_run_test_suite(
         return
 
     try:
+        log.debug(f"Starting grid search run for test suite '{test_id}'")
         grid_search_run_group_id = await send_start_grid_search_run(
             grid_search_params=grid_search_params,
         )
@@ -536,9 +536,6 @@ async def async_run_test_suite(
             error=err,
         )
 
-    if not AutoblocksEnvVar.CLI_SERVER_ADDRESS.get():
-        log.info(f"Finished running test suite '{test_id}'")
-
 
 # Sync fn
 @overload
@@ -576,6 +573,8 @@ def run_test_suite(
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
     grid_search_params: Optional[GridSearchParams] = None,
 ) -> None:
+    if not is_cli_running():
+        log.info(f"Running test suite '{id}'")
     global_state.init()
 
     # Get the caller's filepath. Used in alignment mode to know where the test suite is located.
@@ -597,3 +596,5 @@ def run_test_suite(
         ),
         global_state.event_loop(),
     ).result()
+    if not is_cli_running():
+        log.info(f"Finished running test suite '{id}'")
