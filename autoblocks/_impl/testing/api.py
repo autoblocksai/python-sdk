@@ -198,7 +198,6 @@ async def send_test_case_result(
     test_case_revision_usage = [usage.serialize() for usage in revision_usage] if revision_usage else None
     serialized_test_case_human_review_input_fields = serialize_test_case_for_human_review(test_case_ctx.test_case)
     serialized_test_case_human_review_output_fields = serialize_output_for_human_review(output)
-    result_id = None
     if is_cli_running():
         results_resp = await post_to_cli(
             "/results",
@@ -217,9 +216,9 @@ async def send_test_case_result(
         if not results_resp:
             raise Exception(f"Failed to send test case result for {test_external_id}.")
         results_resp.raise_for_status()
-        result_id = results_resp.json()["id"]
-        await send_test_events(run_id, test_case_ctx.hash(), result_id)
-        return result_id  # type: ignore [no-any-return]
+        result_id_cli: str = results_resp.json()["id"]
+        await send_test_events(run_id, test_case_ctx.hash(), result_id_cli)
+        return result_id_cli
     else:
         # results to the public api are split into multiple requests to avoid errors when sending large amounts of data
         # the CLI splits the results into the same way
@@ -234,7 +233,7 @@ async def send_test_case_result(
         if not results_resp:
             raise Exception(f"Failed to send test case result for {test_external_id}.")
         results_resp.raise_for_status()
-        result_id = results_resp.json()["id"]
+        result_id: str = results_resp.json()["id"]
         results = await all_settled(
             [
                 post_to_api(
@@ -284,7 +283,7 @@ async def send_test_case_result(
         except Exception as e:
             log.warn("Failed to run ui based evaluations\n" f"test case hash: {test_case_ctx.hash()}\n" f"{e}")
 
-        return result_id  # type: ignore [no-any-return]
+        return result_id
 
 
 async def send_eval(
