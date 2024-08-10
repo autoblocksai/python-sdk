@@ -104,7 +104,7 @@ async def send_error(
             ),
         )
     else:
-        log.exception(f"Error in test {test_id}", exc_info=error)
+        log.exception(f"Error in test '{test_id}'", exc_info=error)
 
 
 async def send_start_grid_search_run(
@@ -156,7 +156,7 @@ async def send_start_test_run(
         )
 
     if not start_resp:
-        raise Exception(f"Failed to start test run for {test_external_id}.")
+        raise Exception(f"Failed to start test run for test '{test_external_id}'.")
     start_resp.raise_for_status()
     return start_resp.json()["id"]  # type: ignore [no-any-return]
 
@@ -177,7 +177,7 @@ async def send_test_events(
         json=dict(testCaseEvents=[event.to_json() for event in events]),
     )
     if not events_resp:
-        raise Exception(f"Failed to send test events for {run_id} and {test_case_hash}.")
+        raise Exception(f"Failed to send test events for run '{run_id}' and test case hash '{test_case_hash}'.")
     events_resp.raise_for_status()
 
     # Remove the events from the test_events dict after they have been sent
@@ -215,7 +215,7 @@ async def send_test_case_result(
             ),
         )
         if not results_resp:
-            raise Exception(f"Failed to send test case result for {test_external_id}.")
+            raise Exception(f"Failed to send test case result for test '{test_external_id}'.")
         results_resp.raise_for_status()
         result_id_cli: str = results_resp.json()["id"]
         await send_test_events(run_id, test_case_ctx.hash(), result_id_cli)
@@ -232,7 +232,7 @@ async def send_test_case_result(
             ),
         )
         if not results_resp:
-            raise Exception(f"Failed to send test case result for {test_external_id}.")
+            raise Exception(f"Failed to send test case result for test '{test_external_id}'.")
         results_resp.raise_for_status()
         result_id: str = results_resp.json()["id"]
         results = await all_settled(
@@ -269,7 +269,7 @@ async def send_test_case_result(
         )
         try:
             if not human_review_results_resp:
-                raise Exception(f"Failed to send human review fields to Autoblocks for {test_external_id}.")
+                raise Exception(f"Failed to send human review fields to Autoblocks for test '{test_external_id}'.")
             human_review_results_resp.raise_for_status()
         except Exception as e:
             log.warn(
@@ -279,7 +279,7 @@ async def send_test_case_result(
         ui_based_evals_resp = await post_to_api(f"/runs/{run_id}/results/{result_id}/ui-based-evaluations", json={})
         try:
             if not ui_based_evals_resp:
-                raise Exception(f"Failed to send ui-based evaluations to Autoblocks for {test_external_id}.")
+                raise Exception(f"Failed to send ui-based evaluations to Autoblocks for test '{test_external_id}'.")
             ui_based_evals_resp.raise_for_status()
         except Exception as e:
             log.warn("Failed to run ui based evaluations\n" f"test case hash: {test_case_ctx.hash()}\n" f"{e}")
@@ -328,7 +328,7 @@ async def send_eval(
         if resp:
             resp.raise_for_status()
         else:
-            raise Exception(f"Failed to send evaluation to Autoblocks for {test_external_id}.")
+            raise Exception(f"Failed to send evaluation to Autoblocks for test '{test_external_id}'.")
 
 
 async def send_end_test_run(
