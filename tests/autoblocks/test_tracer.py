@@ -107,6 +107,13 @@ def test_tracer_send_event(httpx_mock):
     flush()
 
 
+def test_tracer_send_event_dry_run(httpx_mock):
+    tracer = AutoblocksTracer("mock-ingestion-key", dry_run=True)
+    tracer.send_event("my-message")
+    flush()
+    assert len(httpx_mock.get_requests()) == 0
+
+
 def test_tracer_with_trace_id_in_send_event(httpx_mock):
     expect_ingestion_post_request(
         httpx_mock,
