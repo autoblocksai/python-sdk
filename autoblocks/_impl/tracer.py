@@ -226,7 +226,7 @@ class AutoblocksTracer:
 
         try:
             if self._dry_run:
-                log.info("AUTOBLOCKS_DRY_RUN: %s", payload.to_json())
+                log.info(payload.to_json())
                 return
             if global_state.main_thread_has_finished():
                 # If we're in a shutdown state, we need to use the sync client
@@ -264,7 +264,7 @@ class AutoblocksTracer:
     ) -> None:
         """Sends an event to the Autoblocks CLI in a testing environment."""
         if self._dry_run:
-            log.info("AUTOBLOCKS_DRY_RUN: %s", payload.to_json())
+            log.info(payload.to_json())
             return
         test_case_run = test_case_run_context_var.get()
         if not test_case_run:
