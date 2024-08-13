@@ -68,20 +68,26 @@ class AutoblocksTracer:
         properties: Optional[Dict[Any, Any]] = None,
         # Timeout for sending events to Autoblocks
         timeout: timedelta = timedelta(seconds=5),
+        # If true, the tracer will not send events to Autoblocks
+        # and instead log them with log.info.
+        dry_run: bool = False,
     ):
         global_state.init()  # Start up event loop if not already started
         self._trace_id: Optional[str] = trace_id
         self._properties: Dict[Any, Any] = properties or {}
 
+        if dry_run:
+            log.info("Autoblocks dry run mode is enabled. Events will not be sent to Autoblocks.")
+
         ingestion_key = ingestion_key or AutoblocksEnvVar.INGESTION_KEY.get()
-        if not ingestion_key:
+        if not ingestion_key and not dry_run:
             raise ValueError(
                 f"You must provide an ingestion_key or set the {AutoblocksEnvVar.INGESTION_KEY} environment variable."
             )
 
-        self._client_headers = {"Authorization": f"Bearer {ingestion_key}"}
+        self._client_headers = {"Authorization": f"Bearer {ingestion_key}"} if ingestion_key and not dry_run else {}
         self._timeout_seconds = timeout.total_seconds()
-        self._cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
+        self._dry_run = dry_run
         self._throw_on_error = AutoblocksEnvVar.TRACER_THROW_ON_ERROR.get() == "1"
 
     def set_trace_id(self, trace_id: str) -> None:
@@ -219,6 +225,9 @@ class AutoblocksTracer:
                 log.error("Unable to evaluate events. Error: %s", err, exc_info=True)
 
         try:
+            if self._dry_run:
+                log.info("AUTOBLOCKS_DRY_RUN: %s", payload.to_json())
+                return
             if global_state.main_thread_has_finished():
                 # If we're in a shutdown state, we need to use the sync client
                 # to avoid scheduling new futures after the interpreter has shut down.
@@ -254,6 +263,9 @@ class AutoblocksTracer:
         payload: Payload,
     ) -> None:
         """Sends an event to the Autoblocks CLI in a testing environment."""
+        if self._dry_run:
+            log.info("AUTOBLOCKS_DRY_RUN: %s", payload.to_json())
+            return
         test_case_run = test_case_run_context_var.get()
         if not test_case_run:
             log.error("Failed to send test event to Autoblocks. No test ID set.")
