@@ -44,7 +44,7 @@ E2E_TESTS_EXPECTED_MESSAGE = "sdk.e2e"
 E2E_TEST_SUITE_ID = "my-test-suite"
 E2E_TEST_CASE_ID = "cluh2cwla0001d590dha70npc"
 
-client = AutoblocksAPIClient(timeout=timedelta(seconds=30))
+client = AutoblocksAPIClient(timeout=timedelta(seconds=30), api_key=os.environ["AUTOBLOCKS_API_KEY_USER"])
 tracer = AutoblocksTracer()
 
 
