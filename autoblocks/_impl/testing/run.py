@@ -24,6 +24,7 @@ from autoblocks._impl.testing.api import send_end_test_run
 from autoblocks._impl.testing.api import send_error
 from autoblocks._impl.testing.api import send_eval
 from autoblocks._impl.testing.api import send_info_for_alignment_mode
+from autoblocks._impl.testing.api import send_slack_notification
 from autoblocks._impl.testing.api import send_start_grid_search_run
 from autoblocks._impl.testing.api import send_start_test_run
 from autoblocks._impl.testing.api import send_test_case_result
@@ -396,6 +397,7 @@ async def run_test_suite_for_grid_combo(
         test_external_id=test_id,
         run_id=run_id,
     )
+    await send_slack_notification(run_id=run_id)
 
 
 async def async_run_test_suite(
