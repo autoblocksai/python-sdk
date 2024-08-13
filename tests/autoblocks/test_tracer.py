@@ -370,6 +370,37 @@ def test_tracer_sends_evaluations(httpx_mock):
 @mock.patch.object(
     uuid,
     "uuid4",
+    side_effect=["mock-uuid-1"],
+)
+def test_tracer_logs_evaluations_dry_run(httpx_mock):
+    tracer = AutoblocksTracer(dry_run=True)
+
+    class MyEvaluator(BaseEventEvaluator):
+        id = "my-evaluator"
+
+        def evaluate_event(self, event: TracerEvent) -> Evaluation:
+            tracer.send_event(f"i am inside evaluator {self.id} with event {event.message}")
+            return Evaluation(
+                score=0.9,
+                threshold=Threshold(gte=0.5),
+            )
+
+    tracer.send_event(
+        "my-message",
+        trace_id="my-trace-id",
+        timestamp=mock_now_timestamp,
+        properties={},
+        evaluators=[MyEvaluator()],
+    )
+
+    flush()
+
+    assert len(httpx_mock.get_requests()) == 0
+
+
+@mock.patch.object(
+    uuid,
+    "uuid4",
     side_effect=[f"mock-uuid={i}" for i in range(2)],
 )
 def test_tracer_sends_async_evaluations(httpx_mock):
