@@ -148,8 +148,7 @@ async def send_start_test_run(
             json=dict(
                 testExternalId=test_external_id,
                 message=None,
-                # TODO: Handle CI runs when not using CLI
-                buildId=None,
+                buildId=AutoblocksEnvVar.CI_TEST_RUN_BUILD_ID.get(),
                 gridSearchRunGroupId=grid_search_run_group_id,
                 gridSearchParamsCombo=grid_search_params_combo,
             ),
@@ -347,3 +346,17 @@ async def send_end_test_run(
         )
     else:
         await post_to_api(f"/runs/{run_id}/end", json={})
+
+
+async def send_slack_notification(
+    run_id: str,
+) -> None:
+    slack_webhook_url = AutoblocksEnvVar.CI_TEST_RUN_SLACK_WEBHOOK_URL.get()
+    if is_cli_running() or not slack_webhook_url or not is_ci():
+        return
+
+    log.info(f"Sending slack notification for test run '{run_id}'.")
+    await post_to_api(
+        f"/runs/{run_id}/slack-notification",
+        json=dict(slackWebhookUrl=slack_webhook_url),
+    )
