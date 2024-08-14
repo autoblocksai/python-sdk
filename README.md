@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="https://app.autoblocks.ai/images/logo.png" width="300px">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://app.autoblocks.ai/images/logo-white.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://app.autoblocks.ai/images/logo-black.png">
+    <img alt="Autoblocks Logo" width="300px" src="https://app.autoblocks.ai/images/logo-black.png">
+  </picture>
 </p>
 <p align="center">
   📚
