@@ -351,7 +351,7 @@ async def send_end_test_run(
 async def send_slack_notification(
     run_id: str,
 ) -> None:
-    slack_webhook_url = AutoblocksEnvVar.CI_TEST_RUN_SLACK_WEBHOOK_URL.get()
+    slack_webhook_url = AutoblocksEnvVar.SLACK_WEBHOOK_URL.get()
     if is_cli_running() or not slack_webhook_url or not is_ci():
         return
 
