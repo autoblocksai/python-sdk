@@ -2638,6 +2638,9 @@ def test_run_stops_if_start_fails(httpx_mock):
 
     # we retry the start request 3 times
     assert len(httpx_mock.get_requests()) == 3
+    for req in httpx_mock.get_requests():
+        assert req.url.path == "/start"
+        assert req.method == "POST"
 
 
 def test_sync_before_evaluators_hook(httpx_mock):
