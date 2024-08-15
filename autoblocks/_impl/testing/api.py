@@ -8,6 +8,9 @@ from typing import Optional
 from typing import Sequence
 
 from httpx import Response
+from tenacity import retry
+from tenacity import stop_after_attempt
+from tenacity import wait_random_exponential
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT
@@ -40,11 +43,13 @@ cli_request_semaphore = asyncio.Semaphore(10)
 api_request_semaphore = asyncio.Semaphore(10)
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=1, max=30), reraise=True)
 async def post_to_cli(
     path: str,
     json: dict[str, Any],
 ) -> Response:
     cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
+    # We check this ahead of time, so it should always be set here
     if not cli_server_address:
         raise Exception("CLI server address is not set.")
 
@@ -58,6 +63,7 @@ async def post_to_cli(
     return resp
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=1, max=30), reraise=True)
 async def post_to_api(
     path: str,
     json: dict[str, Any],
