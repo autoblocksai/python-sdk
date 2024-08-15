@@ -44,6 +44,19 @@ api_request_semaphore = asyncio.Semaphore(10)
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=1, max=30), reraise=True)
+async def post_to_cli_with_retry(
+    url: str,
+    json: dict[str, Any],
+) -> Response:
+    resp = await global_state.http_client().post(
+        url,
+        json=json,
+        timeout=TIMEOUT_SECONDS,
+    )
+    resp.raise_for_status()
+    return resp
+
+
 async def post_to_cli(
     path: str,
     json: dict[str, Any],
@@ -54,16 +67,28 @@ async def post_to_cli(
         raise Exception("CLI server address is not set.")
 
     async with cli_request_semaphore:
-        resp = await global_state.http_client().post(
+        return await post_to_cli_with_retry(
             f"{cli_server_address}{path}",
-            json=json,
-            timeout=TIMEOUT_SECONDS,
+            json,
         )
+
+
+@retry(stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=1, max=30), reraise=True)
+async def post_to_api_with_retry(
+    url: str,
+    api_key: str,
+    json: dict[str, Any],
+) -> Response:
+    resp = await global_state.http_client().post(
+        url,
+        json=json,
+        timeout=TIMEOUT_SECONDS,
+        headers={"Authorization": f"Bearer {api_key}"},
+    )
     resp.raise_for_status()
     return resp
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=1, max=30), reraise=True)
 async def post_to_api(
     path: str,
     json: dict[str, Any],
@@ -74,14 +99,11 @@ async def post_to_api(
         raise ValueError(f"You must set the {AutoblocksEnvVar.API_KEY} environment variable.")
 
     async with api_request_semaphore:
-        resp = await global_state.http_client().post(
+        return await post_to_api_with_retry(
             f"{API_ENDPOINT}{sub_path}{path}",
-            json=json,
-            timeout=TIMEOUT_SECONDS,
-            headers={"Authorization": f"Bearer {api_key}"},
+            api_key,
+            json,
         )
-    resp.raise_for_status()
-    return resp
 
 
 async def send_info_for_alignment_mode(
