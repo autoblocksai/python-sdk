@@ -45,8 +45,6 @@ async def post_to_cli(
         json=json,
         timeout=TIMEOUT_SECONDS,
     )
-    if not resp:
-        raise Exception(f"Failed to send request to Autoblocks CLI at '{path}'.")
     resp.raise_for_status()
     return resp
 
@@ -65,8 +63,6 @@ async def post_to_api(
         timeout=TIMEOUT_SECONDS,
         headers={"Authorization": f"Bearer {api_key}"},
     )
-    if not resp:
-        raise Exception(f"Failed to send request to Autoblocks API at '{path}'.")
     resp.raise_for_status()
     return resp
 
