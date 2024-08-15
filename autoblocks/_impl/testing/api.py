@@ -1,3 +1,4 @@
+import asyncio
 import dataclasses
 import logging
 import os
@@ -31,6 +32,13 @@ log = logging.getLogger(__name__)
 
 TIMEOUT_SECONDS = 30
 
+# We want to try to avoid race conditions with creating the comment if multiple tests are running in parallel
+github_comment_semaphore = asyncio.Semaphore(1)
+
+# Limit the number of concurrent requests to the CLI and API
+cli_request_semaphore = asyncio.Semaphore(10)
+api_request_semaphore = asyncio.Semaphore(10)
+
 
 async def post_to_cli(
     path: str,
@@ -40,11 +48,12 @@ async def post_to_cli(
     if not cli_server_address:
         raise Exception("CLI server address is not set.")
 
-    resp = await global_state.http_client().post(
-        f"{cli_server_address}{path}",
-        json=json,
-        timeout=TIMEOUT_SECONDS,
-    )
+    async with cli_request_semaphore:
+        resp = await global_state.http_client().post(
+            f"{cli_server_address}{path}",
+            json=json,
+            timeout=TIMEOUT_SECONDS,
+        )
     resp.raise_for_status()
     return resp
 
@@ -57,12 +66,14 @@ async def post_to_api(
     api_key = AutoblocksEnvVar.API_KEY.get()
     if not api_key:
         raise ValueError(f"You must set the {AutoblocksEnvVar.API_KEY} environment variable.")
-    resp = await global_state.http_client().post(
-        f"{API_ENDPOINT}{sub_path}{path}",
-        json=json,
-        timeout=TIMEOUT_SECONDS,
-        headers={"Authorization": f"Bearer {api_key}"},
-    )
+
+    async with api_request_semaphore:
+        resp = await global_state.http_client().post(
+            f"{API_ENDPOINT}{sub_path}{path}",
+            json=json,
+            timeout=TIMEOUT_SECONDS,
+            headers={"Authorization": f"Bearer {api_key}"},
+        )
     resp.raise_for_status()
     return resp
 
@@ -352,10 +363,11 @@ async def send_github_comment() -> None:
 
     log.info(f"Creating GitHub comment for build '{build_id}'.")
     try:
-        await post_to_api(
-            f"/builds/{build_id}/github-comment",
-            json=dict(githubToken=github_token),
-        )
+        async with github_comment_semaphore:
+            await post_to_api(
+                f"/builds/{build_id}/github-comment",
+                json=dict(githubToken=github_token),
+            )
     except Exception as e:
         log.warn(
             "Could not create GitHub comment for build '{build_id}'."
