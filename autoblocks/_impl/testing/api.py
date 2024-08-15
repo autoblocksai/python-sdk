@@ -35,32 +35,40 @@ TIMEOUT_SECONDS = 30
 async def post_to_cli(
     path: str,
     json: dict[str, Any],
-) -> Optional[Response]:
+) -> Response:
     cli_server_address = AutoblocksEnvVar.CLI_SERVER_ADDRESS.get()
     if not cli_server_address:
         raise Exception("CLI server address is not set.")
 
-    return await global_state.http_client().post(
+    resp = await global_state.http_client().post(
         f"{cli_server_address}{path}",
         json=json,
         timeout=TIMEOUT_SECONDS,
     )
+    if not resp:
+        raise Exception(f"Failed to send request to Autoblocks CLI at '{path}'.")
+    resp.raise_for_status()
+    return resp
 
 
 async def post_to_api(
     path: str,
     json: dict[str, Any],
-) -> Optional[Response]:
+) -> Response:
     sub_path = "/testing/ci" if is_ci() else "/testing/local"
     api_key = AutoblocksEnvVar.API_KEY.get()
     if not api_key:
         raise ValueError(f"You must set the {AutoblocksEnvVar.API_KEY} environment variable.")
-    return await global_state.http_client().post(
+    resp = await global_state.http_client().post(
         f"{API_ENDPOINT}{sub_path}{path}",
         json=json,
         timeout=TIMEOUT_SECONDS,
         headers={"Authorization": f"Bearer {api_key}"},
     )
+    if not resp:
+        raise Exception(f"Failed to send request to Autoblocks API at '{path}'.")
+    resp.raise_for_status()
+    return resp
 
 
 async def send_info_for_alignment_mode(
@@ -90,20 +98,23 @@ async def send_error(
     test_id: str, run_id: Optional[str], test_case_hash: Optional[str], evaluator_id: Optional[str], error: Exception
 ) -> None:
     if is_cli_running():
-        await post_to_cli(
-            "/errors",
-            json=dict(
-                testExternalId=test_id,
-                runId=run_id,
-                testCaseHash=test_case_hash,
-                evaluatorExternalId=evaluator_id,
-                error=dict(
-                    name=type(error).__name__,
-                    message=str(error),
-                    stacktrace=traceback.format_exc(),
+        try:
+            await post_to_cli(
+                "/errors",
+                json=dict(
+                    testExternalId=test_id,
+                    runId=run_id,
+                    testCaseHash=test_case_hash,
+                    evaluatorExternalId=evaluator_id,
+                    error=dict(
+                        name=type(error).__name__,
+                        message=str(error),
+                        stacktrace=traceback.format_exc(),
+                    ),
                 ),
-            ),
-        )
+            )
+        except Exception:
+            log.exception(f"Error in test '{test_id}'", exc_info=error)
     else:
         log.exception(f"Error in test '{test_id}'", exc_info=error)
 
@@ -122,10 +133,6 @@ async def send_start_grid_search_run(
             json=dict(gridSearchParams=grid_search_params),
         )
 
-    if not grid_resp:
-        raise Exception("Failed to start grid search run.")
-
-    grid_resp.raise_for_status()
     return grid_resp.json()["id"]  # type: ignore [no-any-return]
 
 
@@ -155,9 +162,6 @@ async def send_start_test_run(
             ),
         )
 
-    if not start_resp:
-        raise Exception(f"Failed to start test run for test '{test_external_id}'.")
-    start_resp.raise_for_status()
     return start_resp.json()["id"]  # type: ignore [no-any-return]
 
 
@@ -166,21 +170,15 @@ async def send_test_events(
     test_case_hash: str,
     test_case_result_id: str,
 ) -> None:
-    if (run_id, test_case_hash) not in test_events:
-        return
-
-    # If the key exists, it means there are events to send
-    events = test_events[(run_id, test_case_hash)]
-
-    events_resp = await post_to_api(
-        f"/runs/{run_id}/results/{test_case_result_id}/events",
-        json=dict(testCaseEvents=[event.to_json() for event in events]),
-    )
-
     try:
-        if not events_resp:
-            raise Exception(f"Failed to send test events for run '{run_id}' and test case hash '{test_case_hash}'.")
-        events_resp.raise_for_status()
+        if (run_id, test_case_hash) not in test_events:
+            return
+        # If the key exists, it means there are events to send
+        events = test_events[(run_id, test_case_hash)]
+        await post_to_api(
+            f"/runs/{run_id}/results/{test_case_result_id}/events",
+            json=dict(testCaseEvents=[event.to_json() for event in events]),
+        )
         # Remove the events from the test_events dict after they have been sent
         del test_events[(run_id, test_case_hash)]
     except Exception as e:
@@ -217,9 +215,6 @@ async def send_test_case_result(
                 testCaseHumanReviewOutputFields=serialized_test_case_human_review_output_fields,
             ),
         )
-        if not results_resp:
-            raise Exception(f"Failed to send test case result for test '{test_external_id}'.")
-        results_resp.raise_for_status()
         result_id_cli: str = results_resp.json()["id"]
         await send_test_events(run_id, test_case_ctx.hash(), result_id_cli)
         return result_id_cli
@@ -234,9 +229,6 @@ async def send_test_case_result(
                 testCaseRevisionUsage=test_case_revision_usage,
             ),
         )
-        if not results_resp:
-            raise Exception(f"Failed to send test case result for test '{test_external_id}'.")
-        results_resp.raise_for_status()
         result_id: str = results_resp.json()["id"]
         results = await all_settled(
             [
@@ -264,28 +256,22 @@ async def send_test_case_result(
                     exc_info=result,
                 )
 
-        human_review_results_resp = await post_to_api(
-            f"/runs/{run_id}/results/{result_id}/human-review-fields",
-            json=dict(
-                testCaseHumanReviewInputFields=serialized_test_case_human_review_input_fields,
-                testCaseHumanReviewOutputFields=serialized_test_case_human_review_output_fields,
-            ),
-        )
         try:
-            if not human_review_results_resp:
-                raise Exception(f"Failed to send human review fields to Autoblocks for test '{test_external_id}'.")
-            human_review_results_resp.raise_for_status()
+            await post_to_api(
+                f"/runs/{run_id}/results/{result_id}/human-review-fields",
+                json=dict(
+                    testCaseHumanReviewInputFields=serialized_test_case_human_review_input_fields,
+                    testCaseHumanReviewOutputFields=serialized_test_case_human_review_output_fields,
+                ),
+            )
         except Exception as e:
             log.warn(
                 "Failed to send human review fields to Autoblocks\n" f"test case hash: {test_case_ctx.hash()}\n",
                 exc_info=e,
             )
 
-        ui_based_evals_resp = await post_to_api(f"/runs/{run_id}/results/{result_id}/ui-based-evaluations", json={})
         try:
-            if not ui_based_evals_resp:
-                raise Exception(f"Failed to send ui-based evaluations to Autoblocks for test '{test_external_id}'.")
-            ui_based_evals_resp.raise_for_status()
+            await post_to_api(f"/runs/{run_id}/results/{result_id}/ui-based-evaluations", json={})
         except Exception as e:
             log.warn("Failed to run ui based evaluations\n" f"test case hash: {test_case_ctx.hash()}\n", exc_info=e)
 
@@ -319,7 +305,7 @@ async def send_eval(
             ),
         )
     else:
-        resp = await post_to_api(
+        await post_to_api(
             f"/runs/{run_id}/results/{test_case_result_id}/evaluations",
             json=dict(
                 evaluatorExternalId=evaluator_external_id,
@@ -330,10 +316,6 @@ async def send_eval(
                 revisionUsage=eval_revision_usage,
             ),
         )
-        if resp:
-            resp.raise_for_status()
-        else:
-            raise Exception(f"Failed to send evaluation to Autoblocks for test '{test_external_id}'.")
 
 
 async def send_end_test_run(
@@ -357,10 +339,13 @@ async def send_slack_notification(
         return
 
     log.info(f"Sending slack notification for test run '{run_id}'.")
-    await post_to_api(
-        f"/runs/{run_id}/slack-notification",
-        json=dict(slackWebhookUrl=slack_webhook_url),
-    )
+    try:
+        await post_to_api(
+            f"/runs/{run_id}/slack-notification",
+            json=dict(slackWebhookUrl=slack_webhook_url),
+        )
+    except Exception as e:
+        log.warn(f"Failed to send slack notification for test run '{run_id}'", exc_info=e)
 
 
 async def send_github_comment() -> None:
@@ -370,7 +355,15 @@ async def send_github_comment() -> None:
         return
 
     log.info(f"Creating GitHub comment for build '{build_id}'.")
-    await post_to_api(
-        f"/builds/{build_id}/github-comment",
-        json=dict(githubToken=github_token),
-    )
+    try:
+        await post_to_api(
+            f"/builds/{build_id}/github-comment",
+            json=dict(githubToken=github_token),
+        )
+    except Exception as e:
+        log.warn(
+            "Could not create GitHub comment for build '{build_id}'."
+            "For more information on how to set up GitHub Actions permissions, see: "
+            "https://docs.autoblocks.ai/testing/ci#git-hub-comments-github-actions-permissions",
+            exc_info=e,
+        )
