@@ -22,6 +22,7 @@ from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.util import serialize_test_case_for_human_review
 from autoblocks._impl.tracer import test_events
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks._impl.util import ThirdPartyEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import is_ci
 from autoblocks._impl.util import is_cli_running
@@ -359,4 +360,17 @@ async def send_slack_notification(
     await post_to_api(
         f"/runs/{run_id}/slack-notification",
         json=dict(slackWebhookUrl=slack_webhook_url),
+    )
+
+
+async def send_github_comment() -> None:
+    github_token = ThirdPartyEnvVar.GITHUB_TOKEN.get()
+    build_id = AutoblocksEnvVar.CI_TEST_RUN_BUILD_ID.get()
+    if is_cli_running() or not github_token or not build_id or not is_ci():
+        return
+
+    log.info(f"Sending slack notification for test run '{build_id}'.")
+    await post_to_api(
+        f"/builds/{build_id}/github-comment",
+        json=dict(githubToken=github_token),
     )
