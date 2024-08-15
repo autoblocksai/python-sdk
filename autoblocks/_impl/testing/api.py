@@ -369,7 +369,7 @@ async def send_github_comment() -> None:
     if is_cli_running() or not github_token or not build_id or not is_ci():
         return
 
-    log.info(f"Sending slack notification for test run '{build_id}'.")
+    log.info(f"Creating GitHub comment for build '{build_id}'.")
     await post_to_api(
         f"/builds/{build_id}/github-comment",
         json=dict(githubToken=github_token),
