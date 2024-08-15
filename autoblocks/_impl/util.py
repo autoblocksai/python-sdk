@@ -44,6 +44,7 @@ class AutoblocksEnvVar(StrEnum):
 
 class ThirdPartyEnvVar(StrEnum):
     OPENAI_API_KEY = "OPENAI_API_KEY"
+    GITHUB_TOKEN = "GITHUB_TOKEN"
 
     def get(self) -> Optional[str]:
         return os.environ.get(self.value)

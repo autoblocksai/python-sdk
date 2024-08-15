@@ -21,6 +21,7 @@ click = ">=8.0.0"
 pyyaml = ">=6.0.0"
 orjson = ">=3.0.0"
 ragas = "0.1.10"
+tenacity = ">=8.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.3"
