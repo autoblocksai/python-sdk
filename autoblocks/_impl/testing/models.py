@@ -34,6 +34,9 @@ class Assertion:
     required: bool
     metadata: Optional[Dict[str, Any]] = None
 
+    def serialize(self) -> Dict[str, Any]:
+        return dict(criterion=self.criterion, passed=self.passed, required=self.required, metadata=self.metadata)
+
 
 @dataclasses.dataclass
 class Evaluation:
