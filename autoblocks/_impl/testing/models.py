@@ -5,6 +5,7 @@ from typing import Any
 from typing import Awaitable
 from typing import Dict
 from typing import Generic
+from typing import List
 from typing import Optional
 from typing import TypeVar
 from typing import Union
@@ -27,10 +28,19 @@ class Threshold:
 
 
 @dataclasses.dataclass
+class Assertion:
+    criterion: str
+    passed: bool
+    required: bool
+    metadata: Optional[Dict[str, Any]] = None
+
+
+@dataclasses.dataclass
 class Evaluation:
     score: float
     threshold: Optional[Threshold] = None
     metadata: Optional[Dict[str, Any]] = None
+    assertions: Optional[List[Assertion]] = None
 
     def passed(self) -> Optional[bool]:
         if self.threshold is None:

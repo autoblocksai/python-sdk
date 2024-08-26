@@ -337,6 +337,7 @@ async def send_eval(
                 threshold=threshold,
                 metadata=evaluation.metadata,
                 revisionUsage=eval_revision_usage,
+                assertions=evaluation.assertions,
             ),
         )
     else:
@@ -349,6 +350,7 @@ async def send_eval(
                 threshold=threshold,
                 metadata=evaluation.metadata,
                 revisionUsage=eval_revision_usage,
+                assertions=evaluation.assertions,
             ),
         )
 

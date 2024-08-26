@@ -1,3 +1,4 @@
+from autoblocks._impl.testing.models import Assertion
 from autoblocks._impl.testing.models import BaseEvaluator
 from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import BaseTestCase
@@ -13,6 +14,7 @@ from autoblocks._impl.testing.models import Threshold
 from autoblocks._impl.testing.models import TracerEvent
 
 __all__ = [
+    "Assertion",
     "BaseEvaluator",
     "BaseEventEvaluator",
     "BaseTestCase",
