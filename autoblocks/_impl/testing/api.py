@@ -325,6 +325,7 @@ async def send_eval(
     revision_usage = get_revision_usage()
     eval_revision_usage = [usage.serialize() for usage in revision_usage] if revision_usage else None
     threshold = dataclasses.asdict(evaluation.threshold) if evaluation.threshold else None
+    assertions = [assertion.serialize() for assertion in evaluation.assertions] if evaluation.assertions else None
     if is_cli_running():
         await post_to_cli(
             "/evals",
@@ -337,6 +338,7 @@ async def send_eval(
                 threshold=threshold,
                 metadata=evaluation.metadata,
                 revisionUsage=eval_revision_usage,
+                assertions=assertions,
             ),
         )
     else:
@@ -349,6 +351,7 @@ async def send_eval(
                 threshold=threshold,
                 metadata=evaluation.metadata,
                 revisionUsage=eval_revision_usage,
+                assertions=assertions,
             ),
         )
 

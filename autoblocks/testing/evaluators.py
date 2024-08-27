@@ -1,4 +1,5 @@
 from autoblocks._impl.testing.evaluators.accuracy import BaseAccuracy
+from autoblocks._impl.testing.evaluators.base_assertions import BaseAssertions
 from autoblocks._impl.testing.evaluators.battle import BaseAutomaticBattle
 from autoblocks._impl.testing.evaluators.battle import BaseAutomaticBattle as AutomaticBattle
 from autoblocks._impl.testing.evaluators.battle import BaseManualBattle
@@ -19,6 +20,7 @@ from autoblocks._impl.testing.evaluators.ragas_faithfulness import BaseRagasFait
 from autoblocks._impl.testing.evaluators.toxicity import BaseToxicity
 
 __all__ = [
+    "BaseAssertions",
     "BaseIsEquals",
     "BaseIsValidJSON",
     "BaseHasAllSubstrings",

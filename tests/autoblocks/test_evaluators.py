@@ -8,6 +8,7 @@ import pytest
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks.testing.evaluators import BaseAccuracy
+from autoblocks.testing.evaluators import BaseAssertions
 from autoblocks.testing.evaluators import BaseAutomaticBattle
 from autoblocks.testing.evaluators import BaseHasAllSubstrings
 from autoblocks.testing.evaluators import BaseIsEquals
@@ -16,6 +17,7 @@ from autoblocks.testing.evaluators import BaseLLMJudge
 from autoblocks.testing.evaluators import BaseManualBattle
 from autoblocks.testing.evaluators import BaseNSFW
 from autoblocks.testing.evaluators import BaseToxicity
+from autoblocks.testing.models import Assertion
 from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.models import EvaluationOverride
 from autoblocks.testing.models import ScoreChoice
@@ -101,6 +103,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=dict(missing_substrings=[]),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -131,6 +134,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=dict(missing_substrings=["bar"]),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -207,6 +211,7 @@ def test_is_equals_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -240,6 +245,7 @@ def test_is_equals_evaluator(httpx_mock):
                 actual_output="hello world",
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -315,6 +321,7 @@ def test_is_valid_json_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=dict(error="Expecting value: line 1 column 1 (char 0)"),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -345,6 +352,7 @@ def test_is_valid_json_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -428,6 +436,7 @@ def test_toxicity_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -461,6 +470,7 @@ def test_toxicity_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -544,6 +554,7 @@ def test_nsfw_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -577,6 +588,7 @@ def test_nsfw_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -661,6 +673,7 @@ def test_accuracy_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -694,6 +707,7 @@ def test_accuracy_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -780,6 +794,7 @@ def test_llm_judge_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -813,6 +828,7 @@ def test_llm_judge_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -909,6 +925,7 @@ def test_manual_battle_evaluator(httpx_mock):
                 criteria="Choose the best greeting.",
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -1002,6 +1019,7 @@ def test_automatic_battle_evaluator(httpx_mock):
                 criteria="Choose the best greeting.",
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -1033,4 +1051,82 @@ def test_automatic_battle_evaluator(httpx_mock):
         ],
         fn=test_fn,
         max_test_case_concurrency=1,
+    )
+
+
+def test_assertions_evaluator(httpx_mock):
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="hello world",
+            testCaseBody=dict(input="hello world", expected_substrings=["hello", "world"]),
+            testCaseOutput="hello world",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+        ),
+        json=dict(id="mock-result-id-1"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/evals",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+            testCaseHash="hello world",
+            evaluatorExternalId="assertions",
+            score=1,
+            threshold=dict(lt=None, lte=None, gt=None, gte=1),
+            metadata=None,
+            revisionUsage=None,
+            assertions=[
+                dict(criterion="Must pass", passed=True, required=True, metadata=None),
+                dict(criterion="This is flaky", passed=False, required=False, metadata=None),
+            ],
+        ),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+        ),
+    )
+
+    def test_fn(test_case: MyTestCase) -> str:
+        return "hello world"
+
+    class Assertions(BaseAssertions[MyTestCase, str]):
+        id = "assertions"
+
+        def evaluate_assertions(self, test_case: MyTestCase, output: str) -> list[Assertion]:
+            return [
+                Assertion(criterion="Must pass", passed=True, required=True, metadata=None),
+                Assertion(criterion="This is flaky", passed=False, required=False, metadata=None),
+            ]
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="hello world", expected_substrings=["hello", "world"]),
+        ],
+        evaluators=[
+            Assertions(),
+        ],
+        fn=test_fn,
     )

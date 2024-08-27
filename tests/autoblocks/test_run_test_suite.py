@@ -322,6 +322,7 @@ def test_error_in_evaluator(httpx_mock):
             threshold=dict(lt=0.6, lte=None, gt=None, gte=None),
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -336,6 +337,7 @@ def test_error_in_evaluator(httpx_mock):
             threshold=dict(lt=0.7, lte=None, gt=None, gte=None),
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -537,6 +539,7 @@ def test_with_evaluators(httpx_mock):
             threshold=None,
             metadata=dict(reason="because"),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -551,6 +554,7 @@ def test_with_evaluators(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -581,6 +585,7 @@ def test_with_evaluators(httpx_mock):
             threshold=None,
             metadata=dict(reason="because"),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -595,6 +600,7 @@ def test_with_evaluators(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -764,6 +770,7 @@ def test_concurrency(httpx_mock):
                 threshold=None,
                 metadata=None,
                 revisionUsage=None,
+                assertions=None,
             ),
         ),
         (
@@ -777,6 +784,7 @@ def test_concurrency(httpx_mock):
                 threshold=None,
                 metadata=None,
                 revisionUsage=None,
+                assertions=None,
             ),
         ),
         (
@@ -790,6 +798,7 @@ def test_concurrency(httpx_mock):
                 threshold=None,
                 metadata=None,
                 revisionUsage=None,
+                assertions=None,
             ),
         ),
         (
@@ -803,6 +812,7 @@ def test_concurrency(httpx_mock):
                 threshold=None,
                 metadata=None,
                 revisionUsage=None,
+                assertions=None,
             ),
         ),
         (
@@ -923,6 +933,7 @@ def test_async_evaluators(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -937,6 +948,7 @@ def test_async_evaluators(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -967,6 +979,7 @@ def test_async_evaluators(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -981,6 +994,7 @@ def test_async_evaluators(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -1450,6 +1464,7 @@ def test_repeated_test_cases(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -1464,6 +1479,7 @@ def test_repeated_test_cases(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -1478,6 +1494,7 @@ def test_repeated_test_cases(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
 
@@ -1494,6 +1511,7 @@ def test_repeated_test_cases(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
 
@@ -1602,6 +1620,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -1839,6 +1858,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
                 ]
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -1853,6 +1873,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=dict(failed_rules=["not ideal but whatever"]),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -1867,6 +1888,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=dict(failed_rules=["this is a bit concerning"]),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -2636,7 +2658,7 @@ def test_run_stops_if_start_fails(httpx_mock):
         max_test_case_concurrency=1,
     )
 
-    # we retry the start request 3 times
+    # we retry the start request 3 times and all calls should be to /start
     assert len(httpx_mock.get_requests()) == 3
     for req in httpx_mock.get_requests():
         assert req.url.path == "/start"
@@ -2683,6 +2705,7 @@ def test_sync_before_evaluators_hook(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -2697,6 +2720,7 @@ def test_sync_before_evaluators_hook(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -2813,6 +2837,7 @@ def test_async_before_evaluators_hook(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -2827,6 +2852,7 @@ def test_async_before_evaluators_hook(httpx_mock):
             threshold=None,
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -3088,6 +3114,7 @@ def test_prompt_manager_revision_usage(httpx_mock):
                     usedAt=mock.ANY,
                 ),
             ],
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -3109,6 +3136,7 @@ def test_prompt_manager_revision_usage(httpx_mock):
                     usedAt=mock.ANY,
                 ),
             ],
+            assertions=None,
         ),
     )
     expect_cli_post_request(

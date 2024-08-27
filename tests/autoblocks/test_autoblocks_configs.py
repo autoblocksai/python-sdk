@@ -51,6 +51,7 @@ def test_gracefully_handles_parser_error(httpx_mock):
     )
 
     assert config.value == MyConfigValue(my_val="initial-val")
+    config.stop_refreshing()
 
 
 @mock.patch.dict(
@@ -103,6 +104,7 @@ def test_activates_latest(httpx_mock):
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
+    config.stop_refreshing()
 
 
 @mock.patch.dict(
@@ -173,6 +175,7 @@ def test_activates_undeployed_latest(httpx_mock):
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
+    config.stop_refreshing()
 
 
 @mock.patch.dict(
@@ -290,3 +293,4 @@ def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
     assert config.value == MyConfigValue(my_val="val-from-remote-latest")
     # ensure we only made one call to get latest
     assert len(httpx_mock.get_requests()) == 1
+    config.stop_refreshing()
