@@ -104,6 +104,7 @@ def test_activates_latest(httpx_mock):
     )
 
     assert config.value == MyConfigValue(my_val="val-from-remote")
+    config.stop_refreshing()
 
 
 @mock.patch.dict(
