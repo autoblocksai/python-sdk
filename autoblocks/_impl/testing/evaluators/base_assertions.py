@@ -15,7 +15,7 @@ from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.models import Threshold
 
 
-class BaseAssertionsEvaluator(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
+class BaseAssertions(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]):
     """
     Base evaluator for creating an assertions evaluator.
     """
