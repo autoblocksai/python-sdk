@@ -127,9 +127,10 @@ class AutoblocksConfig(
             await asyncio.sleep(refresh_interval.total_seconds())
 
             try:
-                await self._load_and_set_remote_config(
-                    config=config, api_key=api_key, timeout=refresh_timeout, parser=parser
-                )
+                if not self._is_stopped_refreshing:
+                    await self._load_and_set_remote_config(
+                        config=config, api_key=api_key, timeout=refresh_timeout, parser=parser
+                    )
             except Exception as err:
                 log.warning(f"Failed to refresh config '{config.id}': {err}")
 
