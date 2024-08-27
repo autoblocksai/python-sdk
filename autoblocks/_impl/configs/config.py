@@ -103,6 +103,7 @@ class AutoblocksConfig(
     _value: AutoblocksConfigValueType
     _remote_config_id: Optional[str] = None
     _remote_config_revision_id: Optional[str] = None
+    _is_stopped_refreshing: bool = False
 
     def __init__(self, value: AutoblocksConfigValueType) -> None:
         self._value = value
@@ -122,7 +123,7 @@ class AutoblocksConfig(
         which will cause it to drift each run by the time it takes to run the refresh,
         but I think that is ok in this scenario.
         """
-        while True:
+        while not self._is_stopped_refreshing:
             await asyncio.sleep(refresh_interval.total_seconds())
 
             try:
@@ -233,7 +234,7 @@ class AutoblocksConfig(
         Activate a remote config from Autoblocks and optionally refresh it every `refresh_interval` seconds.
         """
         try:
-            log.info("Activating remote config...")
+            log.info(f"Activating remote config '{config.id}'")
             self._activate_from_remote_unsafe(
                 config=config,
                 api_key=api_key,
@@ -244,6 +245,13 @@ class AutoblocksConfig(
             )
         except Exception as err:
             log.error(f"Failed to activate remote config '{config.id}': {err}")
+
+    def stop_refreshing(self) -> None:
+        """
+        Stops the config from automatically refreshing.
+        """
+        log.info(f"Stopping automatic refreshing for config '{self._remote_config_id}'.")
+        self._is_stopped_refreshing = True
 
     @property
     def value(self) -> AutoblocksConfigValueType:

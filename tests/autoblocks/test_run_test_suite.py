@@ -2659,7 +2659,7 @@ def test_run_stops_if_start_fails(httpx_mock):
     )
 
     # we retry the start request 3 times and all calls should be to /start
-    # we don't assert 3 requests here because it is flaky for some reason?
+    assert len(httpx_mock.get_requests()) == 3
     for req in httpx_mock.get_requests():
         assert req.url.path == "/start"
         assert req.method == "POST"
