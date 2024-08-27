@@ -101,6 +101,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=dict(missing_substrings=[]),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -131,6 +132,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=dict(missing_substrings=["bar"]),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -207,6 +209,7 @@ def test_is_equals_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -240,6 +243,7 @@ def test_is_equals_evaluator(httpx_mock):
                 actual_output="hello world",
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -315,6 +319,7 @@ def test_is_valid_json_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=dict(error="Expecting value: line 1 column 1 (char 0)"),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -345,6 +350,7 @@ def test_is_valid_json_evaluator(httpx_mock):
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -428,6 +434,7 @@ def test_toxicity_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -461,6 +468,7 @@ def test_toxicity_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -544,6 +552,7 @@ def test_nsfw_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -577,6 +586,7 @@ def test_nsfw_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -661,6 +671,7 @@ def test_accuracy_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -694,6 +705,7 @@ def test_accuracy_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -780,6 +792,7 @@ def test_llm_judge_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -813,6 +826,7 @@ def test_llm_judge_evaluator(httpx_mock):
                 prompt=ANY_STRING,
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -909,6 +923,7 @@ def test_manual_battle_evaluator(httpx_mock):
                 criteria="Choose the best greeting.",
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
@@ -1002,6 +1017,7 @@ def test_automatic_battle_evaluator(httpx_mock):
                 criteria="Choose the best greeting.",
             ),
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(

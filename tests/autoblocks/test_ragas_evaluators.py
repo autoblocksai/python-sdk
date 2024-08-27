@@ -77,6 +77,7 @@ def make_expected_requests(evaluator_id: str, httpx_mock: Any) -> None:
             threshold=dict(lt=None, lte=None, gt=None, gte=1),
             metadata=None,
             revisionUsage=None,
+            assertions=None,
         ),
     )
     expect_cli_post_request(
