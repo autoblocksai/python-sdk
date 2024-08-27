@@ -525,6 +525,7 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
                     usedAt=mock.ANY,
                 ),
             ],
+            assertions=None,
         ),
     )
     expect_cli_post_request(
