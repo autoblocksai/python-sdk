@@ -42,7 +42,7 @@ class BaseAssertions(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputTyp
         else:
             assertions_result = self.evaluate_assertions(*args, **kwargs)
 
-        if assertions_result is None:
+        if assertions_result is None or len(assertions_result) == 0:
             return None
 
         # The evaluator passes if all required assertions pass
