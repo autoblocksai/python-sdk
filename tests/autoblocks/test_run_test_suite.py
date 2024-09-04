@@ -194,8 +194,14 @@ def test_duplicate_evaluator_ids(httpx_mock):
     assert req_body["testCaseHash"] is None
     assert req_body["evaluatorExternalId"] is None
     assert req_body["error"]["name"] == "AssertionError"
-    assert req_body["error"]["message"] == "[my-test-id] Duplicate evaluator id: 'my-evaluator'."
-    assert "AssertionError: [my-test-id] Duplicate evaluator id: 'my-evaluator'." in req_body["error"]["stacktrace"]
+    assert (
+        req_body["error"]["message"]
+        == "[my-test-id] Duplicate evaluator id: 'my-evaluator'. Each evaluator id must be unique."
+    )
+    assert (
+        "AssertionError: [my-test-id] Duplicate evaluator id: 'my-evaluator'. Each evaluator id must be unique."
+        in req_body["error"]["stacktrace"]
+    )
 
 
 def test_error_in_test_fn(httpx_mock):

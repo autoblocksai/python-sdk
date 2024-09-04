@@ -302,7 +302,9 @@ def validate_test_suite_inputs(
             BaseTestEvaluator,
         ), f"[{test_id}] Evaluator {evaluator} does not implement {BaseTestEvaluator.__name__}."
         evaluator_id = evaluator.id
-        assert evaluator_id not in evaluator_ids, f"[{test_id}] Duplicate evaluator id: '{evaluator_id}'."
+        assert evaluator_id not in evaluator_ids, (
+            f"[{test_id}] Duplicate evaluator id: '{evaluator_id}'. " "Each evaluator id must be unique."
+        )
         evaluator_ids.add(evaluator_id)
 
     if grid_search_params is not None:
