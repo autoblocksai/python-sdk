@@ -1,6 +1,8 @@
+import asyncio
 import dataclasses
 import logging
 import os
+import random
 import signal
 import subprocess
 import time
@@ -646,3 +648,66 @@ def test_async_script_flushes_on_exit():
     log.info(f"Process {process.pid} terminated with return code {process.returncode}.")
 
     wait_for_trace_to_exist(test_trace_id)
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
+    },
+)
+def test_many_test_cases(httpx_mock):
+    @dataclasses.dataclass
+    class MyTestCase(BaseTestCase):
+        x: int
+
+        def hash(self):
+            return f"{self.x}"
+
+    async def test_fn(test_case: MyTestCase) -> str:
+        return f"{test_case.x}"
+
+    class MyEvaluator(BaseTestEvaluator):
+        id = "my-evaluator"
+
+        async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
+            return Evaluation(score=0.97)
+
+    test_cases = [MyTestCase(x=i) for i in range(0, 100)]
+
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
+    )
+
+    # simulate network latency so the semaphores get triggered
+    async def simulate_network_latency(request: httpx.Request) -> httpx.Response:
+        await asyncio.sleep(random.uniform(0.1, 0.5))  # Random delay between 100ms and 500ms
+        return httpx.Response(
+            status_code=200,
+            json=dict(id=f"mock-result-id-{i}"),
+        )
+
+    for i in range(0, 100):
+        # add one for /results and one for /evals
+        httpx_mock.add_callback(simulate_network_latency)
+        httpx_mock.add_callback(simulate_network_latency)
+
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+        ),
+    )
+
+    run_test_suite(
+        id="my-test-id", test_cases=test_cases, evaluators=[MyEvaluator()], fn=test_fn, max_test_case_concurrency=100
+    )

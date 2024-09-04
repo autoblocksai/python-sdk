@@ -19,6 +19,8 @@ _client: Optional[httpx.AsyncClient] = None
 _sync_client: Optional[httpx.Client] = None
 _background_tasks: Set[AnyTask] = set()
 _main_thread_has_finished: bool = False
+_test_run_api_semaphore: Optional[asyncio.Semaphore] = None
+_github_comment_semaphore: Optional[asyncio.Semaphore] = None
 
 
 def _run_event_loop(_event_loop: asyncio.AbstractEventLoop) -> None:
@@ -120,7 +122,21 @@ def init() -> None:
     )
     _background_thread.start()
 
+    # Important that these get initialized in the background event loop that testing uses
+    # Otherwise we will see errors like Future <Future pending> attached to a different loop in Python 3.9
+    # See https://stackoverflow.com/questions/55918048/asyncio-semaphore-runtimeerror-task-got-future-attached-to-a-different-loop
+    asyncio.run_coroutine_threadsafe(
+        init_semaphores(),
+        _background_event_loop,
+    ).result()
+
     _started = True
+
+
+async def init_semaphores() -> None:
+    global _test_run_api_semaphore, _github_comment_semaphore
+    _test_run_api_semaphore = asyncio.Semaphore(value=10)
+    _github_comment_semaphore = asyncio.Semaphore(value=1)
 
 
 def event_loop() -> asyncio.AbstractEventLoop:
@@ -139,6 +155,21 @@ def sync_http_client() -> httpx.Client:
     if not _sync_client:
         raise Exception("HTTP client not initialized")
     return _sync_client
+
+
+def test_run_api_semaphore() -> asyncio.Semaphore:
+    if not _test_run_api_semaphore:
+        raise Exception("Test run API semaphore not initialized")
+    return _test_run_api_semaphore
+
+
+def github_comment_semaphore() -> asyncio.Semaphore:
+    """
+    Used to avoid race conditions with creating the comment if multiple tests are running in parallel
+    """
+    if not _github_comment_semaphore:
+        raise Exception("GitHub comment semaphore not initialized")
+    return _github_comment_semaphore
 
 
 def add_background_task(task: AnyTask) -> None:

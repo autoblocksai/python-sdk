@@ -1,4 +1,3 @@
-import asyncio
 import dataclasses
 import logging
 import os
@@ -35,13 +34,6 @@ log = logging.getLogger(__name__)
 
 TIMEOUT_SECONDS = 30
 
-# We want to try to avoid race conditions with creating the comment if multiple tests are running in parallel
-github_comment_semaphore = asyncio.Semaphore(1)
-
-# Limit the number of concurrent requests to the CLI and API
-cli_request_semaphore = asyncio.Semaphore(10)
-api_request_semaphore = asyncio.Semaphore(10)
-
 
 @retry(stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=1, max=30), reraise=True)
 async def post_to_cli_with_retry(
@@ -66,7 +58,7 @@ async def post_to_cli(
     if not cli_server_address:
         raise Exception("CLI server address is not set.")
 
-    async with cli_request_semaphore:
+    async with global_state.test_run_api_semaphore():
         return await post_to_cli_with_retry(
             f"{cli_server_address}{path}",
             json,
@@ -98,7 +90,7 @@ async def post_to_api(
     if not api_key:
         raise ValueError(f"You must set the {AutoblocksEnvVar.API_KEY} environment variable.")
 
-    async with api_request_semaphore:
+    async with global_state.test_run_api_semaphore():
         return await post_to_api_with_retry(
             f"{API_ENDPOINT}{sub_path}{path}",
             api_key,
@@ -394,7 +386,7 @@ async def send_github_comment() -> None:
 
     log.info(f"Creating GitHub comment for build '{build_id}'.")
     try:
-        async with github_comment_semaphore:
+        async with global_state.github_comment_semaphore():
             await post_to_api(
                 f"/builds/{build_id}/github-comment",
                 json=dict(githubToken=github_token),
