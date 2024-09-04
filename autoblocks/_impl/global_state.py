@@ -113,13 +113,6 @@ def init() -> None:
     _sync_client = httpx.Client()
 
     _background_event_loop = asyncio.new_event_loop()
-    # Important that these get initialized in the background event loop that testing uses
-    # Otherwise we will see errors like Future <Future pending> attached to a different loop in Python 3.9
-    # See https://stackoverflow.com/questions/55918048/asyncio-semaphore-runtimeerror-task-got-future-attached-to-a-different-loop
-    asyncio.run_coroutine_threadsafe(
-        init_semaphores(),
-        _background_event_loop,
-    ).result()
 
     threading.Thread(target=_main_shut_down_monitor_thread).start()
 
@@ -128,6 +121,14 @@ def init() -> None:
         args=(_background_event_loop,),
     )
     _background_thread.start()
+
+    # Important that these get initialized in the background event loop that testing uses
+    # Otherwise we will see errors like Future <Future pending> attached to a different loop in Python 3.9
+    # See https://stackoverflow.com/questions/55918048/asyncio-semaphore-runtimeerror-task-got-future-attached-to-a-different-loop
+    asyncio.run_coroutine_threadsafe(
+        init_semaphores(),
+        _background_event_loop,
+    ).result()
 
     _started = True
 
