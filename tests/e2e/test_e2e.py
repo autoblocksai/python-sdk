@@ -646,3 +646,87 @@ def test_async_script_flushes_on_exit():
     log.info(f"Process {process.pid} terminated with return code {process.returncode}.")
 
     wait_for_trace_to_exist(test_trace_id)
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
+    },
+)
+def test_many_test_cases(httpx_mock):
+    @dataclasses.dataclass
+    class MyTestCase(BaseTestCase):
+        x: int
+
+        def hash(self):
+            return f"{self.x}"
+
+    def test_fn(test_case: MyTestCase) -> str:
+        return f"{test_case.x}"
+
+    class MyEvaluator(BaseTestEvaluator):
+        id = "my-evaluator"
+
+        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
+            return Evaluation(score=0.97)
+
+    test_cases = [MyTestCase(x=i) for i in range(0, 100)]
+
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id="mock-run-id"),
+    )
+    for i in range(0, 100):
+        expect_cli_post_request(
+            httpx_mock,
+            path="/results",
+            body=dict(
+                testExternalId="my-test-id",
+                runId="mock-run-id",
+                testCaseHash=f"{i}",
+                testCaseBody={"x": i},
+                testCaseOutput=f"{i}",
+                testCaseDurationMs=ANY_NUMBER,
+                testCaseRevisionUsage=None,
+                testCaseHumanReviewInputFields=None,
+                testCaseHumanReviewOutputFields=None,
+            ),
+            json=dict(id=f"mock-result-id-{i}"),
+        )
+        expect_cli_post_request(
+            httpx_mock,
+            path="/evals",
+            body=dict(
+                testExternalId="my-test-id",
+                runId="mock-run-id",
+                testCaseHash=f"{i}",
+                evaluatorExternalId="my-evaluator",
+                score=0.97,
+                threshold=None,
+                metadata=None,
+                revisionUsage=None,
+                assertions=None,
+            ),
+        )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+            runId="mock-run-id",
+        ),
+    )
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=test_cases,
+        evaluators=[MyEvaluator()],
+        fn=test_fn,
+    )
