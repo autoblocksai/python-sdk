@@ -107,6 +107,36 @@ def test_invalid_test_cases(httpx_mock):
     )
 
 
+def test_duplicate_test_case_hashes(httpx_mock):
+    httpx_mock.add_response()
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[MyTestCase(input="a"), MyTestCase(input="a")],
+        evaluators=[],
+        fn=lambda _: None,
+        max_test_case_concurrency=1,
+    )
+
+    requests = httpx_mock.get_requests()
+    assert len(requests) == 1
+    req = requests[0]
+    assert req.url.path == "/errors"
+    req_body = decode_request_body(req)
+    assert req_body["testExternalId"] == "my-test-id"
+    assert req_body["testCaseHash"] is None
+    assert req_body["evaluatorExternalId"] is None
+    assert req_body["error"]["name"] == "AssertionError"
+    assert (
+        req_body["error"]["message"]
+        == "[my-test-id] Duplicate test case hash: 'a'. See https://docs.autoblocks.ai/testing/sdk-reference#test-case-hashing"
+    )
+    assert (
+        "AssertionError: [my-test-id] Duplicate test case hash: 'a'. See https://docs.autoblocks.ai/testing/sdk-reference#test-case-hashing"
+        in req_body["error"]["stacktrace"]
+    )
+
+
 def test_invalid_evaluators(httpx_mock):
     httpx_mock.add_response()
 
@@ -132,6 +162,44 @@ def test_invalid_evaluators(httpx_mock):
     assert req_body["error"]["message"] == "[my-test-id] Evaluator 1 does not implement BaseTestEvaluator."
     assert (
         "AssertionError: [my-test-id] Evaluator 1 does not implement BaseTestEvaluator."
+        in req_body["error"]["stacktrace"]
+    )
+
+
+def test_duplicate_evaluator_ids(httpx_mock):
+    httpx_mock.add_response()
+
+    class MyEvaluator(BaseTestEvaluator):
+        id = "my-evaluator"
+
+        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> None:
+            return None
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[MyEvaluator(), MyEvaluator()],
+        fn=lambda _: None,
+        max_test_case_concurrency=1,
+    )
+
+    requests = httpx_mock.get_requests()
+    assert len(requests) == 1
+    req = requests[0]
+    assert req.url.path == "/errors"
+    req_body = decode_request_body(req)
+    assert req_body["testExternalId"] == "my-test-id"
+    assert req_body["testCaseHash"] is None
+    assert req_body["evaluatorExternalId"] is None
+    assert req_body["error"]["name"] == "AssertionError"
+    assert (
+        req_body["error"]["message"]
+        == "[my-test-id] Duplicate evaluator id: 'my-evaluator'. Each evaluator id must be unique."
+    )
+    assert (
+        "AssertionError: [my-test-id] Duplicate evaluator id: 'my-evaluator'. Each evaluator id must be unique."
         in req_body["error"]["stacktrace"]
     )
 

@@ -282,16 +282,31 @@ def validate_test_suite_inputs(
     grid_search_params: Optional[GridSearchParams],
 ) -> None:
     assert test_cases, f"[{test_id}] No test cases provided."
+    test_case_hashes = set()
     for test_case in test_cases:
         assert isinstance(
             test_case,
             BaseTestCase,
         ), f"[{test_id}] Test case {test_case} does not implement {BaseTestCase.__name__}."
+        test_case_hash = test_case.hash()
+        assert test_case_hash not in test_case_hashes, (
+            f"[{test_id}] Duplicate test case hash: '{test_case_hash}'. "
+            "See https://docs.autoblocks.ai/testing/sdk-reference#test-case-hashing"
+        )
+        test_case_hashes.add(test_case_hash)
+
+    evaluator_ids = set()
     for evaluator in evaluators:
         assert isinstance(
             evaluator,
             BaseTestEvaluator,
         ), f"[{test_id}] Evaluator {evaluator} does not implement {BaseTestEvaluator.__name__}."
+        evaluator_id = evaluator.id
+        assert (
+            evaluator_id not in evaluator_ids
+        ), f"[{test_id}] Duplicate evaluator id: '{evaluator_id}'. Each evaluator id must be unique."
+        evaluator_ids.add(evaluator_id)
+
     if grid_search_params is not None:
         assert isinstance(
             grid_search_params,
