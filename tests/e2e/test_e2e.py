@@ -1,6 +1,8 @@
+import asyncio
 import dataclasses
 import logging
 import os
+import random
 import signal
 import subprocess
 import time
@@ -662,13 +664,13 @@ def test_many_test_cases(httpx_mock):
         def hash(self):
             return f"{self.x}"
 
-    def test_fn(test_case: MyTestCase) -> str:
+    async def test_fn(test_case: MyTestCase) -> str:
         return f"{test_case.x}"
 
     class MyEvaluator(BaseTestEvaluator):
         id = "my-evaluator"
 
-        def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
+        async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0.97)
 
     test_cases = [MyTestCase(x=i) for i in range(0, 100)]
@@ -683,38 +685,20 @@ def test_many_test_cases(httpx_mock):
         ),
         json=dict(id="mock-run-id"),
     )
-    for i in range(0, 100):
-        expect_cli_post_request(
-            httpx_mock,
-            path="/results",
-            body=dict(
-                testExternalId="my-test-id",
-                runId="mock-run-id",
-                testCaseHash=f"{i}",
-                testCaseBody={"x": i},
-                testCaseOutput=f"{i}",
-                testCaseDurationMs=ANY_NUMBER,
-                testCaseRevisionUsage=None,
-                testCaseHumanReviewInputFields=None,
-                testCaseHumanReviewOutputFields=None,
-            ),
+
+    # simulate network latency so the semaphores get triggered
+    async def simulate_network_latency(request: httpx.Request) -> httpx.Response:
+        await asyncio.sleep(random.uniform(0.1, 0.5))  # Random delay between 100ms and 500ms
+        return httpx.Response(
+            status_code=200,
             json=dict(id=f"mock-result-id-{i}"),
         )
-        expect_cli_post_request(
-            httpx_mock,
-            path="/evals",
-            body=dict(
-                testExternalId="my-test-id",
-                runId="mock-run-id",
-                testCaseHash=f"{i}",
-                evaluatorExternalId="my-evaluator",
-                score=0.97,
-                threshold=None,
-                metadata=None,
-                revisionUsage=None,
-                assertions=None,
-            ),
-        )
+
+    for i in range(0, 100):
+        # add one for /results and one for /evals
+        httpx_mock.add_callback(simulate_network_latency)
+        httpx_mock.add_callback(simulate_network_latency)
+
     expect_cli_post_request(
         httpx_mock,
         path="/end",
@@ -725,8 +709,5 @@ def test_many_test_cases(httpx_mock):
     )
 
     run_test_suite(
-        id="my-test-id",
-        test_cases=test_cases,
-        evaluators=[MyEvaluator()],
-        fn=test_fn,
+        id="my-test-id", test_cases=test_cases, evaluators=[MyEvaluator()], fn=test_fn, max_test_case_concurrency=100
     )
