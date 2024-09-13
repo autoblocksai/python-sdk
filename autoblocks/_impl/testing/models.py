@@ -73,11 +73,13 @@ class TestCaseConfig:
 class HumanReviewField:
     name: str
     value: str
+    contentType: Optional[str] = "text"
 
     def serialize(self) -> Dict[str, str]:
         return dict(
             name=self.name,
             value=self.value,
+            contentType=self.contentType,
         )
 
 
