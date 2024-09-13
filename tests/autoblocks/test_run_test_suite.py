@@ -24,6 +24,7 @@ from autoblocks.testing.models import BaseTestCase
 from autoblocks.testing.models import BaseTestEvaluator
 from autoblocks.testing.models import Evaluation
 from autoblocks.testing.models import HumanReviewField
+from autoblocks.testing.models import HumanReviewFieldContentType
 from autoblocks.testing.models import TestCaseConfig
 from autoblocks.testing.models import Threshold
 from autoblocks.testing.models import TracerEvent
@@ -3342,40 +3343,16 @@ def test_serialize_for_human_review(httpx_mock):
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=[
-                dict(
-                    name="x",
-                    value="1",
-                ),
-                dict(
-                    name="y",
-                    value="2",
-                ),
-                dict(
-                    name="sum",
-                    value="3",
-                ),
+                dict(name="x", value="1", contentType="text"),
+                dict(name="y", value="2", contentType="markdown"),
+                dict(name="sum", value="3", contentType="text"),
             ],
             testCaseHumanReviewOutputFields=[
-                dict(
-                    name="x",
-                    value="1",
-                ),
-                dict(
-                    name="y",
-                    value="2",
-                ),
-                dict(
-                    name="sum",
-                    value="3",
-                ),
-                dict(
-                    name="prod",
-                    value="2",
-                ),
-                dict(
-                    name="diff",
-                    value="-1",
-                ),
+                dict(name="x", value="1", contentType="text"),
+                dict(name="y", value="2", contentType="text"),
+                dict(name="sum", value="3", contentType="text"),
+                dict(name="prod", value="2", contentType="text"),
+                dict(name="diff", value="-1", contentType="text"),
             ],
         ),
         json=dict(id="mock-result-id-1"),
@@ -3406,6 +3383,7 @@ def test_serialize_for_human_review(httpx_mock):
                 HumanReviewField(
                     name="y",
                     value=f"{self.y}",
+                    content_type=HumanReviewFieldContentType.MARKDOWN,
                 ),
                 HumanReviewField(
                     name="sum",
