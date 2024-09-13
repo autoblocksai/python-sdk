@@ -8,6 +8,7 @@ from autoblocks._impl.testing.models import EvaluationOverride
 from autoblocks._impl.testing.models import EvaluationOverrideComment
 from autoblocks._impl.testing.models import EvaluationOverrideField
 from autoblocks._impl.testing.models import HumanReviewField
+from autoblocks._impl.testing.models import HumanReviewFieldContentType
 from autoblocks._impl.testing.models import ScoreChoice
 from autoblocks._impl.testing.models import TestCaseConfig
 from autoblocks._impl.testing.models import Threshold
@@ -24,6 +25,7 @@ __all__ = [
     "EvaluationOverrideComment",
     "EvaluationOverrideField",
     "HumanReviewField",
+    "HumanReviewFieldContentType",
     "TestCaseConfig",
     "Threshold",
     "TracerEvent",

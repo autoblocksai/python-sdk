@@ -90,9 +90,3 @@ def now_iso_8601() -> str:
 
 def is_cli_running() -> bool:
     return AutoblocksEnvVar.CLI_SERVER_ADDRESS.get() is not None
-
-class HumanReviewContentType(StrEnum):
-    TEXT = "text"
-    LINK = "link"
-    METADATA = "metadata"
-    HTML = "html"

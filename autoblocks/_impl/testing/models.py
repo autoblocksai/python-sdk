@@ -10,6 +10,8 @@ from typing import Optional
 from typing import TypeVar
 from typing import Union
 
+from autoblocks._impl.util import StrEnum
+
 
 @dataclasses.dataclass
 class TracerEvent:
@@ -69,17 +71,24 @@ class TestCaseConfig:
     repeat_num_times: Optional[int] = None
 
 
+class HumanReviewFieldContentType(StrEnum):
+    TEXT = "text"
+    LINK = "link"
+    MARKDOWN = "markdown"
+    HTML = "html"
+
+
 @dataclasses.dataclass
 class HumanReviewField:
     name: str
     value: str
-    contentType: Optional[str] = "text"
+    content_type: Optional[HumanReviewFieldContentType] = HumanReviewFieldContentType.TEXT
 
-    def serialize(self) -> Dict[str, str]:
+    def serialize(self) -> Dict[str, Any]:
         return dict(
             name=self.name,
             value=self.value,
-            contentType=self.contentType,
+            contentType=self.content_type,
         )
 
 
