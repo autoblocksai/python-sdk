@@ -625,10 +625,7 @@ def test_tracer_human_review_fields(httpx_mock):
         message="my-message",
         system_properties=dict(
             humanReviewFields=[
-                dict(
-                    name="Name",
-                    value="Value",
-                ),
+                dict(name="Name", value="Value", contentType="text"),
             ],
         ),
     )
