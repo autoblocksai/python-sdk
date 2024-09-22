@@ -11,10 +11,20 @@ from typing import Union
 import httpx
 
 from autoblocks._impl.api.models import AbsoluteTimeFilter
+from autoblocks._impl.api.models import AutomatedEvaluation
 from autoblocks._impl.api.models import Event
+from autoblocks._impl.api.models import FieldComment
+from autoblocks._impl.api.models import GeneralComment
+from autoblocks._impl.api.models import Grade
+from autoblocks._impl.api.models import HumanReviewField
+from autoblocks._impl.api.models import HumanReviewJob
+from autoblocks._impl.api.models import HumanReviewJobTestCase
+from autoblocks._impl.api.models import HumanReviewJobTestCaseResult
+from autoblocks._impl.api.models import HumanReviewJobWithTestCases
 from autoblocks._impl.api.models import ManagedTestCase
 from autoblocks._impl.api.models import ManagedTestCaseResponse
 from autoblocks._impl.api.models import RelativeTimeFilter
+from autoblocks._impl.api.models import Reviewer
 from autoblocks._impl.api.models import Trace
 from autoblocks._impl.api.models import TraceFilter
 from autoblocks._impl.api.models import TracesResponse
@@ -111,4 +121,83 @@ class AutoblocksAPIClient:
         resp = req.json()
         return ManagedTestCaseResponse(
             test_cases=[ManagedTestCase(id=case["id"], body=case["body"]) for case in resp["testCases"]]
+        )
+
+    def get_human_review_jobs(self) -> List[HumanReviewJob]:
+        req = self._client.get("/human-review/jobs")
+        req.raise_for_status()
+        resp = req.json()
+        return [
+            HumanReviewJob(
+                id=job["id"],
+                name=job["name"],
+                reviewer=Reviewer(id=job["reviewer"]["id"], email=job["reviewer"]["email"]),
+            )
+            for job in resp["jobs"]
+        ]
+
+    def get_human_review_job_test_cases(self, job_id: str) -> HumanReviewJobWithTestCases:
+        req = self._client.get(f"/human-review/jobs/{job_id}/test-cases")
+        req.raise_for_status()
+        resp = req.json()
+        return HumanReviewJobWithTestCases(
+            id=resp["id"],
+            name=resp["name"],
+            reviewer=Reviewer(id=resp["reviewer"]["id"], email=resp["reviewer"]["email"]),
+            test_cases=[HumanReviewJobTestCase(id=tc["id"], status=tc["status"]) for tc in resp["testCases"]],
+        )
+
+    def get_human_review_job_test_case_result(self, job_id: str, test_case_id: str) -> HumanReviewJobTestCaseResult:
+        req = self._client.get(f"/human-review/jobs/{job_id}/test-cases/{test_case_id}")
+        req.raise_for_status()
+        resp = req.json()
+        return HumanReviewJobTestCaseResult(
+            id=resp["id"],
+            reviewer=Reviewer(id=resp["reviewer"]["id"], email=resp["reviewer"]["email"]),
+            status=resp["status"],
+            grades=[Grade(name=g["name"], grade=g["grade"]) for g in resp["grades"]],
+            automated_evaluations=[
+                AutomatedEvaluation(
+                    id=ae["id"],
+                    original_score=ae["originalScore"],
+                    override_score=ae["overrideScore"],
+                    override_reason=ae.get("overrideReason"),
+                )
+                for ae in resp["automatedEvaluations"]
+            ],
+            input_fields=[
+                HumanReviewField(id=f["id"], name=f["name"], value=f["value"], content_type=f["contentType"])
+                for f in resp["inputFields"]
+            ],
+            output_fields=[
+                HumanReviewField(id=f["id"], name=f["name"], value=f["value"], content_type=f["contentType"])
+                for f in resp["outputFields"]
+            ],
+            field_comments=[
+                FieldComment(
+                    field_id=fc["fieldId"],
+                    start_idx=fc.get("startIdx"),
+                    end_idx=fc.get("endIdx"),
+                    value=fc["value"],
+                    in_relation_to_grade_name=fc.get("inRelationToGradeName"),
+                    in_relation_to_automated_evaluation_id=fc.get("inRelationToAutomatedEvaluationId"),
+                )
+                for fc in resp["fieldComments"]
+            ],
+            input_comments=[
+                GeneralComment(
+                    value=ic["value"],
+                    in_relation_to_grade_name=ic.get("inRelationToGradeName"),
+                    in_relation_to_automated_evaluation_id=ic.get("inRelationToAutomatedEvaluationId"),
+                )
+                for ic in resp["inputComments"]
+            ],
+            output_comments=[
+                GeneralComment(
+                    value=oc["value"],
+                    in_relation_to_grade_name=oc.get("inRelationToGradeName"),
+                    in_relation_to_automated_evaluation_id=oc.get("inRelationToAutomatedEvaluationId"),
+                )
+                for oc in resp["outputComments"]
+            ],
         )

@@ -96,3 +96,86 @@ class TraceFilter:
 class SystemEventFilterKey(StrEnum):
     MESSAGE = "SYSTEM:message"
     LABEL = "SYSTEM:label"
+
+
+class HumanReviewFieldContentType(StrEnum):
+    TEXT = "text"
+    JSON = "json"
+    IMAGE = "image"
+
+
+@dataclass
+class Reviewer:
+    id: str
+    email: str
+
+
+@dataclass
+class HumanReviewJob:
+    id: str
+    name: str
+    reviewer: Reviewer
+
+
+@dataclass
+class HumanReviewJobTestCase:
+    id: str
+    status: str  # 'Submitted' or 'Pending'
+
+
+@dataclass
+class HumanReviewJobWithTestCases(HumanReviewJob):
+    test_cases: List[HumanReviewJobTestCase]
+
+
+@dataclass
+class Grade:
+    name: str
+    grade: float
+
+
+@dataclass
+class AutomatedEvaluation:
+    id: str
+    original_score: float
+    override_score: float
+    override_reason: Optional[str] = None
+
+
+@dataclass
+class HumanReviewField:
+    id: str
+    name: str
+    value: str
+    content_type: HumanReviewFieldContentType
+
+
+@dataclass
+class FieldComment:
+    field_id: str
+    start_idx: Optional[int] = None
+    end_idx: Optional[int] = None
+    value: str = ""
+    in_relation_to_grade_name: Optional[str] = None
+    in_relation_to_automated_evaluation_id: Optional[str] = None
+
+
+@dataclass
+class GeneralComment:
+    value: str
+    in_relation_to_grade_name: Optional[str] = None
+    in_relation_to_automated_evaluation_id: Optional[str] = None
+
+
+@dataclass
+class HumanReviewJobTestCaseResult:
+    id: str
+    reviewer: Reviewer
+    status: str  # 'Submitted' or 'Pending'
+    grades: List[Grade]
+    automated_evaluations: List[AutomatedEvaluation]
+    input_fields: List[HumanReviewField]
+    output_fields: List[HumanReviewField]
+    field_comments: List[FieldComment]
+    input_comments: List[GeneralComment]
+    output_comments: List[GeneralComment]

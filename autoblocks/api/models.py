@@ -2,6 +2,9 @@ from autoblocks._impl.api.models import AbsoluteTimeFilter
 from autoblocks._impl.api.models import Event
 from autoblocks._impl.api.models import EventFilter
 from autoblocks._impl.api.models import EventFilterOperator
+from autoblocks._impl.api.models import HumanReviewJob
+from autoblocks._impl.api.models import HumanReviewJobTestCaseResult
+from autoblocks._impl.api.models import HumanReviewJobWithTestCases
 from autoblocks._impl.api.models import RelativeTimeFilter
 from autoblocks._impl.api.models import SystemEventFilterKey
 from autoblocks._impl.api.models import Trace
@@ -22,4 +25,7 @@ __all__ = [
     "TraceFilterOperator",
     "TracesResponse",
     "View",
+    "HumanReviewJob",
+    "HumanReviewJobWithTestCases",
+    "HumanReviewJobTestCaseResult",
 ]
