@@ -1,4 +1,3 @@
-import abc
 import asyncio
 import logging
 from typing import Generic
@@ -21,7 +20,7 @@ from autoblocks._impl.util import all_settled
 log = logging.getLogger(__name__)
 
 
-class RunManager(abc.ABC, Generic[TestCaseType, OutputType]):
+class RunManager(Generic[TestCaseType, OutputType]):
     """
     The RunManager class can be used to manually manage the lifecycle of a test suite.
     You can also use `runTestSuite` for a more feature rich, managed experience.
