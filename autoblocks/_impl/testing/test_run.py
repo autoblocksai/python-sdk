@@ -43,7 +43,10 @@ class TestRun(abc.ABC, Generic[TestCaseType, OutputType]):
         Starts the run. This must be called before any test case results are added to the run.
         """
         self.run_id = await send_start_test_run(
-            test_external_id=self.test_external_id, grid_search_run_group_id=None, grid_search_params_combo=None
+            test_external_id=self.test_external_id,
+            message=self.message,
+            grid_search_run_group_id=None,
+            grid_search_params_combo=None,
         )
 
     def start(self) -> None:

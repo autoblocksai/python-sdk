@@ -165,6 +165,7 @@ async def send_start_grid_search_run(
 
 async def send_start_test_run(
     test_external_id: str,
+    message: Optional[str],
     grid_search_run_group_id: Optional[str],
     grid_search_params_combo: Optional[GridSearchParamsCombo],
 ) -> str:
@@ -182,7 +183,7 @@ async def send_start_test_run(
             "/runs",
             json=dict(
                 testExternalId=test_external_id,
-                message=None,
+                message=message,
                 buildId=AutoblocksEnvVar.CI_TEST_RUN_BUILD_ID.get(),
                 gridSearchRunGroupId=grid_search_run_group_id,
                 gridSearchParamsCombo=grid_search_params_combo,
