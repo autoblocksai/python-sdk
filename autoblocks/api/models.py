@@ -2,9 +2,18 @@ from autoblocks._impl.api.models import AbsoluteTimeFilter
 from autoblocks._impl.api.models import Event
 from autoblocks._impl.api.models import EventFilter
 from autoblocks._impl.api.models import EventFilterOperator
+from autoblocks._impl.api.models import HumanReviewAutomatedEvaluation
+from autoblocks._impl.api.models import HumanReviewField
+from autoblocks._impl.api.models import HumanReviewFieldComment
+from autoblocks._impl.api.models import HumanReviewFieldContentType
+from autoblocks._impl.api.models import HumanReviewGeneralComment
+from autoblocks._impl.api.models import HumanReviewGrade
 from autoblocks._impl.api.models import HumanReviewJob
+from autoblocks._impl.api.models import HumanReviewJobTestCase
 from autoblocks._impl.api.models import HumanReviewJobTestCaseResult
+from autoblocks._impl.api.models import HumanReviewJobTestCaseStatus
 from autoblocks._impl.api.models import HumanReviewJobWithTestCases
+from autoblocks._impl.api.models import HumanReviewReviewer
 from autoblocks._impl.api.models import RelativeTimeFilter
 from autoblocks._impl.api.models import SystemEventFilterKey
 from autoblocks._impl.api.models import Trace
@@ -28,4 +37,13 @@ __all__ = [
     "HumanReviewJob",
     "HumanReviewJobWithTestCases",
     "HumanReviewJobTestCaseResult",
+    "HumanReviewReviewer",
+    "HumanReviewJobTestCase",
+    "HumanReviewJobTestCaseStatus",
+    "HumanReviewGrade",
+    "HumanReviewAutomatedEvaluation",
+    "HumanReviewField",
+    "HumanReviewFieldContentType",
+    "HumanReviewFieldComment",
+    "HumanReviewGeneralComment",
 ]

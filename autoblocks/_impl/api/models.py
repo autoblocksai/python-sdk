@@ -100,12 +100,18 @@ class SystemEventFilterKey(StrEnum):
 
 class HumanReviewFieldContentType(StrEnum):
     TEXT = "text"
-    JSON = "json"
-    IMAGE = "image"
+    LINK = "link"
+    MARKDOWN = "markdown"
+    HTML = "html"
+
+
+class HumanReviewJobTestCaseStatus(StrEnum):
+    SUBMITTED = "Submitted"
+    PENDING = "Pending"
 
 
 @dataclass
-class Reviewer:
+class HumanReviewReviewer:
     id: str
     email: str
 
@@ -114,13 +120,13 @@ class Reviewer:
 class HumanReviewJob:
     id: str
     name: str
-    reviewer: Reviewer
+    reviewer: HumanReviewReviewer
 
 
 @dataclass
 class HumanReviewJobTestCase:
     id: str
-    status: str  # 'Submitted' or 'Pending'
+    status: HumanReviewJobTestCaseStatus
 
 
 @dataclass
@@ -129,13 +135,13 @@ class HumanReviewJobWithTestCases(HumanReviewJob):
 
 
 @dataclass
-class Grade:
+class HumanReviewGrade:
     name: str
     grade: float
 
 
 @dataclass
-class AutomatedEvaluation:
+class HumanReviewAutomatedEvaluation:
     id: str
     original_score: float
     override_score: float
@@ -151,17 +157,17 @@ class HumanReviewField:
 
 
 @dataclass
-class FieldComment:
+class HumanReviewFieldComment:
     field_id: str
+    value: str
     start_idx: Optional[int] = None
     end_idx: Optional[int] = None
-    value: str = ""
     in_relation_to_grade_name: Optional[str] = None
     in_relation_to_automated_evaluation_id: Optional[str] = None
 
 
 @dataclass
-class GeneralComment:
+class HumanReviewGeneralComment:
     value: str
     in_relation_to_grade_name: Optional[str] = None
     in_relation_to_automated_evaluation_id: Optional[str] = None
@@ -170,12 +176,12 @@ class GeneralComment:
 @dataclass
 class HumanReviewJobTestCaseResult:
     id: str
-    reviewer: Reviewer
-    status: str  # 'Submitted' or 'Pending'
-    grades: List[Grade]
-    automated_evaluations: List[AutomatedEvaluation]
+    reviewer: HumanReviewReviewer
+    status: HumanReviewJobTestCaseStatus
+    grades: List[HumanReviewGrade]
+    automated_evaluations: List[HumanReviewAutomatedEvaluation]
     input_fields: List[HumanReviewField]
     output_fields: List[HumanReviewField]
-    field_comments: List[FieldComment]
-    input_comments: List[GeneralComment]
-    output_comments: List[GeneralComment]
+    field_comments: List[HumanReviewFieldComment]
+    input_comments: List[HumanReviewGeneralComment]
+    output_comments: List[HumanReviewGeneralComment]
