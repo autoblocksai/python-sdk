@@ -7,6 +7,7 @@ from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import EvaluationOverride
 from autoblocks._impl.testing.models import EvaluationOverrideComment
 from autoblocks._impl.testing.models import EvaluationOverrideField
+from autoblocks._impl.testing.models import EvaluationWithId
 from autoblocks._impl.testing.models import HumanReviewField
 from autoblocks._impl.testing.models import HumanReviewFieldContentType
 from autoblocks._impl.testing.models import ScoreChoice
@@ -21,6 +22,7 @@ __all__ = [
     "BaseTestCase",
     "BaseTestEvaluator",
     "Evaluation",
+    "EvaluationWithId",
     "EvaluationOverride",
     "EvaluationOverrideComment",
     "EvaluationOverrideField",
