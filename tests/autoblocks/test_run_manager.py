@@ -10,7 +10,7 @@ from autoblocks._impl.testing.models import EvaluationWithId
 from autoblocks._impl.testing.models import HumanReviewField
 from autoblocks._impl.testing.models import HumanReviewFieldContentType
 from autoblocks._impl.testing.models import Threshold
-from autoblocks._impl.testing.test_run import TestRun
+from autoblocks._impl.testing.run_manager import RunManager
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks.testing.models import BaseTestCase
 from tests.util import expect_api_post_request
@@ -60,7 +60,7 @@ class MyOutput:
 
 
 def test_does_not_allow_adding_result_before_starting():
-    test_run = TestRun[MyTestCase, MyOutput]("test-id", "Test run")
+    test_run = RunManager[MyTestCase, MyOutput]("test-id", "Test run")
 
     with pytest.raises(ValueError):
         test_run.add_result(
@@ -78,7 +78,7 @@ def test_does_not_allow_adding_result_before_starting():
 
 
 def test_does_not_allow_adding_result_after_run_has_ended(httpx_mock):
-    test_run = TestRun[MyTestCase, MyOutput]("test-id", "Test run")
+    test_run = RunManager[MyTestCase, MyOutput]("test-id", "Test run")
     mock_run_id = str(uuid.uuid4())
 
     expect_api_post_request(
@@ -114,7 +114,7 @@ def test_does_not_allow_adding_result_after_run_has_ended(httpx_mock):
 
 
 def test_does_not_allow_ending_run_that_has_not_been_started():
-    test_run = TestRun[MyTestCase, MyOutput]("test-id", "Test run")
+    test_run = RunManager[MyTestCase, MyOutput]("test-id", "Test run")
 
     with pytest.raises(ValueError):
         test_run.end()
@@ -190,7 +190,7 @@ async def test_full_lifecycle(httpx_mock):
         ),
     )
 
-    test_run = TestRun[MyTestCase, MyOutput]("test-id", "Test run")
+    test_run = RunManager[MyTestCase, MyOutput]("test-id", "Test run")
 
     test_run.start()
     assert test_run.run_id == mock_run_id
@@ -221,7 +221,7 @@ async def test_full_lifecycle(httpx_mock):
 
 
 async def test_create_human_review_job_before_start():
-    test_run = TestRun[MyTestCase, MyOutput]("test-id", "Test run")
+    test_run = RunManager[MyTestCase, MyOutput]("test-id", "Test run")
 
     with pytest.raises(ValueError):
         test_run.create_human_review_job(

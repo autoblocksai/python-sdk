@@ -20,9 +20,9 @@ from autoblocks._impl.testing.models import TestCaseType
 log = logging.getLogger(__name__)
 
 
-class TestRun(abc.ABC, Generic[TestCaseType, OutputType]):
+class RunManager(abc.ABC, Generic[TestCaseType, OutputType]):
     """
-    The TestRun class can be used to manually manage the lifecycle of a test suite.
+    The RunManager class can be used to manually manage the lifecycle of a test suite.
     You can also use `runTestSuite` for a more feature rich, managed experience.
     """
 
