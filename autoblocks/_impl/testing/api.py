@@ -217,7 +217,7 @@ async def send_test_case_result(
     run_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
     output: Any,
-    test_case_duration_ms: float,
+    test_case_duration_ms: Optional[float] = None,
 ) -> str:
     # Revision usage is collected throughout a test case's run
     revision_usage = get_revision_usage()
@@ -398,3 +398,9 @@ async def send_github_comment() -> None:
             "https://docs.autoblocks.ai/testing/ci#git-hub-comments-github-actions-permissions",
             exc_info=e,
         )
+
+
+async def send_create_human_review_job(run_id: str, assignee_email_address: str, name: str) -> None:
+    await post_to_api(
+        f"/runs/{run_id}/human-review-job", json=dict(assigneeEmailAddress=assignee_email_address, name=name)
+    )
