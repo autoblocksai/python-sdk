@@ -96,3 +96,92 @@ class TraceFilter:
 class SystemEventFilterKey(StrEnum):
     MESSAGE = "SYSTEM:message"
     LABEL = "SYSTEM:label"
+
+
+class HumanReviewFieldContentType(StrEnum):
+    TEXT = "text"
+    LINK = "link"
+    MARKDOWN = "markdown"
+    HTML = "html"
+
+
+class HumanReviewJobTestCaseStatus(StrEnum):
+    SUBMITTED = "Submitted"
+    PENDING = "Pending"
+
+
+@dataclass
+class HumanReviewReviewer:
+    id: str
+    email: str
+
+
+@dataclass
+class HumanReviewJob:
+    id: str
+    name: str
+    reviewer: HumanReviewReviewer
+
+
+@dataclass
+class HumanReviewJobTestCase:
+    id: str
+    status: HumanReviewJobTestCaseStatus
+
+
+@dataclass
+class HumanReviewJobWithTestCases(HumanReviewJob):
+    test_cases: List[HumanReviewJobTestCase]
+
+
+@dataclass
+class HumanReviewGrade:
+    name: str
+    grade: float
+
+
+@dataclass
+class HumanReviewAutomatedEvaluation:
+    id: str
+    original_score: float
+    override_score: float
+    override_reason: Optional[str] = None
+
+
+@dataclass
+class HumanReviewField:
+    id: str
+    name: str
+    value: str
+    content_type: HumanReviewFieldContentType
+
+
+@dataclass
+class HumanReviewFieldComment:
+    field_id: str
+    value: str
+    start_idx: Optional[int] = None
+    end_idx: Optional[int] = None
+    in_relation_to_grade_name: Optional[str] = None
+    in_relation_to_automated_evaluation_id: Optional[str] = None
+
+
+@dataclass
+class HumanReviewGeneralComment:
+    value: str
+    in_relation_to_grade_name: Optional[str] = None
+    in_relation_to_automated_evaluation_id: Optional[str] = None
+
+
+@dataclass
+class HumanReviewJobTestCaseResult:
+    id: str
+    reviewer: HumanReviewReviewer
+    status: HumanReviewJobTestCaseStatus
+    grades: List[HumanReviewGrade]
+    automated_evaluations: List[HumanReviewAutomatedEvaluation]
+    input_fields: List[HumanReviewField]
+    output_fields: List[HumanReviewField]
+    field_comments: List[HumanReviewFieldComment]
+    input_comments: List[HumanReviewGeneralComment]
+    output_comments: List[HumanReviewGeneralComment]
