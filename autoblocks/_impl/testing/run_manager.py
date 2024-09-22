@@ -42,6 +42,7 @@ class RunManager(abc.ABC, Generic[TestCaseType, OutputType]):
         """
 
         # We initialize inside of start to avoid side effects in __init__
+        # This can be called twice, so we put it in both the sync and async start methods to ensure it gets called
         global_state.init()
 
         self.run_id = await send_start_test_run(
@@ -55,6 +56,10 @@ class RunManager(abc.ABC, Generic[TestCaseType, OutputType]):
         """
         Starts the run. This must be called before any test case results are added to the run.
         """
+
+        # We initialize inside of start to avoid side effects in __init__
+        global_state.init()
+
         asyncio.run_coroutine_threadsafe(self.async_start(), global_state.event_loop()).result()
 
     async def async_add_result(
