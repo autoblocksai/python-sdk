@@ -36,12 +36,14 @@ class RunManager(abc.ABC, Generic[TestCaseType, OutputType]):
         self.run_id: Optional[str] = None
         self.ended = False
 
-        global_state.init()
-
     async def async_start(self) -> None:
         """
         Starts the run. This must be called before any test case results are added to the run.
         """
+
+        # We initialize inside of start to avoid side effects in __init__
+        global_state.init()
+
         self.run_id = await send_start_test_run(
             test_external_id=self.test_external_id,
             message=self.message,
