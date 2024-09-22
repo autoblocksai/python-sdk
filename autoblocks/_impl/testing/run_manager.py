@@ -99,7 +99,7 @@ class RunManager(abc.ABC, Generic[TestCaseType, OutputType]):
                     test_case_result_id=test_case_result_id,
                 )
             except Exception as e:
-                log.warn(f"Failed to send evaluation to Autoblocks for test case hash {test_case_ctx.hash()}: {e}")
+                log.warning(f"Failed to send evaluation to Autoblocks for test case hash {test_case_ctx.hash()}: {e}")
 
     def add_result(
         self,

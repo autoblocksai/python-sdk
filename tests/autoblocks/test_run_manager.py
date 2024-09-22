@@ -120,7 +120,7 @@ def test_does_not_allow_ending_run_that_has_not_been_started():
         test_run.end()
 
 
-async def test_full_lifecycle(httpx_mock):
+def test_full_lifecycle(httpx_mock):
     mock_run_id = str(uuid.uuid4())
     mock_test_case_result_id = str(uuid.uuid4())
 
@@ -141,13 +141,33 @@ async def test_full_lifecycle(httpx_mock):
         httpx_mock,
         path=f"/testing/local/runs/{mock_run_id}/results",
         body=dict(
-            testExternalId="test-id",
-            runId=mock_run_id,
             testCaseHash="test",
-            testCaseBody=dict(input="test"),
-            testCaseOutput=dict(output="test"),
             testCaseDurationMs=100,
             testCaseRevisionUsage=None,
+        ),
+        json=dict(id=mock_test_case_result_id),
+    )
+
+    expect_api_post_request(
+        httpx_mock,
+        path=f"/testing/local/runs/{mock_run_id}/results/{mock_test_case_result_id}/body",
+        body=dict(
+            testCaseBody=dict(input="test"),
+        ),
+    )
+
+    expect_api_post_request(
+        httpx_mock,
+        path=f"/testing/local/runs/{mock_run_id}/results/{mock_test_case_result_id}/output",
+        body=dict(
+            testCaseOutput=dict(output="test"),
+        ),
+    )
+
+    expect_api_post_request(
+        httpx_mock,
+        path=f"/testing/local/runs/{mock_run_id}/results/{mock_test_case_result_id}/human-review-fields",
+        body=dict(
             testCaseHumanReviewInputFields=[
                 dict(name="input", value="test", contentType="text"),
             ],
@@ -155,18 +175,21 @@ async def test_full_lifecycle(httpx_mock):
                 dict(name="output", value="test", contentType="text"),
             ],
         ),
-        json=dict(id=mock_test_case_result_id),
+    )
+
+    expect_api_post_request(
+        httpx_mock,
+        path=f"/testing/local/runs/{mock_run_id}/results/{mock_test_case_result_id}/ui-based-evaluations",
+        body=dict(),
     )
 
     expect_api_post_request(
         httpx_mock,
         path=f"/testing/local/runs/{mock_run_id}/results/{mock_test_case_result_id}/evaluations",
         body=dict(
-            testExternalId="test-id",
-            runId=mock_run_id,
-            testCaseHash="test",
             evaluatorExternalId="evaluator-external-id",
             score=1,
+            passed=True,
             threshold=dict(lt=None, lte=None, gt=None, gte=0.5),
             metadata=None,
             revisionUsage=None,
@@ -182,9 +205,8 @@ async def test_full_lifecycle(httpx_mock):
 
     expect_api_post_request(
         httpx_mock,
-        path=f"/testing/local/runs/{mock_run_id}/human-review-jobs",
+        path=f"/testing/local/runs/{mock_run_id}/human-review-job",
         body=dict(
-            runId=mock_run_id,
             assigneeEmailAddress="test@test.com",
             name="Test human review job",
         ),
@@ -215,12 +237,8 @@ async def test_full_lifecycle(httpx_mock):
         name="Test human review job",
     )
 
-    # Verify all expected requests were made
-    requests = httpx_mock.get_requests()
-    assert len(requests) == 5
 
-
-async def test_create_human_review_job_before_start():
+def test_create_human_review_job_before_start():
     test_run = RunManager[MyTestCase, MyOutput]("test-id", "Test run")
 
     with pytest.raises(ValueError):
