@@ -16,6 +16,7 @@ from autoblocks._impl.testing.models import EvaluationWithId
 from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
+from autoblocks._impl.util import all_settled
 
 log = logging.getLogger(__name__)
 
@@ -90,23 +91,27 @@ class RunManager(abc.ABC, Generic[TestCaseType, OutputType]):
         if not evaluations:
             return
 
-        for evaluation in evaluations:
-            try:
-                await send_eval(
-                    test_external_id=self.test_external_id,
-                    run_id=self.run_id,
-                    test_case_hash=test_case_ctx.hash(),
-                    evaluator_external_id=evaluation.id,
-                    evaluation=Evaluation(
-                        score=evaluation.score,
-                        threshold=evaluation.threshold,
-                        metadata=evaluation.metadata,
-                        assertions=evaluation.assertions,
-                    ),
-                    test_case_result_id=test_case_result_id,
-                )
-            except Exception as e:
-                log.warning(f"Failed to send evaluation to Autoblocks for test case hash {test_case_ctx.hash()}: {e}")
+        try:
+            await all_settled(
+                [
+                    send_eval(
+                        test_external_id=self.test_external_id,
+                        run_id=self.run_id,
+                        test_case_hash=test_case_ctx.hash(),
+                        evaluator_external_id=evaluation.id,
+                        evaluation=Evaluation(
+                            score=evaluation.score,
+                            threshold=evaluation.threshold,
+                            metadata=evaluation.metadata,
+                            assertions=evaluation.assertions,
+                        ),
+                        test_case_result_id=test_case_result_id,
+                    )
+                    for evaluation in evaluations
+                ]
+            )
+        except Exception as e:
+            log.warning(f"Failed to send evaluation to Autoblocks for test case hash {test_case_ctx.hash()}: {e}")
 
     def add_result(
         self,
