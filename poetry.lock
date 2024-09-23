@@ -2018,13 +2018,13 @@ files = [
 
 [[package]]
 name = "ragas"
-version = "0.1.10"
+version = "0.1.20"
 description = ""
 optional = false
 python-versions = "*"
 files = [
-    {file = "ragas-0.1.10-py3-none-any.whl", hash = "sha256:9e547f17f10075cccaae0216c7d22000346c5f9dfc66e55abf621d3ee80786f2"},
-    {file = "ragas-0.1.10.tar.gz", hash = "sha256:29bfd4844a29ca869950d5ed73461c276afd85d999d3c26acdd10560da6dc5c2"},
+    {file = "ragas-0.1.20-py3-none-any.whl", hash = "sha256:5223f1aab8832aaf5285b22d8f0a48cb52c5f114ebbc96a5cf990a485d48ab16"},
+    {file = "ragas-0.1.20.tar.gz", hash = "sha256:01a8bcf379d3462281cea809e01c7f2f0f1b4aebd0d9f3c5166c44877885cdfb"},
 ]
 
 [package.dependencies]
@@ -2032,7 +2032,7 @@ appdirs = "*"
 datasets = "*"
 langchain = "*"
 langchain-community = "*"
-langchain-core = "*"
+langchain-core = "<0.3"
 langchain-openai = "*"
 nest-asyncio = "*"
 numpy = "*"
@@ -2041,7 +2041,7 @@ pysbd = ">=0.3.4"
 tiktoken = "*"
 
 [package.extras]
-all = ["sentence-transformers"]
+all = ["fuzzywuzzy", "nltk", "rapidfuzz", "rouge-score", "sentence-transformers", "transformers"]
 
 [[package]]
 name = "regex"
@@ -2754,4 +2754,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9.0"
-content-hash = "283606e4b0966409e76917f951aae1a72230e6030b8bbf671240766e87fa11ca"
+content-hash = "243885bb67a9b7a7ef83062b74e8ec5d9eaa4d7efec9b1aa4126c18de82f045a"
