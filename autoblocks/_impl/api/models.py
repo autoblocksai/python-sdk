@@ -108,6 +108,7 @@ class HumanReviewFieldContentType(StrEnum):
 class HumanReviewJobTestCaseStatus(StrEnum):
     SUBMITTED = "Submitted"
     PENDING = "Pending"
+    DRAFT = "Draft"
 
 
 @dataclass
