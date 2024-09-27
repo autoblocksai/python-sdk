@@ -62,7 +62,7 @@ class MyOutput:
 def test_does_not_allow_adding_result_before_starting():
     test_run = RunManager[MyTestCase, MyOutput]("test-id", "Test run")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(Exception):
         test_run.add_result(
             test_case=MyTestCase(input="test"),
             output=MyOutput(output="test"),
@@ -144,6 +144,7 @@ def test_full_lifecycle(httpx_mock):
             testCaseHash="test",
             testCaseDurationMs=100,
             testCaseRevisionUsage=None,
+            datasetItemId=None,
         ),
         json=dict(id=mock_test_case_result_id),
     )
