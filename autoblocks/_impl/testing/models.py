@@ -122,6 +122,12 @@ class BaseTestCase(abc.ABC):
         """
         return None
 
+    def serialize_dataset_item_id(self) -> Optional[str]:
+        """
+        Override this method to set the dataset item ID for this test case.
+        """
+        return None
+
 
 TestCaseType = TypeVar("TestCaseType", bound=BaseTestCase)
 OutputType = TypeVar("OutputType")

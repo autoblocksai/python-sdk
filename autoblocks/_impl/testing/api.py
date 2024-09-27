@@ -222,7 +222,7 @@ async def send_test_case_result(
 ) -> str:
     # Revision usage is collected throughout a test case's run
     revision_usage = get_revision_usage()
-
+    dataset_item_id = test_case_ctx.test_case.serialize_dataset_item_id()
     serialized_test_case = serialize_test_case(test_case_ctx.test_case)
     serialized_output = serialize_output(output)
     test_case_revision_usage = [usage.serialize() for usage in revision_usage] if revision_usage else None
@@ -235,6 +235,7 @@ async def send_test_case_result(
                 testExternalId=test_external_id,
                 runId=run_id,
                 testCaseHash=test_case_ctx.hash(),
+                datasetItemId=dataset_item_id,
                 testCaseBody=serialized_test_case,
                 testCaseOutput=serialized_output,
                 testCaseDurationMs=test_case_duration_ms,
@@ -253,6 +254,7 @@ async def send_test_case_result(
             f"/runs/{run_id}/results",
             json=dict(
                 testCaseHash=test_case_ctx.hash(),
+                datasetItemId=dataset_item_id,
                 testCaseDurationMs=test_case_duration_ms,
                 testCaseRevisionUsage=test_case_revision_usage,
             ),
