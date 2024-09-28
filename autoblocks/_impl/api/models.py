@@ -191,6 +191,7 @@ class HumanReviewJobTestCaseResult:
 @dataclass
 class DatasetItem:
     id: str
+    splits: List[str]
     data: Dict[str, Any]
 
 

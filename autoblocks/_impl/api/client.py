@@ -207,14 +207,20 @@ class AutoblocksAPIClient:
             ],
         )
 
-    def get_dataset(self, name: str, schema_version: str, revision_id: Optional[str] = None) -> Dataset:
+    def get_dataset(
+        self, name: str, schema_version: str, splits: Optional[List[str]] = None, revision_id: Optional[str] = None
+    ) -> Dataset:
         encoded_schema_version = encode_uri_component(schema_version)
+        joined_splits = ",".join([f"splits={split}" for split in splits]) if splits else ""
+        splits_query_param = f"?{joined_splits}" if joined_splits != "" else ""
         if revision_id is None:
-            req = self._client.get(f"/datasets/{encode_uri_component(name)}/schema-versions/{encoded_schema_version}")
+            req = self._client.get(
+                f"/datasets/{encode_uri_component(name)}/schema-versions/{encoded_schema_version}{splits_query_param}"
+            )
         else:
             encoded_revision_id = encode_uri_component(revision_id)
             req = self._client.get(
-                f"/datasets/{encode_uri_component(name)}/schema-versions/{encoded_schema_version}/revisions/{encoded_revision_id}"
+                f"/datasets/{encode_uri_component(name)}/schema-versions/{encoded_schema_version}/revisions/{encoded_revision_id}{splits_query_param}"
             )
         req.raise_for_status()
         resp = req.json()
@@ -222,5 +228,5 @@ class AutoblocksAPIClient:
             name=resp["name"],
             schema_version=resp["schemaVersion"],
             revision_id=resp["revisionId"],
-            items=[DatasetItem(id=item["id"], data=item["data"]) for item in resp["items"]],
+            items=[DatasetItem(id=item["id"], splits=item["splits"], data=item["data"]) for item in resp["items"]],
         )
