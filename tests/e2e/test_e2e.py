@@ -715,9 +715,9 @@ def test_many_test_cases(httpx_mock):
 
 
 def test_get_dataset():
-    dataset = client.get_dataset("test-dataset", "1")
+    dataset = client.get_dataset("Test Dataset", "1")
     assert dataset.revision_id == "cm1mgsnx1000bf9f85p99kx3g"
-    assert dataset.name == "test-dataset"
+    assert dataset.name == "Test Dataset"
     assert dataset.schema_version == "1"
     assert len(dataset.items) == 1
     assert dataset.items[0].splits == ["test-split"]
@@ -725,17 +725,17 @@ def test_get_dataset():
 
 
 def test_get_dataset_by_splits():
-    dataset = client.get_dataset("test-dataset", "1", splits=["test-split-2"])
+    dataset = client.get_dataset("Test Dataset", "1", splits=["test-split-2"])
     assert dataset.revision_id == "cm1mgsnx1000bf9f85p99kx3g"
-    assert dataset.name == "test-dataset"
+    assert dataset.name == "Test Dataset"
     assert dataset.schema_version == "1"
     assert len(dataset.items) == 0
 
 
 def test_get_dataset_by_revision_id():
-    dataset = client.get_dataset("test-dataset", "1", revision_id="cm1mgsgu30006f9f85zhuwzlx")
+    dataset = client.get_dataset("Test Dataset", "1", revision_id="cm1mgsgu30006f9f85zhuwzlx")
     assert dataset.revision_id == "cm1mgsgu30006f9f85zhuwzlx"
-    assert dataset.name == "test-dataset"
+    assert dataset.name == "Test Dataset"
     assert dataset.schema_version == "1"
     assert len(dataset.items) == 1
     assert dataset.items[0].splits == ["test-split"]
@@ -743,8 +743,8 @@ def test_get_dataset_by_revision_id():
 
 
 def test_get_dataset_by_revision_id_and_splits():
-    dataset = client.get_dataset("test-dataset", "1", revision_id="cm1mgsgu30006f9f85zhuwzlx", splits=["test-split-2"])
+    dataset = client.get_dataset("Test Dataset", "1", revision_id="cm1mgsgu30006f9f85zhuwzlx", splits=["test-split-2"])
     assert dataset.revision_id == "cm1mgsgu30006f9f85zhuwzlx"
-    assert dataset.name == "test-dataset"
+    assert dataset.name == "Test Dataset"
     assert dataset.schema_version == "1"
     assert len(dataset.items) == 0

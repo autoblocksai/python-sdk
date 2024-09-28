@@ -226,7 +226,7 @@ class AutoblocksAPIClient:
         resp = req.json()
         return Dataset(
             name=resp["name"],
-            schema_version=resp["schemaVersion"],
+            schema_version=f"{resp['schemaVersion']}",
             revision_id=resp["revisionId"],
             items=[DatasetItem(id=item["id"], splits=item["splits"], data=item["data"]) for item in resp["items"]],
         )
