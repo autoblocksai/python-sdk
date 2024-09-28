@@ -724,6 +724,14 @@ def test_get_dataset():
     assert dataset.items[0].data == {"Test Property": "Test Value 2"}
 
 
+def test_get_dataset_by_splits():
+    dataset = client.get_dataset("test-dataset", "1", splits=["test-split-2"])
+    assert dataset.revision_id == "cm1mgsnx1000bf9f85p99kx3g"
+    assert dataset.name == "test-dataset"
+    assert dataset.schema_version == "1"
+    assert len(dataset.items) == 0
+
+
 def test_get_dataset_by_revision_id():
     dataset = client.get_dataset("test-dataset", "1", revision_id="cm1mgsgu30006f9f85zhuwzlx")
     assert dataset.revision_id == "cm1mgsgu30006f9f85zhuwzlx"
@@ -732,3 +740,11 @@ def test_get_dataset_by_revision_id():
     assert len(dataset.items) == 1
     assert dataset.items[0].splits == ["test-split"]
     assert dataset.items[0].data == {"Test Property": "Test Value"}
+
+
+def test_get_dataset_by_revision_id_and_splits():
+    dataset = client.get_dataset("test-dataset", "1", revision_id="cm1mgsgu30006f9f85zhuwzlx", splits=["test-split-2"])
+    assert dataset.revision_id == "cm1mgsgu30006f9f85zhuwzlx"
+    assert dataset.name == "test-dataset"
+    assert dataset.schema_version == "1"
+    assert len(dataset.items) == 0
