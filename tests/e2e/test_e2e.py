@@ -505,6 +505,7 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
             ],
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
