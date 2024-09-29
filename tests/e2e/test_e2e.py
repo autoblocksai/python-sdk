@@ -505,6 +505,7 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
             ],
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -711,3 +712,39 @@ def test_many_test_cases(httpx_mock):
     run_test_suite(
         id="my-test-id", test_cases=test_cases, evaluators=[MyEvaluator()], fn=test_fn, max_test_case_concurrency=100
     )
+
+
+def test_get_dataset():
+    dataset = client.get_dataset("Test Dataset", "1")
+    assert dataset.revision_id == "cm1mgsnx1000bf9f85p99kx3g"
+    assert dataset.name == "Test Dataset"
+    assert dataset.schema_version == "1"
+    assert len(dataset.items) == 1
+    assert dataset.items[0].splits == ["test-split"]
+    assert dataset.items[0].data == {"Test Property": "Test Value 2"}
+
+
+def test_get_dataset_by_splits():
+    dataset = client.get_dataset("Test Dataset", "1", splits=["test-split-2"])
+    assert dataset.revision_id == "cm1mgsnx1000bf9f85p99kx3g"
+    assert dataset.name == "Test Dataset"
+    assert dataset.schema_version == "1"
+    assert len(dataset.items) == 0
+
+
+def test_get_dataset_by_revision_id():
+    dataset = client.get_dataset("Test Dataset", "1", revision_id="cm1mgsgu30006f9f85zhuwzlx")
+    assert dataset.revision_id == "cm1mgsgu30006f9f85zhuwzlx"
+    assert dataset.name == "Test Dataset"
+    assert dataset.schema_version == "1"
+    assert len(dataset.items) == 1
+    assert dataset.items[0].splits == ["test-split"]
+    assert dataset.items[0].data == {"Test Property": "Test Value"}
+
+
+def test_get_dataset_by_revision_id_and_splits():
+    dataset = client.get_dataset("Test Dataset", "1", revision_id="cm1mgsgu30006f9f85zhuwzlx", splits=["test-split-2"])
+    assert dataset.revision_id == "cm1mgsgu30006f9f85zhuwzlx"
+    assert dataset.name == "Test Dataset"
+    assert dataset.schema_version == "1"
+    assert len(dataset.items) == 0

@@ -1,4 +1,6 @@
 from autoblocks._impl.api.models import AbsoluteTimeFilter
+from autoblocks._impl.api.models import Dataset
+from autoblocks._impl.api.models import DatasetItem
 from autoblocks._impl.api.models import Event
 from autoblocks._impl.api.models import EventFilter
 from autoblocks._impl.api.models import EventFilterOperator
@@ -34,6 +36,8 @@ __all__ = [
     "TraceFilterOperator",
     "TracesResponse",
     "View",
+    "Dataset",
+    "DatasetItem",
     "HumanReviewJob",
     "HumanReviewJobWithTestCases",
     "HumanReviewJobTestCaseResult",

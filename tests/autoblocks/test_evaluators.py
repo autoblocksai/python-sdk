@@ -88,6 +88,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -119,6 +120,7 @@ def test_has_all_substrings_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -196,6 +198,7 @@ def test_is_equals_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -227,6 +230,7 @@ def test_is_equals_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -306,6 +310,7 @@ def test_is_valid_json_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -337,6 +342,7 @@ def test_is_valid_json_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -418,6 +424,7 @@ def test_toxicity_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -452,6 +459,7 @@ def test_toxicity_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -536,6 +544,7 @@ def test_nsfw_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -570,6 +579,7 @@ def test_nsfw_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -655,6 +665,7 @@ def test_accuracy_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -689,6 +700,7 @@ def test_accuracy_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -776,6 +788,7 @@ def test_llm_judge_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -810,6 +823,7 @@ def test_llm_judge_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -905,6 +919,7 @@ def test_manual_battle_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -987,6 +1002,7 @@ def test_automatic_battle_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -1078,6 +1094,7 @@ def test_assertions_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )

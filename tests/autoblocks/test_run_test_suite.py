@@ -230,6 +230,7 @@ def test_error_in_test_fn(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -303,6 +304,7 @@ def test_error_in_async_test_fn(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -376,6 +378,7 @@ def test_error_in_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -422,6 +425,7 @@ def test_error_in_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -526,6 +530,7 @@ def test_no_evaluators(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -542,6 +547,7 @@ def test_no_evaluators(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -593,6 +599,7 @@ def test_with_evaluators(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -639,6 +646,7 @@ def test_with_evaluators(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -736,6 +744,7 @@ def test_concurrency(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -752,6 +761,7 @@ def test_concurrency(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -812,6 +822,7 @@ def test_concurrency(httpx_mock):
                 testCaseRevisionUsage=None,
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
+                datasetItemId=None,
             ),
         ),
         (
@@ -826,6 +837,7 @@ def test_concurrency(httpx_mock):
                 testCaseRevisionUsage=None,
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
+                datasetItemId=None,
             ),
         ),
         (
@@ -919,6 +931,7 @@ def test_async_test_fn(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -935,6 +948,7 @@ def test_async_test_fn(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -987,6 +1001,7 @@ def test_async_evaluators(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -1033,6 +1048,7 @@ def test_async_evaluators(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -1136,6 +1152,7 @@ def test_serializes(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -1273,6 +1290,7 @@ def test_skips_non_serializable_test_case_attributes(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -1352,6 +1370,7 @@ def test_sends_tracer_events(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -1383,6 +1402,7 @@ def test_sends_tracer_events(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -1464,6 +1484,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -1481,6 +1502,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -1498,6 +1520,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-3"),
     )
@@ -1516,6 +1539,7 @@ def test_repeated_test_cases(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-4"),
     )
@@ -1674,6 +1698,7 @@ def test_handles_evaluators_implementing_base_evaluator(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -1883,6 +1908,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -1907,6 +1933,7 @@ def test_evaluators_with_optional_evaluations(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -2036,6 +2063,7 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -2090,6 +2118,7 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
                 testCaseRevisionUsage=None,
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
+                datasetItemId=None,
             ),
         ),
         dict(
@@ -2135,6 +2164,7 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -2190,6 +2220,7 @@ def test_alignment_mode_with_test_case_hash(httpx_mock):
                 testCaseRevisionUsage=None,
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
+                datasetItemId=None,
             ),
         ),
         dict(
@@ -2263,6 +2294,7 @@ def test_filters_test_suites_filters_tests(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -2302,6 +2334,7 @@ def test_filters_test_suites_filters_tests(httpx_mock):
                 testCaseRevisionUsage=None,
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
+                datasetItemId=None,
             ),
         ),
         dict(
@@ -2345,6 +2378,7 @@ def test_filters_test_suites_filters_tests_multiple_filters(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -2384,6 +2418,7 @@ def test_filters_test_suites_filters_tests_multiple_filters(httpx_mock):
                 testCaseRevisionUsage=None,
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
+                datasetItemId=None,
             ),
         ),
         dict(
@@ -2427,6 +2462,7 @@ def test_filters_test_suites_filters_tests_exact_match(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -2466,6 +2502,7 @@ def test_filters_test_suites_filters_tests_exact_match(httpx_mock):
                 testCaseRevisionUsage=None,
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
+                datasetItemId=None,
             ),
         ),
         dict(
@@ -2536,6 +2573,7 @@ def test_tests_and_hashes_overrides_with_empty_value(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -2552,6 +2590,7 @@ def test_tests_and_hashes_overrides_with_empty_value(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -2592,6 +2631,7 @@ def test_tests_and_hashes_overrides_with_empty_value(httpx_mock):
                 testCaseRevisionUsage=None,
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
+                datasetItemId=None,
             ),
         ),
         dict(
@@ -2606,6 +2646,7 @@ def test_tests_and_hashes_overrides_with_empty_value(httpx_mock):
                 testCaseRevisionUsage=None,
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
+                datasetItemId=None,
             ),
         ),
         dict(
@@ -2650,6 +2691,7 @@ def test_tests_and_hashes_overrides_with_non_empty_value(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -2691,6 +2733,7 @@ def test_tests_and_hashes_overrides_with_non_empty_value(httpx_mock):
                 testCaseRevisionUsage=None,
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
+                datasetItemId=None,
             ),
         ),
         dict(
@@ -2759,6 +2802,7 @@ def test_sync_before_evaluators_hook(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -2891,6 +2935,7 @@ def test_async_before_evaluators_hook(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -3138,6 +3183,7 @@ def test_prompt_manager_revision_usage(httpx_mock):
             ],
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -3161,6 +3207,7 @@ def test_prompt_manager_revision_usage(httpx_mock):
             ],
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-2"),
     )
@@ -3265,6 +3312,7 @@ def test_serialize(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -3354,6 +3402,7 @@ def test_serialize_for_human_review(httpx_mock):
                 dict(name="prod", value="2", contentType="text"),
                 dict(name="diff", value="-1", contentType="text"),
             ],
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )
@@ -3429,6 +3478,68 @@ def test_serialize_for_human_review(httpx_mock):
     )
 
 
+def test_serialize_dataset_item_id(httpx_mock):
+    mock_run_id = str(uuid.uuid4())
+    mock_dataset_item_id = str(uuid.uuid4())
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id=mock_run_id),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId=mock_run_id,
+            testCaseHash="1-2",
+            testCaseBody=dict(
+                x=1,
+                y=2,
+            ),
+            testCaseOutput="1-2",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+            datasetItemId=mock_dataset_item_id,
+        ),
+        json=dict(id="mock-result-id-1"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+            runId=mock_run_id,
+        ),
+    )
+
+    @dataclasses.dataclass
+    class MyCustomTestCase(BaseTestCase):
+        x: int
+        y: int
+
+        def hash(self):
+            return f"{self.x}-{self.y}"
+
+        def serialize_dataset_item_id(self):
+            return mock_dataset_item_id
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyCustomTestCase(x=1, y=2),
+        ],
+        fn=lambda test_case: f"{test_case.x}-{test_case.y}",
+    )
+
+
 def test_grid_search_params(httpx_mock):
     mock_grid_id = str(uuid.uuid4())
     expect_cli_post_request(
@@ -3473,6 +3584,7 @@ def test_grid_search_params(httpx_mock):
                 testCaseRevisionUsage=None,
                 testCaseHumanReviewInputFields=None,
                 testCaseHumanReviewOutputFields=None,
+                datasetItemId=None,
             ),
             json=dict(id="mock-result-id-1"),
         )
@@ -3531,6 +3643,7 @@ def test_exceptions_as_outputs(httpx_mock):
             testCaseRevisionUsage=None,
             testCaseHumanReviewInputFields=None,
             testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
         ),
         json=dict(id="mock-result-id-1"),
     )

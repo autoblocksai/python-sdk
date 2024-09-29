@@ -186,3 +186,18 @@ class HumanReviewJobTestCaseResult:
     field_comments: List[HumanReviewFieldComment]
     input_comments: List[HumanReviewGeneralComment]
     output_comments: List[HumanReviewGeneralComment]
+
+
+@dataclass
+class DatasetItem:
+    id: str
+    splits: List[str]
+    data: Dict[str, Any]
+
+
+@dataclass
+class Dataset:
+    name: str
+    schema_version: str
+    revision_id: str
+    items: List[DatasetItem]

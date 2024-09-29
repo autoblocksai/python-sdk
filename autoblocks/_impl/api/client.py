@@ -11,6 +11,8 @@ from typing import Union
 import httpx
 
 from autoblocks._impl.api.models import AbsoluteTimeFilter
+from autoblocks._impl.api.models import Dataset
+from autoblocks._impl.api.models import DatasetItem
 from autoblocks._impl.api.models import Event
 from autoblocks._impl.api.models import HumanReviewAutomatedEvaluation
 from autoblocks._impl.api.models import HumanReviewField
@@ -31,6 +33,7 @@ from autoblocks._impl.api.models import TracesResponse
 from autoblocks._impl.api.models import View
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks._impl.util import encode_uri_component
 
 log = logging.getLogger(__name__)
 
@@ -85,7 +88,7 @@ class AutoblocksAPIClient:
 
     def get_traces_from_view(self, view_id: str, *, page_size: int, cursor: Optional[str] = None) -> TracesResponse:
         req = self._client.get(
-            f"/views/{view_id}/traces",
+            f"/views/{encode_uri_component(view_id)}/traces",
             params={"pageSize": page_size, "cursor": cursor or ""},
         )
         req.raise_for_status()
@@ -137,7 +140,7 @@ class AutoblocksAPIClient:
         ]
 
     def get_human_review_job_test_cases(self, job_id: str) -> HumanReviewJobWithTestCases:
-        req = self._client.get(f"/human-review/jobs/{job_id}/test-cases")
+        req = self._client.get(f"/human-review/jobs/{encode_uri_component(job_id)}/test-cases")
         req.raise_for_status()
         resp = req.json()
         return HumanReviewJobWithTestCases(
@@ -148,7 +151,9 @@ class AutoblocksAPIClient:
         )
 
     def get_human_review_job_test_case_result(self, job_id: str, test_case_id: str) -> HumanReviewJobTestCaseResult:
-        req = self._client.get(f"/human-review/jobs/{job_id}/test-cases/{test_case_id}")
+        req = self._client.get(
+            f"/human-review/jobs/{encode_uri_component(job_id)}/test-cases/{encode_uri_component(test_case_id)}"
+        )
         req.raise_for_status()
         resp = req.json()
         return HumanReviewJobTestCaseResult(
@@ -200,4 +205,28 @@ class AutoblocksAPIClient:
                 )
                 for oc in resp["outputComments"]
             ],
+        )
+
+    def get_dataset(
+        self, name: str, schema_version: str, splits: Optional[List[str]] = None, revision_id: Optional[str] = None
+    ) -> Dataset:
+        encoded_schema_version = encode_uri_component(schema_version)
+        joined_splits = ",".join([f"splits={split}" for split in splits]) if splits else ""
+        splits_query_param = f"?{joined_splits}" if joined_splits != "" else ""
+        if revision_id is None:
+            req = self._client.get(
+                f"/datasets/{encode_uri_component(name)}/schema-versions/{encoded_schema_version}{splits_query_param}"
+            )
+        else:
+            encoded_revision_id = encode_uri_component(revision_id)
+            req = self._client.get(
+                f"/datasets/{encode_uri_component(name)}/schema-versions/{encoded_schema_version}/revisions/{encoded_revision_id}{splits_query_param}"
+            )
+        req.raise_for_status()
+        resp = req.json()
+        return Dataset(
+            name=resp["name"],
+            schema_version=f"{resp['schemaVersion']}",
+            revision_id=resp["revisionId"],
+            items=[DatasetItem(id=item["id"], splits=item["splits"], data=item["data"]) for item in resp["items"]],
         )
