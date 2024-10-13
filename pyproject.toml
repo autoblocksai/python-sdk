@@ -24,7 +24,7 @@ tenacity = ">=8.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.3"
-pytest = "^7.4.0"
+pytest = "^8.0.0"
 pytest-httpx = "0.32.0"
 freezegun = "^1.2.2"
 pydantic = "^2.5.3"
