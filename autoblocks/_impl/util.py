@@ -37,6 +37,7 @@ class AutoblocksEnvVar(StrEnum):
     TRACER_THROW_ON_ERROR = "AUTOBLOCKS_TRACER_THROW_ON_ERROR"
     CI_TEST_RUN_BUILD_ID = "AUTOBLOCKS_CI_TEST_RUN_BUILD_ID"
     SLACK_WEBHOOK_URL = "AUTOBLOCKS_SLACK_WEBHOOK_URL"
+    TEST_RUN_MESSAGE = "AUTOBLOCKS_TEST_RUN_MESSAGE"
 
     def get(self) -> Optional[str]:
         return os.environ.get(self.value)

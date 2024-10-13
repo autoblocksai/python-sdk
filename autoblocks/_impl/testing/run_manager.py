@@ -15,6 +15,7 @@ from autoblocks._impl.testing.models import EvaluationWithId
 from autoblocks._impl.testing.models import OutputType
 from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
+from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 
 log = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ class RunManager(Generic[TestCaseType, OutputType]):
 
         self.run_id = await send_start_test_run(
             test_external_id=self.test_external_id,
-            message=self.message,
+            message=self.message or AutoblocksEnvVar.TEST_RUN_MESSAGE.get(),
             grid_search_run_group_id=None,
             grid_search_params_combo=None,
         )

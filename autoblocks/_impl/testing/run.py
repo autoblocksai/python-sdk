@@ -363,7 +363,7 @@ async def run_test_suite_for_grid_combo(
     try:
         run_id = await send_start_test_run(
             test_external_id=test_id,
-            message=None,
+            message=AutoblocksEnvVar.TEST_RUN_MESSAGE.get(),
             grid_search_run_group_id=grid_search_run_group_id,
             grid_search_params_combo=grid_search_params_combo,
         )
