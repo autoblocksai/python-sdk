@@ -66,14 +66,8 @@ def wait_for_trace_to_exist(trace_id: str) -> None:
     raise Exception(f"Trace {trace_id} was not found.")
 
 
-@pytest.fixture
-def non_mocked_hosts() -> list[str]:
-    """
-    Don't mock requests to our API.
-
-    https://colin-b.github.io/pytest_httpx/#do-not-mock-some-requests
-    """
-    return ["api.autoblocks.ai"]
+# apply this to all tests in this file
+pytestmark = pytest.mark.httpx_mock(non_mocked_hosts=["api.autoblocks.ai"])
 
 
 def test_get_views():

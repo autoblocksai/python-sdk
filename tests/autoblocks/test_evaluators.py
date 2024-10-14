@@ -41,9 +41,8 @@ def mock_cli_server_address_env_var():
         yield
 
 
-@pytest.fixture(autouse=True)
-def non_mocked_hosts() -> list[str]:
-    return ["api.openai.com"]
+# apply this to all tests in this file
+pytestmark = pytest.mark.httpx_mock(non_mocked_hosts=["api.openai.com"])
 
 
 @dataclasses.dataclass
