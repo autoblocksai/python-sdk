@@ -162,12 +162,19 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
             tool_choice={"type": "function", "function": {"name": function_name}},
             tools=[self._make_tool()],
             messages=[
-                dict(
-                    role="system",
-                    content=dedent(
-                        """Answer the following question by selecting an answer.
-                            Always provide a reason for your answer."""
-                    ),
+                # o1-preview and o1-mini don't support system messages
+                *(
+                    []
+                    if self.model.startswith(("o1-preview", "o1-mini"))
+                    else [
+                        dict(
+                            role="system",
+                            content=dedent(
+                                """Answer the following question by selecting an answer.
+                                Always provide a reason for your answer."""
+                            ),
+                        ),
+                    ]
                 ),
                 dict(role="user", content=prompt),
             ],
