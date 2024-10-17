@@ -23,6 +23,11 @@ from autoblocks._impl.api.models import TraceFilter
 from autoblocks._impl.api.models import TraceFilterOperator
 from autoblocks._impl.api.models import TracesResponse
 from autoblocks._impl.api.models import View
+from autoblocks._impl.api.models import AutoblocksTestRun
+from autoblocks._impl.api.models import AutoblocksTestCaseResult
+from autoblocks._impl.api.models import Evaluation
+from autoblocks._impl.api.models import AutoblocksTestCaseResultWithEvaluations
+
 
 __all__ = [
     "AbsoluteTimeFilter",
@@ -50,4 +55,8 @@ __all__ = [
     "HumanReviewFieldContentType",
     "HumanReviewFieldComment",
     "HumanReviewGeneralComment",
+    "AutoblocksTestRun",
+    "AutoblocksTestCaseResult",
+    "AutoblocksTestCaseResultWithEvaluations",
+    "Evaluation",
 ]
