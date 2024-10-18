@@ -220,13 +220,14 @@ class Evaluation:
     metadata: Dict[str, Any]
     threshold: Optional[Dict[str, Optional[float]]] = None
 
+
 @dataclass
-class AutoblocksTestCaseResultWithEvaluations:
+class AutoblocksTestCaseResult:
     id: str
     runId: str
     hash: str
-    datasetItemId: Optional[str]
-    durationMs: Optional[int]
+    dataset_item_id: Optional[str]
+    duration_ms: Optional[int]
     events: List[Event]
     body: Any
     output: Any

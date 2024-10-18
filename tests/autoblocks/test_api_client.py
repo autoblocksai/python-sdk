@@ -16,7 +16,7 @@ from autoblocks.api.models import TracesResponse
 from autoblocks.api.models import View
 from autoblocks.api.models import AutoblocksTestRun
 from autoblocks.api.models import AutoblocksTestCaseResultId
-from autoblocks.api.models import AutoblocksTestCaseResultWithEvaluations, Evaluation    
+from autoblocks.api.models import AutoblocksTestCaseResult, Evaluation    
 from tests.util import make_expected_body
 
 
@@ -353,8 +353,8 @@ def test_get_local_test_result(httpx_mock):
                 "id": "local-result-id",
                 "runId": "local-run-id",
                 "hash": "local-hash-value",
-                "datasetItemId": "local-dataset-item-id",
-                "durationMs": 150,
+                "dataset_item_id": "local-dataset-item-id",
+                "duration_ms": 150,
                 "events": [{"type": "local-event"}],
                 "body": {"input": "local test input"},
                 "output": {"result": "local test output"},
@@ -374,13 +374,13 @@ def test_get_local_test_result(httpx_mock):
     client = AutoblocksAPIClient("mock-api-key")
     result = client.get_local_test_result("local-result-id")
 
-    assert isinstance(result, AutoblocksTestCaseResultWithEvaluations)
-    assert result == AutoblocksTestCaseResultWithEvaluations(
+    assert isinstance(result, AutoblocksTestCaseResult)
+    assert result == AutoblocksTestCaseResult(
         id="local-result-id",
         runId="local-run-id",
         hash="local-hash-value",
-        datasetItemId="local-dataset-item-id",
-        durationMs=150,
+        dataset_item_id="local-dataset-item-id",
+        duration_ms=150,
         events=[{"type": "local-event"}],
         body={"input": "local test input"},
         output={"result": "local test output"},
@@ -404,8 +404,8 @@ def test_get_ci_test_result(httpx_mock):
                 "id": "ci-result-id",
                 "runId": "ci-run-id",
                 "hash": "ci-hash-value",
-                "datasetItemId": "ci-dataset-item-id",
-                "durationMs": 200,
+                "dataset_item_id": "ci-dataset-item-id",
+                "duration_ms": 200,
                 "events": [{"type": "ci-event"}],
                 "body": {"input": "ci test input"},
                 "output": {"result": "ci test output"},
@@ -425,13 +425,13 @@ def test_get_ci_test_result(httpx_mock):
     client = AutoblocksAPIClient("mock-api-key")
     result = client.get_ci_test_result("ci-result-id")
 
-    assert isinstance(result, AutoblocksTestCaseResultWithEvaluations)
-    assert result == AutoblocksTestCaseResultWithEvaluations(
+    assert isinstance(result, AutoblocksTestCaseResult)
+    assert result == AutoblocksTestCaseResult(
         id="ci-result-id",
         runId="ci-run-id",
         hash="ci-hash-value",
-        datasetItemId="ci-dataset-item-id",
-        durationMs=200,
+        dataset_item_id="ci-dataset-item-id",
+        duration_ms=200,
         events=[{"type": "ci-event"}],
         body={"input": "ci test input"},
         output={"result": "ci test output"},

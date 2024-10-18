@@ -26,7 +26,7 @@ from autoblocks._impl.api.models import View
 from autoblocks._impl.api.models import AutoblocksTestRun
 from autoblocks._impl.api.models import AutoblocksTestCaseResultId
 from autoblocks._impl.api.models import Evaluation
-from autoblocks._impl.api.models import AutoblocksTestCaseResultWithEvaluations
+from autoblocks._impl.api.models import AutoblocksTestCaseResult
 
 
 __all__ = [
@@ -57,6 +57,6 @@ __all__ = [
     "HumanReviewGeneralComment",
     "AutoblocksTestRun",
     "AutoblocksTestCaseResultId",
-    "AutoblocksTestCaseResultWithEvaluations",
+    "AutoblocksTestCaseResult",
     "Evaluation",
 ]
