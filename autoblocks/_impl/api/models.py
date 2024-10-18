@@ -208,7 +208,7 @@ class AutoblocksTestRun:
 
 
 @dataclass
-class AutoblocksTestCaseResult:
+class AutoblocksTestCaseResultId:
     id: str
 
 

@@ -24,7 +24,7 @@ from autoblocks._impl.api.models import TraceFilterOperator
 from autoblocks._impl.api.models import TracesResponse
 from autoblocks._impl.api.models import View
 from autoblocks._impl.api.models import AutoblocksTestRun
-from autoblocks._impl.api.models import AutoblocksTestCaseResult
+from autoblocks._impl.api.models import AutoblocksTestCaseResultId
 from autoblocks._impl.api.models import Evaluation
 from autoblocks._impl.api.models import AutoblocksTestCaseResultWithEvaluations
 
@@ -56,7 +56,7 @@ __all__ = [
     "HumanReviewFieldComment",
     "HumanReviewGeneralComment",
     "AutoblocksTestRun",
-    "AutoblocksTestCaseResult",
+    "AutoblocksTestCaseResultId",
     "AutoblocksTestCaseResultWithEvaluations",
     "Evaluation",
 ]

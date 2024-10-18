@@ -32,7 +32,7 @@ from autoblocks._impl.api.models import TraceFilter
 from autoblocks._impl.api.models import TracesResponse
 from autoblocks._impl.api.models import View
 from autoblocks._impl.api.models import AutoblocksTestRun
-from autoblocks._impl.api.models import AutoblocksTestCaseResult
+from autoblocks._impl.api.models import AutoblocksTestCaseResultId
 from autoblocks._impl.api.models import AutoblocksTestCaseResultWithEvaluations
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
@@ -246,30 +246,30 @@ class AutoblocksAPIClient:
         resp = req.json()
         return [AutoblocksTestRun(id=run["id"]) for run in resp["runs"]]
 
-    def get_local_test_run_results(self, run_id: str) -> List[AutoblocksTestCaseResult]:
+    def get_local_test_results(self, run_id: str) -> List[AutoblocksTestCaseResultId]:
         resp = self._client.get(f"/testing/local/runs/{encode_uri_component(run_id)}/results")
         resp.raise_for_status()
         data = resp.json()
-        return [AutoblocksTestCaseResult(
+        return [AutoblocksTestCaseResultId(
                 id=result["id"]
             )
             for result in data["results"]
         ]
 
-    def get_ci_test_run_results(self, run_id: str) -> List[AutoblocksTestCaseResult]:
+    def get_ci_test_results(self, run_id: str) -> List[AutoblocksTestCaseResultId]:
         resp = self._client.get(f"/testing/ci/runs/{encode_uri_component(run_id)}/results")
-        data = resp.json()  # Parse the response JSON
-        return [AutoblocksTestCaseResult(
+        data = resp.json()
+        return [AutoblocksTestCaseResultId(
             id=result["id"]
         ) for result in data["results"]]
 
-    def get_local_test_case_result(self, test_case_result_id: str) -> AutoblocksTestCaseResultWithEvaluations:
+    def get_local_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResultWithEvaluations:
         req = self._client.get(f"/testing/local/results/{encode_uri_component(test_case_result_id)}")
         req.raise_for_status()
         resp = req.json()
         return AutoblocksTestCaseResultWithEvaluations(**resp["testCaseResult"])
 
-    def get_ci_test_case_result(self, test_case_result_id: str) -> AutoblocksTestCaseResultWithEvaluations:
+    def get_ci_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResultWithEvaluations:
         req = self._client.get(f"/testing/ci/results/{encode_uri_component(test_case_result_id)}")
         req.raise_for_status()
         resp = req.json()
