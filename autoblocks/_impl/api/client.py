@@ -11,6 +11,9 @@ from typing import Union
 import httpx
 
 from autoblocks._impl.api.models import AbsoluteTimeFilter
+from autoblocks._impl.api.models import AutoblocksTestCaseResult
+from autoblocks._impl.api.models import AutoblocksTestCaseResultId
+from autoblocks._impl.api.models import AutoblocksTestRun
 from autoblocks._impl.api.models import Dataset
 from autoblocks._impl.api.models import DatasetItem
 from autoblocks._impl.api.models import Event
@@ -31,9 +34,6 @@ from autoblocks._impl.api.models import Trace
 from autoblocks._impl.api.models import TraceFilter
 from autoblocks._impl.api.models import TracesResponse
 from autoblocks._impl.api.models import View
-from autoblocks._impl.api.models import AutoblocksTestRun
-from autoblocks._impl.api.models import AutoblocksTestCaseResultId
-from autoblocks._impl.api.models import AutoblocksTestCaseResult
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import encode_uri_component
@@ -250,19 +250,12 @@ class AutoblocksAPIClient:
         req = self._client.get(f"/testing/local/runs/{encode_uri_component(run_id)}/results")
         req.raise_for_status()
         resp = req.json()
-        return [AutoblocksTestCaseResultId(
-                id=result["id"]
-            )
-            for result in resp["results"]
-        ]
-
+        return [AutoblocksTestCaseResultId(id=result["id"]) for result in resp["results"]]
     def get_ci_test_results(self, run_id: str) -> List[AutoblocksTestCaseResultId]:
         req = self._client.get(f"/testing/ci/runs/{encode_uri_component(run_id)}/results")
         req.raise_for_status()
         resp = req.json()
-        return [AutoblocksTestCaseResultId(
-            id=result["id"]
-        ) for result in resp["results"]]
+        return [AutoblocksTestCaseResultId(id=result["id"]) for result in resp["results"]]
 
     def get_local_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResult:
         req = self._client.get(f"/testing/local/results/{encode_uri_component(test_case_result_id)}")

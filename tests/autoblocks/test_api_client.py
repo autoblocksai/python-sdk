@@ -5,6 +5,9 @@ from httpx import Timeout
 
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks.api.client import AutoblocksAPIClient
+from autoblocks.api.models import AutoblocksTestCaseResultId
+from autoblocks.api.models import AutoblocksTestCaseResult   
+from autoblocks.api.models import AutoblocksTestRun
 from autoblocks.api.models import Event
 from autoblocks.api.models import EventFilter
 from autoblocks.api.models import EventFilterOperator
@@ -13,10 +16,7 @@ from autoblocks.api.models import Trace
 from autoblocks.api.models import TraceFilter
 from autoblocks.api.models import TraceFilterOperator
 from autoblocks.api.models import TracesResponse
-from autoblocks.api.models import View
-from autoblocks.api.models import AutoblocksTestRun
-from autoblocks.api.models import AutoblocksTestCaseResultId
-from autoblocks.api.models import AutoblocksTestCaseResult, Evaluation    
+from autoblocks.api.models import View 
 from tests.util import make_expected_body
 
 
@@ -258,6 +258,7 @@ def test_search_traces(httpx_mock):
         ],
     )
 
+
 def test_get_local_test_runs(httpx_mock):
     httpx_mock.add_response(
         url=f"{API_ENDPOINT}/testing/local/tests/test-external-id/runs",
@@ -279,6 +280,7 @@ def test_get_local_test_runs(httpx_mock):
     assert all(isinstance(run, AutoblocksTestRun) for run in runs)
     assert [run.id for run in runs] == ["run-1", "run-2"]
 
+
 def test_get_ci_test_runs(httpx_mock):
     httpx_mock.add_response(
         url=f"{API_ENDPOINT}/testing/ci/tests/test-external-id/runs",
@@ -299,6 +301,7 @@ def test_get_ci_test_runs(httpx_mock):
     assert len(runs) == 2
     assert all(isinstance(run, AutoblocksTestRun) for run in runs)
     assert [run.id for run in runs] == ["ci-run-1", "ci-run-2"]
+
 
 def test_get_local_test_results(httpx_mock):
     httpx_mock.add_response(
@@ -342,6 +345,7 @@ def test_get_ci_test_results(httpx_mock):
     assert len(results) == 2
     assert all(isinstance(result, AutoblocksTestCaseResultId) for result in results)
     assert [result.id for result in results] == ["ci-result-1", "ci-result-2"]
+
 
 def test_get_local_test_result(httpx_mock):
     httpx_mock.add_response(
@@ -391,8 +395,9 @@ def test_get_local_test_result(httpx_mock):
                 "passed": True,
                 "metadata": {"key": "local-value"},
             }
-        ]
+        ],
     )
+
 
 def test_get_ci_test_result(httpx_mock):
     httpx_mock.add_response(
