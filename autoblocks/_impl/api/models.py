@@ -201,3 +201,34 @@ class Dataset:
     schema_version: str
     revision_id: str
     items: List[DatasetItem]
+
+@dataclass
+class AutoblocksTestRun:
+    id: str
+
+
+@dataclass
+class AutoblocksTestCaseResultId:
+    id: str
+
+
+@dataclass
+class Evaluation:
+    evaluatorId: str
+    score: float
+    passed: bool
+    metadata: Dict[str, Any]
+    threshold: Optional[Dict[str, Optional[float]]] = None
+
+
+@dataclass
+class AutoblocksTestCaseResult:
+    id: str
+    runId: str
+    hash: str
+    dataset_item_id: Optional[str]
+    duration_ms: Optional[int]
+    events: List[Event]
+    body: Any
+    output: Any
+    evaluations: List[Evaluation]

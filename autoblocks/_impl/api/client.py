@@ -11,6 +11,9 @@ from typing import Union
 import httpx
 
 from autoblocks._impl.api.models import AbsoluteTimeFilter
+from autoblocks._impl.api.models import AutoblocksTestCaseResult
+from autoblocks._impl.api.models import AutoblocksTestCaseResultId
+from autoblocks._impl.api.models import AutoblocksTestRun
 from autoblocks._impl.api.models import Dataset
 from autoblocks._impl.api.models import DatasetItem
 from autoblocks._impl.api.models import Event
@@ -230,3 +233,38 @@ class AutoblocksAPIClient:
             revision_id=resp["revisionId"],
             items=[DatasetItem(id=item["id"], splits=item["splits"], data=item["data"]) for item in resp["items"]],
         )
+
+    def get_local_test_runs(self, test_external_id: str) -> List[AutoblocksTestRun]:
+        req = self._client.get(f"/testing/local/tests/{encode_uri_component(test_external_id)}/runs")
+        req.raise_for_status()
+        resp = req.json()
+        return [AutoblocksTestRun(id=run["id"]) for run in resp["runs"]]
+
+    def get_ci_test_runs(self, test_external_id: str) -> List[AutoblocksTestRun]:
+        req = self._client.get(f"/testing/ci/tests/{encode_uri_component(test_external_id)}/runs")
+        req.raise_for_status()
+        resp = req.json()
+        return [AutoblocksTestRun(id=run["id"]) for run in resp["runs"]]
+
+    def get_local_test_results(self, run_id: str) -> List[AutoblocksTestCaseResultId]:
+        req = self._client.get(f"/testing/local/runs/{encode_uri_component(run_id)}/results")
+        req.raise_for_status()
+        resp = req.json()
+        return [AutoblocksTestCaseResultId(id=result["id"]) for result in resp["results"]]
+    def get_ci_test_results(self, run_id: str) -> List[AutoblocksTestCaseResultId]:
+        req = self._client.get(f"/testing/ci/runs/{encode_uri_component(run_id)}/results")
+        req.raise_for_status()
+        resp = req.json()
+        return [AutoblocksTestCaseResultId(id=result["id"]) for result in resp["results"]]
+
+    def get_local_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResult:
+        req = self._client.get(f"/testing/local/results/{encode_uri_component(test_case_result_id)}")
+        req.raise_for_status()
+        resp = req.json()
+        return AutoblocksTestCaseResult(**resp["testCaseResult"])
+
+    def get_ci_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResult:
+        req = self._client.get(f"/testing/ci/results/{encode_uri_component(test_case_result_id)}")
+        req.raise_for_status()
+        resp = req.json()
+        return AutoblocksTestCaseResult(**resp["testCaseResult"])
