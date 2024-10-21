@@ -251,6 +251,7 @@ class AutoblocksAPIClient:
         req.raise_for_status()
         resp = req.json()
         return [AutoblocksTestCaseResultId(id=result["id"]) for result in resp["results"]]
+
     def get_ci_test_results(self, run_id: str) -> List[AutoblocksTestCaseResultId]:
         req = self._client.get(f"/testing/ci/runs/{encode_uri_component(run_id)}/results")
         req.raise_for_status()

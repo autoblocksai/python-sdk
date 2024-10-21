@@ -5,9 +5,10 @@ from httpx import Timeout
 
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks.api.client import AutoblocksAPIClient
+from autoblocks.api.models import AutoblocksTestCaseResult
 from autoblocks.api.models import AutoblocksTestCaseResultId
-from autoblocks.api.models import AutoblocksTestCaseResult   
 from autoblocks.api.models import AutoblocksTestRun
+from autoblocks.api.models import Evaluation
 from autoblocks.api.models import Event
 from autoblocks.api.models import EventFilter
 from autoblocks.api.models import EventFilterOperator
@@ -16,7 +17,7 @@ from autoblocks.api.models import Trace
 from autoblocks.api.models import TraceFilter
 from autoblocks.api.models import TraceFilterOperator
 from autoblocks.api.models import TracesResponse
-from autoblocks.api.models import View 
+from autoblocks.api.models import View
 from tests.util import make_expected_body
 
 
@@ -182,25 +183,25 @@ def test_search_traces(httpx_mock):
                 {
                     "id": "trace-1",
                     "events": [
-                        {
-                            "id": "event-1",
-                            "traceId": "trace-1",
-                            "message": "message-1",
-                            "timestamp": "2021-01-01T00:00:00.000Z",
-                            "properties": {"x": "1"},
-                        },
+                        Event(
+                            id="event-1",
+                            trace_id="trace-1",
+                            message="message-1",
+                            timestamp="2021-01-01T00:00:00.000Z",
+                            properties={"x": "1"},
+                        ),
                     ],
                 },
                 {
                     "id": "trace-2",
                     "events": [
-                        {
-                            "id": "event-2",
-                            "traceId": "trace-2",
-                            "message": "message-2",
-                            "timestamp": "2021-01-01T00:00:00.000Z",
-                            "properties": {"x": "2"},
-                        }
+                        Event(
+                            id="event-2",
+                            trace_id="trace-2",
+                            message="message-2",
+                            timestamp="2021-01-01T00:00:00.000Z",
+                            properties={"x": "2"},
+                        ),
                     ],
                 },
             ],
@@ -385,16 +386,24 @@ def test_get_local_test_result(httpx_mock):
         hash="local-hash-value",
         dataset_item_id="local-dataset-item-id",
         duration_ms=150,
-        events=[{"type": "local-event"}],
+        events=[
+            Event(
+                id="some_id",
+                trace_id="some_trace_id",
+                message="some_message",
+                timestamp="some_timestamp",
+                properties={"key": "value"},
+            ),
+        ],
         body={"input": "local test input"},
         output={"result": "local test output"},
         evaluations=[
-            {
-                "evaluatorId": "local-evaluator-1",
-                "score": 0.95,
-                "passed": True,
-                "metadata": {"key": "local-value"},
-            }
+            Evaluation(
+                evaluatorId="local-evaluator-1",
+                score=0.95,
+                passed=True,
+                metadata={"key": "local-value"},
+            )
         ],
     )
 
@@ -437,15 +446,23 @@ def test_get_ci_test_result(httpx_mock):
         hash="ci-hash-value",
         dataset_item_id="ci-dataset-item-id",
         duration_ms=200,
-        events=[{"type": "ci-event"}],
+        events=[
+            Event(
+                id="some_id",
+                trace_id="some_trace_id",
+                message="some_message",
+                timestamp="some_timestamp",
+                properties={"key": "value"},
+            ),
+        ],
         body={"input": "ci test input"},
         output={"result": "ci test output"},
         evaluations=[
-            {
-                "evaluatorId": "ci-evaluator-1",
-                "score": 0.85,
-                "passed": True,
-                "metadata": {"key": "ci-value"},
-            }
-        ]
+            Evaluation(
+                evaluatorId="ci-evaluator-1",
+                score=0.85,
+                passed=True,
+                metadata={"key": "ci-value"},
+            )
+        ],
     )

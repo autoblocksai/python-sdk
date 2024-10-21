@@ -28,7 +28,6 @@ from autoblocks._impl.api.models import TraceFilterOperator
 from autoblocks._impl.api.models import TracesResponse
 from autoblocks._impl.api.models import View
 
-
 __all__ = [
     "AbsoluteTimeFilter",
     "Event",
