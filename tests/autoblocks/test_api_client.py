@@ -183,25 +183,25 @@ def test_search_traces(httpx_mock):
                 {
                     "id": "trace-1",
                     "events": [
-                        Event(
-                            id="event-1",
-                            trace_id="trace-1",
-                            message="message-1",
-                            timestamp="2021-01-01T00:00:00.000Z",
-                            properties={"x": "1"},
-                        ),
+                        {
+                            "id": "event-1",
+                            "traceId": "trace-1",
+                            "message": "message-1",
+                            "timestamp": "2021-01-01T00:00:00.000Z",
+                            "properties": {"x": "1"},
+                        },
                     ],
                 },
                 {
                     "id": "trace-2",
                     "events": [
-                        Event(
-                            id="event-2",
-                            trace_id="trace-2",
-                            message="message-2",
-                            timestamp="2021-01-01T00:00:00.000Z",
-                            properties={"x": "2"},
-                        ),
+                        {
+                            "id": "event-2",
+                            "traceId": "trace-2",
+                            "message": "message-2",
+                            "timestamp": "2021-01-01T00:00:00.000Z",
+                            "properties": {"x": "2"},
+                        }
                     ],
                 },
             ],
@@ -360,7 +360,15 @@ def test_get_local_test_result(httpx_mock):
                 "hash": "local-hash-value",
                 "dataset_item_id": "local-dataset-item-id",
                 "duration_ms": 150,
-                "events": [{"type": "local-event"}],
+                "events": [
+                    {
+                        "id": "some_id",
+                        "trace_id": "some_trace_id",
+                        "message": "local-event",
+                        "timestamp": "some_timestamp",
+                        "properties": {},
+                    }
+                ],
                 "body": {"input": "local test input"},
                 "output": {"result": "local test output"},
                 "evaluations": [
@@ -390,9 +398,9 @@ def test_get_local_test_result(httpx_mock):
             Event(
                 id="some_id",
                 trace_id="some_trace_id",
-                message="some_message",
+                message="local-event",
                 timestamp="some_timestamp",
-                properties={"key": "value"},
+                properties={},
             ),
         ],
         body={"input": "local test input"},
@@ -420,7 +428,15 @@ def test_get_ci_test_result(httpx_mock):
                 "hash": "ci-hash-value",
                 "dataset_item_id": "ci-dataset-item-id",
                 "duration_ms": 200,
-                "events": [{"type": "ci-event"}],
+                "events": [
+                    {
+                        "id": "some_id",
+                        "trace_id": "some_trace_id",
+                        "message": "ci-event",
+                        "timestamp": "some_timestamp",
+                        "properties": {},
+                    }
+                ],
                 "body": {"input": "ci test input"},
                 "output": {"result": "ci test output"},
                 "evaluations": [
@@ -450,9 +466,9 @@ def test_get_ci_test_result(httpx_mock):
             Event(
                 id="some_id",
                 trace_id="some_trace_id",
-                message="some_message",
+                message="ci-event",
                 timestamp="some_timestamp",
-                properties={"key": "value"},
+                properties={},
             ),
         ],
         body={"input": "ci test input"},

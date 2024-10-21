@@ -16,6 +16,7 @@ from autoblocks._impl.api.models import AutoblocksTestCaseResultId
 from autoblocks._impl.api.models import AutoblocksTestRun
 from autoblocks._impl.api.models import Dataset
 from autoblocks._impl.api.models import DatasetItem
+from autoblocks._impl.api.models import Evaluation
 from autoblocks._impl.api.models import Event
 from autoblocks._impl.api.models import HumanReviewAutomatedEvaluation
 from autoblocks._impl.api.models import HumanReviewField
@@ -262,10 +263,60 @@ class AutoblocksAPIClient:
         req = self._client.get(f"/testing/local/results/{encode_uri_component(test_case_result_id)}")
         req.raise_for_status()
         resp = req.json()
-        return AutoblocksTestCaseResult(**resp["testCaseResult"])
+        result = resp["testCaseResult"]
+
+        # Convert events to Event objects
+        events = [
+            Event(
+                id=event.get("id"),
+                trace_id=event.get("trace_id"),
+                message=event.get("message"),
+                timestamp=event.get("timestamp"),
+                properties=event.get("properties", {}),
+            )
+            for event in result.get("events", [])
+        ]
+
+        # Convert evaluations to Evaluation objects
+        evaluations = [
+            Evaluation(
+                evaluatorId=eval.get("evaluatorId"),
+                score=eval.get("score"),
+                passed=eval.get("passed"),
+                metadata=eval.get("metadata", {}),
+            )
+            for eval in result.get("evaluations", [])
+        ]
+
+        return AutoblocksTestCaseResult(**{**result, "events": events, "evaluations": evaluations})
 
     def get_ci_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResult:
         req = self._client.get(f"/testing/ci/results/{encode_uri_component(test_case_result_id)}")
         req.raise_for_status()
         resp = req.json()
-        return AutoblocksTestCaseResult(**resp["testCaseResult"])
+        result = resp["testCaseResult"]
+
+        # Convert events to Event objects
+        events = [
+            Event(
+                id=event.get("id"),
+                trace_id=event.get("trace_id"),
+                message=event.get("message"),
+                timestamp=event.get("timestamp"),
+                properties=event.get("properties", {}),
+            )
+            for event in result.get("events", [])
+        ]
+
+        # Convert evaluations to Evaluation objects
+        evaluations = [
+            Evaluation(
+                evaluatorId=eval.get("evaluatorId"),
+                score=eval.get("score"),
+                passed=eval.get("passed"),
+                metadata=eval.get("metadata", {}),
+            )
+            for eval in result.get("evaluations", [])
+        ]
+
+        return AutoblocksTestCaseResult(**{**result, "events": events, "evaluations": evaluations})
