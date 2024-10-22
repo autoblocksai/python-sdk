@@ -8,7 +8,8 @@ from autoblocks.api.client import AutoblocksAPIClient
 from autoblocks.api.models import AutoblocksTestCaseResult
 from autoblocks.api.models import AutoblocksTestCaseResultId
 from autoblocks.api.models import AutoblocksTestRun
-from autoblocks.api.models import Evaluation
+from autoblocks.api.models import EvaluationAssertion
+from autoblocks.api.models import EvaluationWithEvaluatorId
 from autoblocks.api.models import Event
 from autoblocks.api.models import EventFilter
 from autoblocks.api.models import EventFilterOperator
@@ -358,12 +359,12 @@ def test_get_local_test_result(httpx_mock):
                 "id": "local-result-id",
                 "runId": "local-run-id",
                 "hash": "local-hash-value",
-                "dataset_item_id": "local-dataset-item-id",
-                "duration_ms": 150,
+                "datasetItemId": "local-dataset-item-id",
+                "durationMs": 150,
                 "events": [
                     {
                         "id": "some_id",
-                        "trace_id": "some_trace_id",
+                        "traceId": "some_trace_id",
                         "message": "local-event",
                         "timestamp": "some_timestamp",
                         "properties": {},
@@ -377,6 +378,13 @@ def test_get_local_test_result(httpx_mock):
                         "score": 0.95,
                         "passed": True,
                         "metadata": {"key": "local-value"},
+                        "assertions": [
+                            {
+                                "passed": True,
+                                "required": True,
+                                "criterion": "criterion-1",
+                            }
+                        ],
                     }
                 ],
             }
@@ -390,7 +398,7 @@ def test_get_local_test_result(httpx_mock):
     assert isinstance(result, AutoblocksTestCaseResult)
     assert result == AutoblocksTestCaseResult(
         id="local-result-id",
-        runId="local-run-id",
+        run_id="local-run-id",
         hash="local-hash-value",
         dataset_item_id="local-dataset-item-id",
         duration_ms=150,
@@ -406,11 +414,19 @@ def test_get_local_test_result(httpx_mock):
         body={"input": "local test input"},
         output={"result": "local test output"},
         evaluations=[
-            Evaluation(
-                evaluatorId="local-evaluator-1",
+            EvaluationWithEvaluatorId(
+                evaluator_id="local-evaluator-1",
                 score=0.95,
                 passed=True,
                 metadata={"key": "local-value"},
+                assertions=[
+                    EvaluationAssertion(
+                        passed=True,
+                        required=True,
+                        criterion="criterion-1",
+                        metadata=None,
+                    )
+                ],
             )
         ],
     )
@@ -426,12 +442,12 @@ def test_get_ci_test_result(httpx_mock):
                 "id": "ci-result-id",
                 "runId": "ci-run-id",
                 "hash": "ci-hash-value",
-                "dataset_item_id": "ci-dataset-item-id",
-                "duration_ms": 200,
+                "datasetItemId": "ci-dataset-item-id",
+                "durationMs": 200,
                 "events": [
                     {
                         "id": "some_id",
-                        "trace_id": "some_trace_id",
+                        "traceId": "some_trace_id",
                         "message": "ci-event",
                         "timestamp": "some_timestamp",
                         "properties": {},
@@ -445,6 +461,13 @@ def test_get_ci_test_result(httpx_mock):
                         "score": 0.85,
                         "passed": True,
                         "metadata": {"key": "ci-value"},
+                        "assertions": [
+                            {
+                                "passed": True,
+                                "required": True,
+                                "criterion": "criterion-1",
+                            }
+                        ],
                     }
                 ],
             }
@@ -458,7 +481,7 @@ def test_get_ci_test_result(httpx_mock):
     assert isinstance(result, AutoblocksTestCaseResult)
     assert result == AutoblocksTestCaseResult(
         id="ci-result-id",
-        runId="ci-run-id",
+        run_id="ci-run-id",
         hash="ci-hash-value",
         dataset_item_id="ci-dataset-item-id",
         duration_ms=200,
@@ -474,11 +497,20 @@ def test_get_ci_test_result(httpx_mock):
         body={"input": "ci test input"},
         output={"result": "ci test output"},
         evaluations=[
-            Evaluation(
-                evaluatorId="ci-evaluator-1",
+            EvaluationWithEvaluatorId(
+                evaluator_id="ci-evaluator-1",
                 score=0.85,
                 passed=True,
                 metadata={"key": "ci-value"},
+                threshold=None,
+                assertions=[
+                    EvaluationAssertion(
+                        passed=True,
+                        required=True,
+                        criterion="criterion-1",
+                        metadata=None,
+                    )
+                ],
             )
         ],
     )

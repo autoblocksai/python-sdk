@@ -4,7 +4,8 @@ from autoblocks._impl.api.models import AutoblocksTestCaseResultId
 from autoblocks._impl.api.models import AutoblocksTestRun
 from autoblocks._impl.api.models import Dataset
 from autoblocks._impl.api.models import DatasetItem
-from autoblocks._impl.api.models import Evaluation
+from autoblocks._impl.api.models import EvaluationAssertion
+from autoblocks._impl.api.models import EvaluationWithEvaluatorId
 from autoblocks._impl.api.models import Event
 from autoblocks._impl.api.models import EventFilter
 from autoblocks._impl.api.models import EventFilterOperator
@@ -57,5 +58,6 @@ __all__ = [
     "AutoblocksTestRun",
     "AutoblocksTestCaseResultId",
     "AutoblocksTestCaseResult",
-    "Evaluation",
+    "EvaluationWithEvaluatorId",
+    "EvaluationAssertion",
 ]
