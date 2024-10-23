@@ -55,7 +55,7 @@ class BaseRagasFaithfulness(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, Ou
     @abc.abstractmethod
     def retrieved_contexts_mapper(self, test_case: TestCaseType, output: OutputType) -> List[str]:
         """
-        Map your test case and output to the contexts passed to Ragas
+        Map your test case and output to the retrieved contexts passed to Ragas
         """
         pass
 
