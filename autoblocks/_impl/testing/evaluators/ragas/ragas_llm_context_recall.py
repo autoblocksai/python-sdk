@@ -27,7 +27,7 @@ class BaseRagasLLMContextRecall(BaseTestEvaluator, abc.ABC, Generic[TestCaseType
         """
         Custom LLM for the evaluation
 
-        See: https://docs.ragas.io/en/stable/howtos/customizations/customize_models/#customize-models
+        See: https://docs.ragas.io/en/stable/howtos/customizations/customize_models
         """
         pass
 

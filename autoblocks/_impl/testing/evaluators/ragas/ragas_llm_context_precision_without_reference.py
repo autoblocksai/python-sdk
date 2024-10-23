@@ -30,7 +30,7 @@ class BaseRagasLLMContextPrecisionWithoutReference(BaseTestEvaluator, abc.ABC, G
         """
         Custom LLM for the evaluation
 
-        See: https://docs.ragas.io/en/stable/howtos/customizations/customize_models/#customize-models
+        See: https://docs.ragas.io/en/stable/howtos/customizations/customize_models
         """
         pass
 

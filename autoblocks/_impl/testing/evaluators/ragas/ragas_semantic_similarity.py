@@ -30,7 +30,7 @@ class BaseRagasSemanticSimilarity(BaseTestEvaluator, abc.ABC, Generic[TestCaseTy
         """
         Custom LLM for the evaluation
 
-        See: https://docs.ragas.io/en/stable/howtos/customizations/customize_models/#customize-models
+        See: https://docs.ragas.io/en/stable/howtos/customizations/customize_models
         """
         pass
 
@@ -40,7 +40,7 @@ class BaseRagasSemanticSimilarity(BaseTestEvaluator, abc.ABC, Generic[TestCaseTy
         """
         Custom Embeddings for the evaluation
 
-        See: https://docs.ragas.io/en/stable/howtos/customizations/customize_models/#customize-models
+        See: https://docs.ragas.io/en/stable/howtos/customizations/customize_models
         """
         pass
 
