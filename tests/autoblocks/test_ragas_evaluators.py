@@ -14,8 +14,10 @@ from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks.testing.evaluators import BaseRagasContextEntitiesRecall
 from autoblocks.testing.evaluators import BaseRagasFactualCorrectness
 from autoblocks.testing.evaluators import BaseRagasFaithfulness
+from autoblocks.testing.evaluators import BaseRagasLLMContextPrecisionWithReference
 from autoblocks.testing.evaluators import BaseRagasLLMContextRecall
 from autoblocks.testing.evaluators import BaseRagasNoiseSensitivity
+from autoblocks.testing.evaluators import BaseRagasNonLLMContextPrecisionWithReference
 from autoblocks.testing.evaluators import BaseRagasNonLLMContextRecall
 from autoblocks.testing.evaluators import BaseRagasResponseRelevancy
 from autoblocks.testing.evaluators import BaseRagasSemanticSimilarity
@@ -355,6 +357,56 @@ def test_ragas_context_entities_recall_evaluator(httpx_mock):
         test_cases=test_cases,
         evaluators=[
             ContextEntitiesRecall(),
+        ],
+        fn=function_to_test,
+    )
+
+
+def test_ragas_llm_context_precision_with_reference_evaluator(httpx_mock):
+    make_expected_requests("llm-context-precision-with-reference", httpx_mock)
+
+    class LLMContextPrecisionWithReference(BaseRagasLLMContextPrecisionWithReference[RagasTestCase, str]):
+        id = "llm-context-precision-with-reference"
+        threshold = Threshold(gte=1)
+        llm = evaluator_llm
+
+        def user_input_mapper(self, test_case: RagasTestCase, output: str) -> str:
+            return test_case.question
+
+        def reference_mapper(self, test_case: RagasTestCase) -> str:
+            return test_case.expected_answer
+
+        def retrieved_contexts_mapper(self, test_case: RagasTestCase, output: str) -> List[str]:
+            return ["The Eiffel Tower stands 300 meters tall in Paris, France."]
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=test_cases,
+        evaluators=[
+            LLMContextPrecisionWithReference(),
+        ],
+        fn=function_to_test,
+    )
+
+
+def test_ragas_non_llm_context_precision_with_reference_evaluator(httpx_mock):
+    make_expected_requests("non-llm-context-precision-with-reference", httpx_mock)
+
+    class NonLLMContextPrecisionWithReference(BaseRagasNonLLMContextPrecisionWithReference[RagasTestCase, str]):
+        id = "non-llm-context-precision-with-reference"
+        threshold = Threshold(gte=1)
+
+        def reference_contexts_mapper(self, test_case: RagasTestCase) -> List[str]:
+            return ["The Eiffel Tower stands 300 meters tall in Paris, France."]
+
+        def retrieved_contexts_mapper(self, test_case: RagasTestCase, output: str) -> List[str]:
+            return ["The Eiffel Tower stands 300 meters tall in Paris, France."]
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=test_cases,
+        evaluators=[
+            NonLLMContextPrecisionWithReference(),
         ],
         fn=function_to_test,
     )

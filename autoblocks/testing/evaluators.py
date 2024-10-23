@@ -13,8 +13,14 @@ from autoblocks._impl.testing.evaluators.nsfw import BaseNSFW
 from autoblocks._impl.testing.evaluators.ragas.ragas_context_entities_recall import BaseRagasContextEntitiesRecall
 from autoblocks._impl.testing.evaluators.ragas.ragas_factual_correctness import BaseRagasFactualCorrectness
 from autoblocks._impl.testing.evaluators.ragas.ragas_faithfulness import BaseRagasFaithfulness
+from autoblocks._impl.testing.evaluators.ragas.ragas_llm_context_precision_with_reference import (
+    BaseRagasLLMContextPrecisionWithReference,
+)
 from autoblocks._impl.testing.evaluators.ragas.ragas_llm_context_recall import BaseRagasLLMContextRecall
 from autoblocks._impl.testing.evaluators.ragas.ragas_noise_sensitivity import BaseRagasNoiseSensitivity
+from autoblocks._impl.testing.evaluators.ragas.ragas_non_llm_context_precision_with_reference import (
+    BaseRagasNonLLMContextPrecisionWithReference,
+)
 from autoblocks._impl.testing.evaluators.ragas.ragas_non_llm_context_recall import BaseRagasNonLLMContextRecall
 from autoblocks._impl.testing.evaluators.ragas.ragas_response_relevancy import BaseRagasResponseRelevancy
 from autoblocks._impl.testing.evaluators.ragas.ragas_semantic_similarity import BaseRagasSemanticSimilarity
@@ -32,6 +38,8 @@ __all__ = [
     "BaseRagasSemanticSimilarity",
     "BaseRagasContextEntitiesRecall",
     "BaseRagasLLMContextRecall",
+    "BaseRagasLLMContextPrecisionWithReference",
+    "BaseRagasNonLLMContextPrecisionWithReference",
     "BaseRagasFaithfulness",
     "BaseRagasNoiseSensitivity",
     "BaseRagasNonLLMContextRecall",
