@@ -26,16 +26,6 @@ class BaseRagasSemanticSimilarity(BaseTestEvaluator, abc.ABC, Generic[TestCaseTy
 
     @property
     @abc.abstractmethod
-    def llm(self) -> Any:
-        """
-        Custom LLM for the evaluation
-
-        See: https://docs.ragas.io/en/stable/howtos/customizations/customize_models
-        """
-        pass
-
-    @property
-    @abc.abstractmethod
     def embeddings(self) -> Any:
         """
         Custom Embeddings for the evaluation
@@ -66,6 +56,6 @@ class BaseRagasSemanticSimilarity(BaseTestEvaluator, abc.ABC, Generic[TestCaseTy
         )
 
         # Instantiate the metric with appropriate arguments
-        scorer = ragas.metrics.SemanticSimilarity(llm=self.llm, embeddings=self.embeddings)
+        scorer = ragas.metrics.SemanticSimilarity(embeddings=self.embeddings)
         result = await scorer.single_turn_ascore(sample=sample)
         return Evaluation(score=round_and_clamp_score(score=result), threshold=self.threshold)

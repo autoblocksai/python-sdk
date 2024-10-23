@@ -289,7 +289,6 @@ def test_ragas_semantic_similarity_evaluator(httpx_mock):
     class SemanticSimilarity(BaseRagasSemanticSimilarity[RagasTestCase, str]):
         id = "semantic-similarity"
         threshold = Threshold(gte=1)
-        llm = evaluator_llm
         embeddings = evaluator_embeddings
 
         def response_mapper(self, output: str) -> str:
