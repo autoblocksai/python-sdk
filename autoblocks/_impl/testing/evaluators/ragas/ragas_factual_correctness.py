@@ -18,7 +18,7 @@ class BaseRagasFactualCorrectness(BaseTestEvaluator, abc.ABC, Generic[TestCaseTy
     with the reference. This metric is used to determine the extent
     to which the generated response aligns with the reference.
 
-    See more: hhttps://docs.ragas.io/en/stable/concepts/metrics/available_metrics/factual_correctness
+    See more: https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/factual_correctness
     """
 
     @property
