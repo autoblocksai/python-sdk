@@ -11,8 +11,13 @@ from typing import Union
 import httpx
 
 from autoblocks._impl.api.models import AbsoluteTimeFilter
+from autoblocks._impl.api.models import AutoblocksTestCaseResult
+from autoblocks._impl.api.models import AutoblocksTestCaseResultId
+from autoblocks._impl.api.models import AutoblocksTestRun
 from autoblocks._impl.api.models import Dataset
 from autoblocks._impl.api.models import DatasetItem
+from autoblocks._impl.api.models import EvaluationAssertion
+from autoblocks._impl.api.models import EvaluationWithEvaluatorId
 from autoblocks._impl.api.models import Event
 from autoblocks._impl.api.models import HumanReviewAutomatedEvaluation
 from autoblocks._impl.api.models import HumanReviewField
@@ -229,4 +234,130 @@ class AutoblocksAPIClient:
             schema_version=f"{resp['schemaVersion']}",
             revision_id=resp["revisionId"],
             items=[DatasetItem(id=item["id"], splits=item["splits"], data=item["data"]) for item in resp["items"]],
+        )
+
+    def get_local_test_runs(self, test_external_id: str) -> List[AutoblocksTestRun]:
+        req = self._client.get(f"/testing/local/tests/{encode_uri_component(test_external_id)}/runs")
+        req.raise_for_status()
+        resp = req.json()
+        return [AutoblocksTestRun(id=run["id"]) for run in resp["runs"]]
+
+    def get_ci_test_runs(self, test_external_id: str) -> List[AutoblocksTestRun]:
+        req = self._client.get(f"/testing/ci/tests/{encode_uri_component(test_external_id)}/runs")
+        req.raise_for_status()
+        resp = req.json()
+        return [AutoblocksTestRun(id=run["id"]) for run in resp["runs"]]
+
+    def get_local_test_results(self, run_id: str) -> List[AutoblocksTestCaseResultId]:
+        req = self._client.get(f"/testing/local/runs/{encode_uri_component(run_id)}/results")
+        req.raise_for_status()
+        resp = req.json()
+        return [AutoblocksTestCaseResultId(id=result["id"]) for result in resp["results"]]
+
+    def get_ci_test_results(self, run_id: str) -> List[AutoblocksTestCaseResultId]:
+        req = self._client.get(f"/testing/ci/runs/{encode_uri_component(run_id)}/results")
+        req.raise_for_status()
+        resp = req.json()
+        return [AutoblocksTestCaseResultId(id=result["id"]) for result in resp["results"]]
+
+    def get_local_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResult:
+        req = self._client.get(f"/testing/local/results/{encode_uri_component(test_case_result_id)}")
+        req.raise_for_status()
+        resp = req.json()
+        result = resp["testCaseResult"]
+
+        # Convert events to Event objects
+        events = [
+            Event(
+                id=event.get("id"),
+                trace_id=event.get("traceId"),
+                message=event.get("message"),
+                timestamp=event.get("timestamp"),
+                properties=event.get("properties", {}),
+            )
+            for event in result.get("events", [])
+        ]
+
+        # Convert evaluations to Evaluation objects
+        evaluations = [
+            EvaluationWithEvaluatorId(
+                evaluator_id=eval.get("evaluatorId"),
+                score=eval.get("score"),
+                passed=eval.get("passed"),
+                metadata=eval.get("metadata", {}),
+                threshold=eval.get("threshold"),
+                assertions=[
+                    EvaluationAssertion(
+                        passed=assertion["passed"],
+                        required=assertion["required"],
+                        criterion=assertion["criterion"],
+                        metadata=assertion.get("metadata"),
+                    )
+                    for assertion in eval.get("assertions", [])
+                ],
+            )
+            for eval in result.get("evaluations", [])
+        ]
+
+        return AutoblocksTestCaseResult(
+            id=result.get("id"),
+            run_id=result.get("runId"),
+            hash=result.get("hash"),
+            dataset_item_id=result.get("datasetItemId"),
+            duration_ms=result.get("durationMs"),
+            events=events,
+            body=result.get("body"),
+            output=result.get("output"),
+            evaluations=evaluations,
+        )
+
+    def get_ci_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResult:
+        req = self._client.get(f"/testing/ci/results/{encode_uri_component(test_case_result_id)}")
+        req.raise_for_status()
+        resp = req.json()
+        result = resp["testCaseResult"]
+
+        # Convert events to Event objects
+        events = [
+            Event(
+                id=event.get("id"),
+                trace_id=event.get("traceId"),
+                message=event.get("message"),
+                timestamp=event.get("timestamp"),
+                properties=event.get("properties", {}),
+            )
+            for event in result.get("events", [])
+        ]
+
+        # Convert evaluations to Evaluation objects
+        evaluations = [
+            EvaluationWithEvaluatorId(
+                evaluator_id=eval.get("evaluatorId"),
+                score=eval.get("score"),
+                passed=eval.get("passed"),
+                metadata=eval.get("metadata", {}),
+                threshold=eval.get("threshold"),
+                assertions=[
+                    EvaluationAssertion(
+                        passed=assertion["passed"],
+                        required=assertion["required"],
+                        criterion=assertion["criterion"],
+                        metadata=assertion.get("metadata"),
+                    )
+                    for assertion in eval.get("assertions", [])
+                ],
+            )
+            for eval in result.get("evaluations", [])
+        ]
+
+        return AutoblocksTestCaseResult(
+            id=result.get("id"),
+            run_id=result.get("runId"),
+            hash=result.get("hash"),
+            dataset_item_id=result.get("datasetItemId"),
+            duration_ms=result.get("durationMs"),
+            events=events,
+            body=result.get("body"),
+            output=result.get("output"),
+            evaluations=evaluations,
         )
