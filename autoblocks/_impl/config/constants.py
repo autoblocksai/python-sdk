@@ -1,4 +1,4 @@
-API_ENDPOINT = "https://api.autoblocks.ai"
+API_ENDPOINT = "https://adamnolte-public-api.autoblocksinternal.com"
 INGESTION_ENDPOINT = "https://ingest-event.autoblocks.ai"
 REVISION_LATEST = "latest"
 REVISION_UNDEPLOYED = "undeployed"
