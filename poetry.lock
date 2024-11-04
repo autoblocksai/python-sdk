@@ -2270,13 +2270,13 @@ files = [
 
 [[package]]
 name = "ragas"
-version = "0.2.2"
+version = "0.2.3"
 description = ""
 optional = false
 python-versions = "*"
 files = [
-    {file = "ragas-0.2.2-py3-none-any.whl", hash = "sha256:32e22d355db20be2e9a4d78df6b094e6b8f0c967c3f7f489aeaa9e005545601b"},
-    {file = "ragas-0.2.2.tar.gz", hash = "sha256:ccec576d635592898eed241af0ce1b7a31c2260665c5fbb1fbb6b787d51dab05"},
+    {file = "ragas-0.2.3-py3-none-any.whl", hash = "sha256:0cafbb7f4382ac56a27b4eed960619f5692799d098de2ffe982955a77bec6919"},
+    {file = "ragas-0.2.3.tar.gz", hash = "sha256:d6c2a26e2832c01dc128e8906b76c2c1956ddc5949bfaf89de5d1ed99c92964f"},
 ]
 
 [package.dependencies]
@@ -3133,4 +3133,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9.0"
-content-hash = "f80030320944972a89dba8c532dcfcbc7a2f2c691e5efb3f8eff038a2fabbb44"
+content-hash = "67d404bb58e410b5d0719c363e7e0dff9391221a51ec8eae23dd63ab367ff3be"
