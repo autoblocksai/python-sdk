@@ -28,7 +28,7 @@ from tests.util import ANY_NUMBER
 from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import expect_cli_post_request
 
-evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o"))
+evaluator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini"))
 evaluator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
 
 
