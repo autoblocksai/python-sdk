@@ -10,7 +10,7 @@
       "groupSlug": "all-minor-patch-dev",
       "matchDepTypes": ["dev"],
       "matchUpdateTypes": ["minor", "patch"],
-      "matchPackageNames": ["*", "!ragas"]
+      "matchPackageNames": ["*", "!pytest-httpx"]
     }
   ]
 }
