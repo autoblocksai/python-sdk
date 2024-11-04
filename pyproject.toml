@@ -23,7 +23,7 @@ orjson = ">=3.0.0"
 tenacity = ">=8.0.0"
 
 [tool.poetry.group.dev.dependencies]
-pre-commit = "^3.3.3"
+pre-commit = "^4.0.0"
 pytest = "8.3.3"
 pytest-httpx = "0.31.2"
 freezegun = "^1.2.2"
