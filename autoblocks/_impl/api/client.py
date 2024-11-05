@@ -269,10 +269,10 @@ class AutoblocksAPIClient:
         # Convert events to Event objects
         events = [
             Event(
-                id=event.get("id"),
-                trace_id=event.get("traceId"),
-                message=event.get("message"),
-                timestamp=event.get("timestamp"),
+                id=event["id"],
+                trace_id=event["traceId"],
+                message=event["message"],
+                timestamp=event["timestamp"],
                 properties=event.get("properties", {}),
             )
             for event in result.get("events", [])
@@ -281,17 +281,17 @@ class AutoblocksAPIClient:
         # Convert evaluations to Evaluation objects
         evaluations = [
             EvaluationWithEvaluatorId(
-                evaluator_id=eval.get("evaluatorId"),
-                score=eval.get("score"),
-                passed=eval.get("passed"),
-                metadata=eval.get("metadata", {}),
-                threshold=eval.get("threshold"),
+                evaluator_id=eval["evaluatorId"],
+                score=eval["score"],
+                passed=eval["passed"],
+                metadata=eval.get("metadata", None),
+                threshold=eval.get("threshold", None),
                 assertions=[
                     EvaluationAssertion(
                         passed=assertion["passed"],
                         required=assertion["required"],
                         criterion=assertion["criterion"],
-                        metadata=assertion.get("metadata"),
+                        metadata=assertion.get("metadata", None),
                     )
                     for assertion in eval.get("assertions", [])
                 ],
@@ -300,14 +300,14 @@ class AutoblocksAPIClient:
         ]
 
         return AutoblocksTestCaseResult(
-            id=result.get("id"),
-            run_id=result.get("runId"),
-            hash=result.get("hash"),
-            dataset_item_id=result.get("datasetItemId"),
-            duration_ms=result.get("durationMs"),
+            id=result["id"],
+            run_id=result["runId"],
+            hash=result["hash"],
+            dataset_item_id=result.get("datasetItemId", None),
+            duration_ms=result.get("durationMs", None),
             events=events,
-            body=result.get("body"),
-            output=result.get("output"),
+            body=result["body"],
+            output=result["output"],
             evaluations=evaluations,
         )
 
@@ -320,11 +320,11 @@ class AutoblocksAPIClient:
         # Convert events to Event objects
         events = [
             Event(
-                id=event.get("id"),
-                trace_id=event.get("traceId"),
-                message=event.get("message"),
-                timestamp=event.get("timestamp"),
-                properties=event.get("properties", {}),
+                id=event["id"],
+                trace_id=event["traceId"],
+                message=event["message"],
+                timestamp=event["timestamp"],
+                properties=event.get("properties", None),
             )
             for event in result.get("events", [])
         ]
@@ -332,17 +332,17 @@ class AutoblocksAPIClient:
         # Convert evaluations to Evaluation objects
         evaluations = [
             EvaluationWithEvaluatorId(
-                evaluator_id=eval.get("evaluatorId"),
-                score=eval.get("score"),
-                passed=eval.get("passed"),
-                metadata=eval.get("metadata", {}),
-                threshold=eval.get("threshold"),
+                evaluator_id=eval["evaluatorId"],
+                score=eval["score"],
+                passed=eval["passed"],
+                metadata=eval.get("metadata", None),
+                threshold=eval.get("threshold", None),
                 assertions=[
                     EvaluationAssertion(
                         passed=assertion["passed"],
                         required=assertion["required"],
                         criterion=assertion["criterion"],
-                        metadata=assertion.get("metadata"),
+                        metadata=assertion.get("metadata", None),
                     )
                     for assertion in eval.get("assertions", [])
                 ],
@@ -351,13 +351,13 @@ class AutoblocksAPIClient:
         ]
 
         return AutoblocksTestCaseResult(
-            id=result.get("id"),
-            run_id=result.get("runId"),
-            hash=result.get("hash"),
-            dataset_item_id=result.get("datasetItemId"),
-            duration_ms=result.get("durationMs"),
+            id=result["id"],
+            run_id=result["runId"],
+            hash=result["hash"],
+            dataset_item_id=result.get("datasetItemId", None),
+            duration_ms=result.get("durationMs", None),
             events=events,
-            body=result.get("body"),
-            output=result.get("output"),
+            body=result["body"],
+            output=result["output"],
             evaluations=evaluations,
         )
