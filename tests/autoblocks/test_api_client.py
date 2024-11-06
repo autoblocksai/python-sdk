@@ -5,6 +5,11 @@ from httpx import Timeout
 
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks.api.client import AutoblocksAPIClient
+from autoblocks.api.models import AutoblocksTestCaseResult
+from autoblocks.api.models import AutoblocksTestCaseResultId
+from autoblocks.api.models import AutoblocksTestRun
+from autoblocks.api.models import EvaluationAssertion
+from autoblocks.api.models import EvaluationWithEvaluatorId
 from autoblocks.api.models import Event
 from autoblocks.api.models import EventFilter
 from autoblocks.api.models import EventFilterOperator
@@ -252,5 +257,260 @@ def test_search_traces(httpx_mock):
                     ),
                 ],
             ),
+        ],
+    )
+
+
+def test_get_local_test_runs(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/testing/local/tests/test-external-id/runs",
+        method="GET",
+        status_code=200,
+        json={
+            "runs": [
+                {"id": "run-1"},
+                {"id": "run-2"},
+            ],
+        },
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    runs = client.get_local_test_runs("test-external-id")
+
+    assert len(runs) == 2
+    assert all(isinstance(run, AutoblocksTestRun) for run in runs)
+    assert [run.id for run in runs] == ["run-1", "run-2"]
+
+
+def test_get_ci_test_runs(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/testing/ci/tests/test-external-id/runs",
+        method="GET",
+        status_code=200,
+        json={
+            "runs": [
+                {"id": "ci-run-1"},
+                {"id": "ci-run-2"},
+            ],
+        },
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    runs = client.get_ci_test_runs("test-external-id")
+
+    assert len(runs) == 2
+    assert all(isinstance(run, AutoblocksTestRun) for run in runs)
+    assert [run.id for run in runs] == ["ci-run-1", "ci-run-2"]
+
+
+def test_get_local_test_results(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/testing/local/runs/run-id/results",
+        method="GET",
+        status_code=200,
+        json={
+            "results": [
+                {"id": "result-1"},
+                {"id": "result-2"},
+            ],
+        },
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    results = client.get_local_test_results("run-id")
+
+    assert len(results) == 2
+    assert all(isinstance(result, AutoblocksTestCaseResultId) for result in results)
+    assert [result.id for result in results] == ["result-1", "result-2"]
+
+
+def test_get_ci_test_results(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/testing/ci/runs/run-id/results",
+        method="GET",
+        status_code=200,
+        json={
+            "results": [
+                {"id": "ci-result-1"},
+                {"id": "ci-result-2"},
+            ],
+        },
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    results = client.get_ci_test_results("run-id")
+
+    assert len(results) == 2
+    assert all(isinstance(result, AutoblocksTestCaseResultId) for result in results)
+    assert [result.id for result in results] == ["ci-result-1", "ci-result-2"]
+
+
+def test_get_local_test_result(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/testing/local/results/local-result-id",
+        method="GET",
+        status_code=200,
+        json={
+            "testCaseResult": {
+                "id": "local-result-id",
+                "runId": "local-run-id",
+                "hash": "local-hash-value",
+                "datasetItemId": "local-dataset-item-id",
+                "durationMs": 150,
+                "events": [
+                    {
+                        "id": "some_id",
+                        "traceId": "some_trace_id",
+                        "message": "local-event",
+                        "timestamp": "some_timestamp",
+                        "properties": {},
+                    }
+                ],
+                "body": {"input": "local test input"},
+                "output": {"result": "local test output"},
+                "evaluations": [
+                    {
+                        "evaluatorId": "local-evaluator-1",
+                        "score": 0.95,
+                        "passed": True,
+                        "metadata": {"key": "local-value"},
+                        "assertions": [
+                            {
+                                "passed": True,
+                                "required": True,
+                                "criterion": "criterion-1",
+                            }
+                        ],
+                    }
+                ],
+            }
+        },
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    result = client.get_local_test_result("local-result-id")
+
+    assert isinstance(result, AutoblocksTestCaseResult)
+    assert result == AutoblocksTestCaseResult(
+        id="local-result-id",
+        run_id="local-run-id",
+        hash="local-hash-value",
+        dataset_item_id="local-dataset-item-id",
+        duration_ms=150,
+        events=[
+            Event(
+                id="some_id",
+                trace_id="some_trace_id",
+                message="local-event",
+                timestamp="some_timestamp",
+                properties={},
+            ),
+        ],
+        body={"input": "local test input"},
+        output={"result": "local test output"},
+        evaluations=[
+            EvaluationWithEvaluatorId(
+                evaluator_id="local-evaluator-1",
+                score=0.95,
+                passed=True,
+                metadata={"key": "local-value"},
+                assertions=[
+                    EvaluationAssertion(
+                        passed=True,
+                        required=True,
+                        criterion="criterion-1",
+                        metadata=None,
+                    )
+                ],
+            )
+        ],
+    )
+
+
+def test_get_ci_test_result(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/testing/ci/results/ci-result-id",
+        method="GET",
+        status_code=200,
+        json={
+            "testCaseResult": {
+                "id": "ci-result-id",
+                "runId": "ci-run-id",
+                "hash": "ci-hash-value",
+                "datasetItemId": "ci-dataset-item-id",
+                "durationMs": 200,
+                "events": [
+                    {
+                        "id": "some_id",
+                        "traceId": "some_trace_id",
+                        "message": "ci-event",
+                        "timestamp": "some_timestamp",
+                        "properties": {},
+                    }
+                ],
+                "body": {"input": "ci test input"},
+                "output": {"result": "ci test output"},
+                "evaluations": [
+                    {
+                        "evaluatorId": "ci-evaluator-1",
+                        "score": 0.85,
+                        "passed": True,
+                        "metadata": {"key": "ci-value"},
+                        "assertions": [
+                            {
+                                "passed": True,
+                                "required": True,
+                                "criterion": "criterion-1",
+                            }
+                        ],
+                    }
+                ],
+            }
+        },
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    result = client.get_ci_test_result("ci-result-id")
+
+    assert isinstance(result, AutoblocksTestCaseResult)
+    assert result == AutoblocksTestCaseResult(
+        id="ci-result-id",
+        run_id="ci-run-id",
+        hash="ci-hash-value",
+        dataset_item_id="ci-dataset-item-id",
+        duration_ms=200,
+        events=[
+            Event(
+                id="some_id",
+                trace_id="some_trace_id",
+                message="ci-event",
+                timestamp="some_timestamp",
+                properties={},
+            ),
+        ],
+        body={"input": "ci test input"},
+        output={"result": "ci test output"},
+        evaluations=[
+            EvaluationWithEvaluatorId(
+                evaluator_id="ci-evaluator-1",
+                score=0.85,
+                passed=True,
+                metadata={"key": "ci-value"},
+                threshold=None,
+                assertions=[
+                    EvaluationAssertion(
+                        passed=True,
+                        required=True,
+                        criterion="criterion-1",
+                        metadata=None,
+                    )
+                ],
+            )
         ],
     )

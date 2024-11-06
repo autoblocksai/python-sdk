@@ -201,3 +201,44 @@ class Dataset:
     schema_version: str
     revision_id: str
     items: List[DatasetItem]
+
+
+@dataclass
+class AutoblocksTestRun:
+    id: str
+
+
+@dataclass
+class AutoblocksTestCaseResultId:
+    id: str
+
+
+@dataclass
+class EvaluationAssertion:
+    passed: bool
+    required: bool
+    criterion: str
+    metadata: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class EvaluationWithEvaluatorId:
+    evaluator_id: str
+    score: float
+    passed: Optional[bool]
+    metadata: Optional[Dict[str, Any]]
+    assertions: List[EvaluationAssertion]
+    threshold: Optional[Dict[str, Optional[float]]] = None
+
+
+@dataclass
+class AutoblocksTestCaseResult:
+    id: str
+    run_id: str
+    hash: str
+    dataset_item_id: Optional[str]
+    duration_ms: Optional[int]
+    events: List[Event]
+    body: Any
+    output: Any
+    evaluations: List[EvaluationWithEvaluatorId]
