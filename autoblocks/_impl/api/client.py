@@ -283,7 +283,7 @@ class AutoblocksAPIClient:
             EvaluationWithEvaluatorId(
                 evaluator_id=eval["evaluatorId"],
                 score=eval["score"],
-                passed=eval["passed"],
+                passed=eval.get("passed", None),
                 metadata=eval.get("metadata", None),
                 threshold=eval.get("threshold", None),
                 assertions=[
@@ -334,7 +334,7 @@ class AutoblocksAPIClient:
             EvaluationWithEvaluatorId(
                 evaluator_id=eval["evaluatorId"],
                 score=eval["score"],
-                passed=eval["passed"],
+                passed=eval.get("passed", None),
                 metadata=eval.get("metadata", None),
                 threshold=eval.get("threshold", None),
                 assertions=[

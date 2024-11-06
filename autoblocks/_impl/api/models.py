@@ -225,8 +225,8 @@ class EvaluationAssertion:
 class EvaluationWithEvaluatorId:
     evaluator_id: str
     score: float
-    passed: bool
-    metadata: Dict[str, Any]
+    passed: Optional[bool]
+    metadata: Optional[Dict[str, Any]]
     assertions: List[EvaluationAssertion]
     threshold: Optional[Dict[str, Optional[float]]] = None
 
