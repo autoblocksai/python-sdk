@@ -42,9 +42,9 @@ class BaseLLMJudge(BaseTestEvaluator, abc.ABC, Generic[TestCaseType, OutputType]
         """
         The model to use for the evaluator.
         It must be an OpenAI model that supports tools.
-        Defaults to "gpt-4-turbo".
+        Defaults to "gpt-4o".
         """
-        return "gpt-4-turbo"
+        return "gpt-4o"
 
     @property
     def num_overrides(self) -> int:

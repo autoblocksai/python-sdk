@@ -46,3 +46,28 @@ def get_test_id(evaluator_id: str) -> str:
         # Evaluators should always be run inside the context of a test case
         raise ValueError(f"No test case context found in the {evaluator_id} evaluator.")
     return test_run_ctx.test_id
+
+
+# Wrapped in a function so that the error is only thrown when relevant evaluators are used
+def get_ragas(evaluator_id: str):  # type: ignore[no-untyped-def]
+    try:
+        import ragas  # type: ignore[import-untyped]
+
+        assert ragas.__version__.startswith("0.2.")
+    except (ImportError, AssertionError):
+        raise ImportError(
+            f"The {evaluator_id} evaluator requires ragas version 0.2.x. "
+            "You can install it with `pip install ragas==0.2.*`"
+        )
+
+    return ragas
+
+
+def round_and_clamp_score(score: float) -> float:
+    """
+    Ragas returns scores between 0 and 1
+    But sometimes returns score like 1.000004 or 0.154313
+    We want to round to 2 decimal places for readability.
+    and ensure that the score is a max of 1
+    """
+    return min(round(score, 2), 1)
