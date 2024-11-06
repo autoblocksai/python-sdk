@@ -15,7 +15,7 @@ from autoblocks._impl.api.models import AutoblocksTestCaseResult
 from autoblocks._impl.api.models import AutoblocksTestCaseResultId
 from autoblocks._impl.api.models import AutoblocksTestCaseResultPair
 from autoblocks._impl.api.models import AutoblocksTestCaseResultPairId
-from autoblocks._impl.api.models import AutoblocksTestCaseResultWithoutEvaluations
+from autoblocks._impl.api.models import AutoblocksTestCaseResultWithEvaluations
 from autoblocks._impl.api.models import AutoblocksTestRun
 from autoblocks._impl.api.models import Dataset
 from autoblocks._impl.api.models import DatasetItem
@@ -263,7 +263,7 @@ class AutoblocksAPIClient:
         resp = req.json()
         return [AutoblocksTestCaseResultId(id=result["id"]) for result in resp["results"]]
 
-    def get_local_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResult:
+    def get_local_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResultWithEvaluations:
         req = self._client.get(f"/testing/local/results/{encode_uri_component(test_case_result_id)}")
         req.raise_for_status()
         resp = req.json()
@@ -302,7 +302,7 @@ class AutoblocksAPIClient:
             for eval in result.get("evaluations", [])
         ]
 
-        return AutoblocksTestCaseResult(
+        return AutoblocksTestCaseResultWithEvaluations(
             id=result["id"],
             run_id=result["runId"],
             hash=result["hash"],
@@ -314,7 +314,7 @@ class AutoblocksAPIClient:
             evaluations=evaluations,
         )
 
-    def get_ci_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResult:
+    def get_ci_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResultWithEvaluations:
         req = self._client.get(f"/testing/ci/results/{encode_uri_component(test_case_result_id)}")
         req.raise_for_status()
         resp = req.json()
@@ -353,7 +353,7 @@ class AutoblocksAPIClient:
             for eval in result.get("evaluations", [])
         ]
 
-        return AutoblocksTestCaseResult(
+        return AutoblocksTestCaseResultWithEvaluations(
             id=result["id"],
             run_id=result["runId"],
             hash=result["hash"],
@@ -380,7 +380,7 @@ class AutoblocksAPIClient:
         pair = resp["pair"]
 
         test_case_results = [
-            AutoblocksTestCaseResultWithoutEvaluations(
+            AutoblocksTestCaseResult(
                 id=result["id"],
                 run_id=result["runId"],
                 hash=result["hash"],

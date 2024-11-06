@@ -241,19 +241,11 @@ class AutoblocksTestCaseResult:
     events: List[Event]
     body: Any
     output: Any
-    evaluations: List[EvaluationWithEvaluatorId]
 
 
 @dataclass
-class AutoblocksTestCaseResultWithoutEvaluations:
-    id: str
-    run_id: str
-    hash: str
-    dataset_item_id: Optional[str]
-    duration_ms: Optional[int]
-    events: List[Event]
-    body: Any
-    output: Any
+class AutoblocksTestCaseResultWithEvaluations(AutoblocksTestCaseResult):
+    evaluations: List[EvaluationWithEvaluatorId]
 
 
 @dataclass
@@ -266,4 +258,4 @@ class AutoblocksTestCaseResultPair:
     id: str
     hash: str
     chosen_output_id: Optional[str]
-    test_case_results: List[AutoblocksTestCaseResultWithoutEvaluations]
+    test_case_results: List[AutoblocksTestCaseResult]

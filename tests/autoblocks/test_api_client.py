@@ -9,7 +9,7 @@ from autoblocks.api.models import AutoblocksTestCaseResult
 from autoblocks.api.models import AutoblocksTestCaseResultId
 from autoblocks.api.models import AutoblocksTestCaseResultPair
 from autoblocks.api.models import AutoblocksTestCaseResultPairId
-from autoblocks.api.models import AutoblocksTestCaseResultWithoutEvaluations
+from autoblocks.api.models import AutoblocksTestCaseResultWithEvaluations
 from autoblocks.api.models import AutoblocksTestRun
 from autoblocks.api.models import EvaluationAssertion
 from autoblocks.api.models import EvaluationWithEvaluatorId
@@ -398,8 +398,8 @@ def test_get_local_test_result(httpx_mock):
     client = AutoblocksAPIClient("mock-api-key")
     result = client.get_local_test_result("local-result-id")
 
-    assert isinstance(result, AutoblocksTestCaseResult)
-    assert result == AutoblocksTestCaseResult(
+    assert isinstance(result, AutoblocksTestCaseResultWithEvaluations)
+    assert result == AutoblocksTestCaseResultWithEvaluations(
         id="local-result-id",
         run_id="local-run-id",
         hash="local-hash-value",
@@ -481,8 +481,8 @@ def test_get_ci_test_result(httpx_mock):
     client = AutoblocksAPIClient("mock-api-key")
     result = client.get_ci_test_result("ci-result-id")
 
-    assert isinstance(result, AutoblocksTestCaseResult)
-    assert result == AutoblocksTestCaseResult(
+    assert isinstance(result, AutoblocksTestCaseResultWithEvaluations)
+    assert result == AutoblocksTestCaseResultWithEvaluations(
         id="ci-result-id",
         run_id="ci-run-id",
         hash="ci-hash-value",
@@ -603,7 +603,7 @@ def test_get_human_review_job_pair(httpx_mock):
         hash="hash-value",
         chosen_output_id="result-1",
         test_case_results=[
-            AutoblocksTestCaseResultWithoutEvaluations(
+            AutoblocksTestCaseResult(
                 id="result-1",
                 run_id="run-1",
                 hash="hash-1",
@@ -621,7 +621,7 @@ def test_get_human_review_job_pair(httpx_mock):
                 body={"input": "test input 1"},
                 output={"result": "test output 1"},
             ),
-            AutoblocksTestCaseResultWithoutEvaluations(
+            AutoblocksTestCaseResult(
                 id="result-2",
                 run_id="run-2",
                 hash="hash-2",

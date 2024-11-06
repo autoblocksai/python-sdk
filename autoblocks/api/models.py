@@ -3,7 +3,7 @@ from autoblocks._impl.api.models import AutoblocksTestCaseResult
 from autoblocks._impl.api.models import AutoblocksTestCaseResultId
 from autoblocks._impl.api.models import AutoblocksTestCaseResultPair
 from autoblocks._impl.api.models import AutoblocksTestCaseResultPairId
-from autoblocks._impl.api.models import AutoblocksTestCaseResultWithoutEvaluations
+from autoblocks._impl.api.models import AutoblocksTestCaseResultWithEvaluations
 from autoblocks._impl.api.models import AutoblocksTestRun
 from autoblocks._impl.api.models import Dataset
 from autoblocks._impl.api.models import DatasetItem
@@ -65,5 +65,5 @@ __all__ = [
     "EvaluationAssertion",
     "AutoblocksTestCaseResultPairId",
     "AutoblocksTestCaseResultPair",
-    "AutoblocksTestCaseResultWithoutEvaluations",
+    "AutoblocksTestCaseResultWithEvaluations",
 ]
