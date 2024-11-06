@@ -10,5 +10,3 @@ __pycache__/
 dist/
 
 .vscode
-
-python-sdk
