@@ -242,3 +242,28 @@ class AutoblocksTestCaseResult:
     body: Any
     output: Any
     evaluations: List[EvaluationWithEvaluatorId]
+
+
+@dataclass
+class AutoblocksTestCaseResultWithoutEvaluations:
+    id: str
+    run_id: str
+    hash: str
+    dataset_item_id: Optional[str]
+    duration_ms: Optional[int]
+    events: List[Event]
+    body: Any
+    output: Any
+
+
+@dataclass
+class AutoblocksTestCaseResultPairId:
+    id: str
+
+
+@dataclass
+class AutoblocksTestCaseResultPair:
+    id: str
+    hash: str
+    chosen_output_id: Optional[str]
+    test_case_results: List[AutoblocksTestCaseResultWithoutEvaluations]
