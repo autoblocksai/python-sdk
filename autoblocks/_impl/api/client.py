@@ -13,6 +13,9 @@ import httpx
 from autoblocks._impl.api.models import AbsoluteTimeFilter
 from autoblocks._impl.api.models import AutoblocksTestCaseResult
 from autoblocks._impl.api.models import AutoblocksTestCaseResultId
+from autoblocks._impl.api.models import AutoblocksTestCaseResultPair
+from autoblocks._impl.api.models import AutoblocksTestCaseResultPairId
+from autoblocks._impl.api.models import AutoblocksTestCaseResultWithEvaluations
 from autoblocks._impl.api.models import AutoblocksTestRun
 from autoblocks._impl.api.models import Dataset
 from autoblocks._impl.api.models import DatasetItem
@@ -260,7 +263,7 @@ class AutoblocksAPIClient:
         resp = req.json()
         return [AutoblocksTestCaseResultId(id=result["id"]) for result in resp["results"]]
 
-    def get_local_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResult:
+    def get_local_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResultWithEvaluations:
         req = self._client.get(f"/testing/local/results/{encode_uri_component(test_case_result_id)}")
         req.raise_for_status()
         resp = req.json()
@@ -299,7 +302,7 @@ class AutoblocksAPIClient:
             for eval in result.get("evaluations", [])
         ]
 
-        return AutoblocksTestCaseResult(
+        return AutoblocksTestCaseResultWithEvaluations(
             id=result["id"],
             run_id=result["runId"],
             hash=result["hash"],
@@ -311,7 +314,7 @@ class AutoblocksAPIClient:
             evaluations=evaluations,
         )
 
-    def get_ci_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResult:
+    def get_ci_test_result(self, test_case_result_id: str) -> AutoblocksTestCaseResultWithEvaluations:
         req = self._client.get(f"/testing/ci/results/{encode_uri_component(test_case_result_id)}")
         req.raise_for_status()
         resp = req.json()
@@ -350,7 +353,7 @@ class AutoblocksAPIClient:
             for eval in result.get("evaluations", [])
         ]
 
-        return AutoblocksTestCaseResult(
+        return AutoblocksTestCaseResultWithEvaluations(
             id=result["id"],
             run_id=result["runId"],
             hash=result["hash"],
@@ -360,4 +363,48 @@ class AutoblocksAPIClient:
             body=result["body"],
             output=result["output"],
             evaluations=evaluations,
+        )
+
+    def get_human_review_job_pairs(self, job_id: str) -> List[AutoblocksTestCaseResultPairId]:
+        req = self._client.get(f"/human-review/jobs/{encode_uri_component(job_id)}/pairs")
+        req.raise_for_status()
+        resp = req.json()
+        return [AutoblocksTestCaseResultPairId(id=pair["id"]) for pair in resp["pairs"]]
+
+    def get_human_review_job_pair(self, job_id: str, pair_id: str) -> AutoblocksTestCaseResultPair:
+        req = self._client.get(
+            f"/human-review/jobs/{encode_uri_component(job_id)}/pairs/{encode_uri_component(pair_id)}"
+        )
+        req.raise_for_status()
+        resp = req.json()
+        pair = resp["pair"]
+
+        test_case_results = [
+            AutoblocksTestCaseResult(
+                id=result["id"],
+                run_id=result["runId"],
+                hash=result["hash"],
+                dataset_item_id=result.get("datasetItemId", None),
+                duration_ms=result.get("durationMs", None),
+                events=[
+                    Event(
+                        id=event["id"],
+                        trace_id=event["traceId"],
+                        message=event["message"],
+                        timestamp=event["timestamp"],
+                        properties=event.get("properties", None),
+                    )
+                    for event in result.get("events", [])
+                ],
+                body=result["body"],
+                output=result["output"],
+            )
+            for result in pair["testCaseResults"]
+        ]
+
+        return AutoblocksTestCaseResultPair(
+            id=pair["id"],
+            hash=pair["hash"],
+            chosen_output_id=pair.get("chosenOutputId", None),
+            test_case_results=test_case_results,
         )

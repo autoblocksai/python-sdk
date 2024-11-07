@@ -7,6 +7,9 @@ from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks.api.client import AutoblocksAPIClient
 from autoblocks.api.models import AutoblocksTestCaseResult
 from autoblocks.api.models import AutoblocksTestCaseResultId
+from autoblocks.api.models import AutoblocksTestCaseResultPair
+from autoblocks.api.models import AutoblocksTestCaseResultPairId
+from autoblocks.api.models import AutoblocksTestCaseResultWithEvaluations
 from autoblocks.api.models import AutoblocksTestRun
 from autoblocks.api.models import EvaluationAssertion
 from autoblocks.api.models import EvaluationWithEvaluatorId
@@ -395,8 +398,8 @@ def test_get_local_test_result(httpx_mock):
     client = AutoblocksAPIClient("mock-api-key")
     result = client.get_local_test_result("local-result-id")
 
-    assert isinstance(result, AutoblocksTestCaseResult)
-    assert result == AutoblocksTestCaseResult(
+    assert isinstance(result, AutoblocksTestCaseResultWithEvaluations)
+    assert result == AutoblocksTestCaseResultWithEvaluations(
         id="local-result-id",
         run_id="local-run-id",
         hash="local-hash-value",
@@ -478,8 +481,8 @@ def test_get_ci_test_result(httpx_mock):
     client = AutoblocksAPIClient("mock-api-key")
     result = client.get_ci_test_result("ci-result-id")
 
-    assert isinstance(result, AutoblocksTestCaseResult)
-    assert result == AutoblocksTestCaseResult(
+    assert isinstance(result, AutoblocksTestCaseResultWithEvaluations)
+    assert result == AutoblocksTestCaseResultWithEvaluations(
         id="ci-result-id",
         run_id="ci-run-id",
         hash="ci-hash-value",
@@ -512,5 +515,129 @@ def test_get_ci_test_result(httpx_mock):
                     )
                 ],
             )
+        ],
+    )
+
+
+def test_get_human_review_job_pairs(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/human-review/jobs/job-123/pairs",
+        method="GET",
+        status_code=200,
+        json={
+            "pairs": [
+                {"id": "pair-1"},
+                {"id": "pair-2"},
+            ],
+        },
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    pairs = client.get_human_review_job_pairs("job-123")
+
+    assert len(pairs) == 2
+    assert all(isinstance(pair, AutoblocksTestCaseResultPairId) for pair in pairs)
+    assert [pair.id for pair in pairs] == ["pair-1", "pair-2"]
+
+
+def test_get_human_review_job_pair(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/human-review/jobs/job-123/pairs/pair-456",
+        method="GET",
+        status_code=200,
+        json={
+            "pair": {
+                "id": "pair-456",
+                "hash": "hash-value",
+                "chosenOutputId": "result-1",
+                "testCaseResults": [
+                    {
+                        "id": "result-1",
+                        "runId": "run-1",
+                        "hash": "hash-1",
+                        "datasetItemId": "dataset-1",
+                        "durationMs": 100,
+                        "events": [
+                            {
+                                "id": "event-1",
+                                "traceId": "trace-1",
+                                "message": "test event 1",
+                                "timestamp": "2024-03-20T10:00:00Z",
+                                "properties": {"key": "value"},
+                            }
+                        ],
+                        "body": {"input": "test input 1"},
+                        "output": {"result": "test output 1"},
+                    },
+                    {
+                        "id": "result-2",
+                        "runId": "run-2",
+                        "hash": "hash-2",
+                        "datasetItemId": "dataset-2",
+                        "durationMs": 150,
+                        "events": [
+                            {
+                                "id": "event-2",
+                                "traceId": "trace-2",
+                                "message": "test event 2",
+                                "timestamp": "2024-03-20T10:01:00Z",
+                                "properties": {"key": "value"},
+                            }
+                        ],
+                        "body": {"input": "test input 2"},
+                        "output": {"result": "test output 2"},
+                    },
+                ],
+            }
+        },
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    pair = client.get_human_review_job_pair("job-123", "pair-456")
+
+    assert isinstance(pair, AutoblocksTestCaseResultPair)
+    assert pair == AutoblocksTestCaseResultPair(
+        id="pair-456",
+        hash="hash-value",
+        chosen_output_id="result-1",
+        test_case_results=[
+            AutoblocksTestCaseResult(
+                id="result-1",
+                run_id="run-1",
+                hash="hash-1",
+                dataset_item_id="dataset-1",
+                duration_ms=100,
+                events=[
+                    Event(
+                        id="event-1",
+                        trace_id="trace-1",
+                        message="test event 1",
+                        timestamp="2024-03-20T10:00:00Z",
+                        properties={"key": "value"},
+                    )
+                ],
+                body={"input": "test input 1"},
+                output={"result": "test output 1"},
+            ),
+            AutoblocksTestCaseResult(
+                id="result-2",
+                run_id="run-2",
+                hash="hash-2",
+                dataset_item_id="dataset-2",
+                duration_ms=150,
+                events=[
+                    Event(
+                        id="event-2",
+                        trace_id="trace-2",
+                        message="test event 2",
+                        timestamp="2024-03-20T10:01:00Z",
+                        properties={"key": "value"},
+                    )
+                ],
+                body={"input": "test input 2"},
+                output={"result": "test output 2"},
+            ),
         ],
     )
