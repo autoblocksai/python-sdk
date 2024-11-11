@@ -40,6 +40,7 @@ ragas = "0.2.4"
 datasets = "^3.0.0"
 nltk = "^3.9.1"
 rapidfuzz = "^3.10.0"
+llama-index = "^0.11.22"
 
 [tool.poetry.scripts]
 prompts = "autoblocks._impl.prompts.cli.main:main"
