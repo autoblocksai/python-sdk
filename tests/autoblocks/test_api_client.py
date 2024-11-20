@@ -595,7 +595,7 @@ def test_get_human_review_job_pair(httpx_mock):
     )
 
     client = AutoblocksAPIClient("mock-api-key")
-    pair = client.get_human_review_job_pair("job-123", "pair-456")
+    pair = client.get_human_review_job_pair(job_id="job-123", pair_id="pair-456")
 
     assert isinstance(pair, AutoblocksTestCaseResultPair)
     assert pair == AutoblocksTestCaseResultPair(
@@ -641,3 +641,54 @@ def test_get_human_review_job_pair(httpx_mock):
             ),
         ],
     )
+
+
+def test_add_dataset_item(httpx_mock):
+    test_data = {"text": "Hello world", "metadata": {"source": "test"}}
+
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/datasets/test-dataset/items",
+        method="POST",
+        status_code=200,
+        json={"id": "new-revision-id"},
+        match_content=make_expected_body({"data": test_data}),
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    revision_id = client.add_dataset_item("test-dataset", test_data)
+    assert revision_id == "new-revision-id"
+
+
+def test_delete_dataset_item(httpx_mock):
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/datasets/test-dataset/items/item-123",
+        method="DELETE",
+        status_code=200,
+        json={"id": "new-revision-id"},
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    revision_id = client.delete_dataset_item("test-dataset", "item-123")
+
+    assert revision_id == "new-revision-id"
+
+
+def test_update_dataset_item(httpx_mock):
+    test_data = {"text": "Updated text", "metadata": {"source": "test"}}
+    test_splits = ["train", "test"]
+
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT}/datasets/test-dataset/items/item-123",
+        method="PUT",
+        status_code=200,
+        json={"id": "new-revision-id"},
+        match_content=make_expected_body({"data": test_data, "splitNames": test_splits}),
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAPIClient("mock-api-key")
+    revision_id = client.update_dataset_item("test-dataset", "item-123", test_data, test_splits)
+
+    assert revision_id == "new-revision-id"
