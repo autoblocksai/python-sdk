@@ -651,7 +651,7 @@ def test_add_dataset_item(httpx_mock):
         method="POST",
         status_code=200,
         json={"id": "new-revision-id"},
-        match_content=make_expected_body({"data": test_data}),
+        match_content=make_expected_body({"data": test_data, "splitNames": []}),
         match_headers={"Authorization": "Bearer mock-api-key"},
     )
 

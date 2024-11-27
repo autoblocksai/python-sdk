@@ -409,10 +409,13 @@ class AutoblocksAPIClient:
             test_case_results=test_case_results,
         )
 
-    def add_dataset_item(self, dataset_external_id: str, data: Dict[str, Any]) -> str:
+    def add_dataset_item(
+        self, dataset_external_id: str, data: Dict[str, Any], split_names: Optional[List[str]] = None
+    ) -> str:
+        split_names = split_names or []
         response = self._client.post(
             f"/datasets/{encode_uri_component(dataset_external_id)}/items",
-            json={"data": data},
+            json={"data": data, "splitNames": split_names},
         )
         response.raise_for_status()
         return str(response.json()["id"])
@@ -425,8 +428,9 @@ class AutoblocksAPIClient:
         return str(response.json()["id"])
 
     def update_dataset_item(
-        self, dataset_external_id: str, item_id: str, data: Dict[str, Any], split_names: List[str]
+        self, dataset_external_id: str, item_id: str, data: Dict[str, Any], split_names: Optional[List[str]] = None
     ) -> str:
+        split_names = split_names or []
         response = self._client.put(
             f"/datasets/{encode_uri_component(dataset_external_id)}/items/{encode_uri_component(item_id)}",
             json={"data": data, "splitNames": split_names},
