@@ -1324,19 +1324,19 @@ pydantic = ">=1.10"
 
 [[package]]
 name = "llama-index"
-version = "0.12.0"
+version = "0.12.4"
 description = "Interface between LLMs and your data"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "llama_index-0.12.0-py3-none-any.whl", hash = "sha256:04110abdab89f69118dab46d63148f5b989f0aea87fd2233cc754196248d3bed"},
-    {file = "llama_index-0.12.0.tar.gz", hash = "sha256:e5676c71e3706624c8165c54baadee9ff88219ea1dff05465dac4fadd3cb0b25"},
+    {file = "llama_index-0.12.4-py3-none-any.whl", hash = "sha256:37df2745619476005d934aad356efc709c20179fffa5e4bb1c042927d10c3565"},
+    {file = "llama_index-0.12.4.tar.gz", hash = "sha256:1f9ca21406e15db587aba2e504982b9e5c88c06c864647c1f1b08badffe76fd8"},
 ]
 
 [package.dependencies]
 llama-index-agent-openai = ">=0.4.0,<0.5.0"
 llama-index-cli = ">=0.4.0,<0.5.0"
-llama-index-core = ">=0.12.0,<0.13.0"
+llama-index-core = ">=0.12.4,<0.13.0"
 llama-index-embeddings-openai = ">=0.3.0,<0.4.0"
 llama-index-indices-managed-llama-cloud = ">=0.4.0"
 llama-index-legacy = ">=0.9.48,<0.10.0"
@@ -1382,13 +1382,13 @@ llama-index-llms-openai = ">=0.3.0,<0.4.0"
 
 [[package]]
 name = "llama-index-core"
-version = "0.12.0"
+version = "0.12.4"
 description = "Interface between LLMs and your data"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "llama_index_core-0.12.0-py3-none-any.whl", hash = "sha256:dc2ac0ca04cad135f72cb5f8cc44dca3f1a74f214ee9f39647e1f7a723cae17a"},
-    {file = "llama_index_core-0.12.0.tar.gz", hash = "sha256:99bb6c953af2de225268f10c70b06e861df394184e9c13ee7c70107ff542439d"},
+    {file = "llama_index_core-0.12.4-py3-none-any.whl", hash = "sha256:7bb6c552b09d7a0efc5423e841ecf77ae02139a1e80cfd846ff5a2a53a188fb2"},
+    {file = "llama_index_core-0.12.4.tar.gz", hash = "sha256:a5f9a7c4d5ebf90957681c3a6ee3f27556639e3f8b5e5d59125cf617ce272ab0"},
 ]
 
 [package.dependencies]
@@ -1405,11 +1405,11 @@ networkx = ">=3.0"
 nltk = ">3.8.1"
 numpy = "*"
 pillow = ">=9.0.0"
-pydantic = ">=2.7.0,<3.0.0"
+pydantic = ">=2.8.0"
 PyYAML = ">=6.0.1"
 requests = ">=2.31.0"
 SQLAlchemy = {version = ">=1.4.49", extras = ["asyncio"]}
-tenacity = ">=8.2.0,<8.4.0 || >8.4.0,<9.0.0"
+tenacity = ">=8.2.0,<8.4.0 || >8.4.0,<10.0.0"
 tiktoken = ">=0.3.3"
 tqdm = ">=4.66.1,<5.0.0"
 typing-extensions = ">=4.5.0"
@@ -1991,13 +1991,13 @@ files = [
 
 [[package]]
 name = "openai"
-version = "1.55.1"
+version = "1.57.0"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "openai-1.55.1-py3-none-any.whl", hash = "sha256:d10d96a4f9dc5f05d38dea389119ec8dcd24bc9698293c8357253c601b4a77a5"},
-    {file = "openai-1.55.1.tar.gz", hash = "sha256:471324321e7739214f16a544e801947a046d3c5d516fae8719a317234e4968d3"},
+    {file = "openai-1.57.0-py3-none-any.whl", hash = "sha256:972e36960b821797952da3dc4532f486c28e28a2a332d7d0c5407f242e9d9c39"},
+    {file = "openai-1.57.0.tar.gz", hash = "sha256:76f91971c4bdbd78380c9970581075e0337b5d497c2fbf7b5255078f4b31abf9"},
 ]
 
 [package.dependencies]
@@ -2498,13 +2498,13 @@ test = ["cffi", "hypothesis", "pandas", "pytest", "pytz"]
 
 [[package]]
 name = "pydantic"
-version = "2.10.1"
+version = "2.10.3"
 description = "Data validation using Python type hints"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pydantic-2.10.1-py3-none-any.whl", hash = "sha256:a8d20db84de64cf4a7d59e899c2caf0fe9d660c7cfc482528e7020d7dd189a7e"},
-    {file = "pydantic-2.10.1.tar.gz", hash = "sha256:a4daca2dc0aa429555e0656d6bf94873a7dc5f54ee42b1f5873d666fb3f35560"},
+    {file = "pydantic-2.10.3-py3-none-any.whl", hash = "sha256:be04d85bbc7b65651c5f8e6b9976ed9c6f41782a55524cef079a34a0bb82144d"},
+    {file = "pydantic-2.10.3.tar.gz", hash = "sha256:cb5ac360ce894ceacd69c403187900a02c4b20b693a9dd1d643e1effab9eadf9"},
 ]
 
 [package.dependencies]
@@ -2682,13 +2682,13 @@ files = [
 
 [[package]]
 name = "pytest"
-version = "8.3.3"
+version = "8.3.4"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pytest-8.3.3-py3-none-any.whl", hash = "sha256:a6853c7375b2663155079443d2e45de913a911a11d669df02a50814944db57b2"},
-    {file = "pytest-8.3.3.tar.gz", hash = "sha256:70b98107bd648308a7952b06e6ca9a50bc660be218d53c257cc1fc94fda10181"},
+    {file = "pytest-8.3.4-py3-none-any.whl", hash = "sha256:50e16d954148559c9a74109af1eaf0c945ba2d8f30f0a3d3335edde19788b6f6"},
+    {file = "pytest-8.3.4.tar.gz", hash = "sha256:965370d062bce11e73868e0335abac31b4d3de0e82f4007408d242b4f8610761"},
 ]
 
 [package.dependencies]
@@ -2823,13 +2823,13 @@ files = [
 
 [[package]]
 name = "ragas"
-version = "0.2.6"
+version = "0.2.7"
 description = ""
 optional = false
 python-versions = "*"
 files = [
-    {file = "ragas-0.2.6-py3-none-any.whl", hash = "sha256:2d40a6af196df7346486e2eeb203bb0a542efa0827e839812f6c66123fd3319f"},
-    {file = "ragas-0.2.6.tar.gz", hash = "sha256:877e723e4bbf29eab8e1b12f7bf6f63bb2145d63ea4c3ce21620b14f9dbfb421"},
+    {file = "ragas-0.2.7-py3-none-any.whl", hash = "sha256:1a06fa50bcf80e23dcccd36c41d0b601f1caa93155260de8c0879f0a8231e099"},
+    {file = "ragas-0.2.7.tar.gz", hash = "sha256:26137158db551ff32b90b6b225675c2f902ba12cb833a4e7adbef0bfa5c8353a"},
 ]
 
 [package.dependencies]
@@ -2838,7 +2838,7 @@ datasets = "*"
 langchain = "*"
 langchain-community = "*"
 langchain-core = "*"
-langchain-openai = "*"
+langchain_openai = "*"
 nest-asyncio = "*"
 numpy = "*"
 openai = ">1"
@@ -2847,7 +2847,7 @@ pysbd = ">=0.3.4"
 tiktoken = "*"
 
 [package.extras]
-all = ["datacompy", "llama-index", "nltk", "pandas", "rapidfuzz", "rouge-score", "sentence-transformers", "transformers"]
+all = ["datacompy", "llama_index", "nltk", "pandas", "rapidfuzz", "rouge_score", "sentence-transformers", "transformers"]
 docs = ["mkdocs (>=1.6.1)", "mkdocs-autorefs", "mkdocs-gen-files", "mkdocs-git-committers-plugin-2", "mkdocs-git-revision-date-localized-plugin", "mkdocs-glightbox", "mkdocs-literate-nav", "mkdocs-material", "mkdocs-material[imaging]", "mkdocs-section-index", "mkdocstrings[python]"]
 
 [[package]]
@@ -3788,4 +3788,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9.0"
-content-hash = "ec31a7cc099f3771e505b1fde6380331eb89a1e68e6df5573d08aa1373ec1a1c"
+content-hash = "a258a9116642221d956a33462c36a00e065311751ae0b93354bc11b50451f5d1"
