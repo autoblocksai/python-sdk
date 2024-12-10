@@ -421,13 +421,13 @@ typing-inspect = ">=0.4.0,<1"
 
 [[package]]
 name = "datasets"
-version = "3.1.0"
+version = "3.2.0"
 description = "HuggingFace community-driven open-source library of datasets"
 optional = false
-python-versions = ">=3.8.0"
+python-versions = ">=3.9.0"
 files = [
-    {file = "datasets-3.1.0-py3-none-any.whl", hash = "sha256:dc8808a6d17838fe05e13b39aa7ac3ea0fd0806ed7004eaf4d4eb2c2a356bc61"},
-    {file = "datasets-3.1.0.tar.gz", hash = "sha256:c92cac049e0f9f85b0dd63739c68e564c657b1624bc2b66b1e13489062832e27"},
+    {file = "datasets-3.2.0-py3-none-any.whl", hash = "sha256:f3d2ba2698b7284a4518019658596a6a8bc79f31e51516524249d6c59cf0fe2a"},
+    {file = "datasets-3.2.0.tar.gz", hash = "sha256:9a6e1a356052866b5dbdd9c9eedb000bf3fc43d986e3584d9b028f4976937229"},
 ]
 
 [package.dependencies]
@@ -449,15 +449,15 @@ xxhash = "*"
 [package.extras]
 audio = ["librosa", "soundfile (>=0.12.1)", "soxr (>=0.4.0)"]
 benchmarks = ["tensorflow (==2.12.0)", "torch (==2.0.1)", "transformers (==4.30.1)"]
-dev = ["Pillow (>=9.4.0)", "absl-py", "decorator", "decord (==0.6.0)", "elasticsearch (<8.0.0)", "faiss-cpu (>=1.8.0.post1)", "jax (>=0.3.14)", "jaxlib (>=0.3.14)", "joblib (<1.3.0)", "joblibspark", "librosa", "lz4", "moto[server]", "polars[timezone] (>=0.20.0)", "protobuf (<4.0.0)", "py7zr", "pyspark (>=3.4)", "pytest", "pytest-datadir", "pytest-xdist", "rarfile (>=4.0)", "ruff (>=0.3.0)", "s3fs", "s3fs (>=2021.11.1)", "soundfile (>=0.12.1)", "soxr (>=0.4.0)", "sqlalchemy", "tensorflow (>=2.16.0)", "tensorflow (>=2.6.0)", "tensorflow (>=2.6.0)", "tiktoken", "torch", "torch (>=2.0.0)", "torchdata", "transformers", "transformers (>=4.42.0)", "zstandard"]
+dev = ["Pillow (>=9.4.0)", "absl-py", "decorator", "decord (==0.6.0)", "elasticsearch (>=7.17.12,<8.0.0)", "faiss-cpu (>=1.8.0.post1)", "jax (>=0.3.14)", "jaxlib (>=0.3.14)", "joblib (<1.3.0)", "joblibspark", "librosa", "lz4", "moto[server]", "polars[timezone] (>=0.20.0)", "protobuf (<4.0.0)", "py7zr", "pyspark (>=3.4)", "pytest", "pytest-datadir", "pytest-xdist", "rarfile (>=4.0)", "ruff (>=0.3.0)", "s3fs", "s3fs (>=2021.11.1)", "soundfile (>=0.12.1)", "soxr (>=0.4.0)", "sqlalchemy", "tensorflow (>=2.16.0)", "tensorflow (>=2.6.0)", "tensorflow (>=2.6.0)", "tiktoken", "torch", "torch (>=2.0.0)", "torchdata", "transformers", "transformers (>=4.42.0)", "zstandard"]
 docs = ["s3fs", "tensorflow (>=2.6.0)", "torch", "transformers"]
 jax = ["jax (>=0.3.14)", "jaxlib (>=0.3.14)"]
 quality = ["ruff (>=0.3.0)"]
 s3 = ["s3fs"]
 tensorflow = ["tensorflow (>=2.6.0)"]
 tensorflow-gpu = ["tensorflow (>=2.6.0)"]
-tests = ["Pillow (>=9.4.0)", "absl-py", "decorator", "decord (==0.6.0)", "elasticsearch (<8.0.0)", "faiss-cpu (>=1.8.0.post1)", "jax (>=0.3.14)", "jaxlib (>=0.3.14)", "joblib (<1.3.0)", "joblibspark", "librosa", "lz4", "moto[server]", "polars[timezone] (>=0.20.0)", "protobuf (<4.0.0)", "py7zr", "pyspark (>=3.4)", "pytest", "pytest-datadir", "pytest-xdist", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "soundfile (>=0.12.1)", "soxr (>=0.4.0)", "sqlalchemy", "tensorflow (>=2.16.0)", "tensorflow (>=2.6.0)", "tiktoken", "torch (>=2.0.0)", "torchdata", "transformers (>=4.42.0)", "zstandard"]
-tests-numpy2 = ["Pillow (>=9.4.0)", "absl-py", "decorator", "decord (==0.6.0)", "elasticsearch (<8.0.0)", "jax (>=0.3.14)", "jaxlib (>=0.3.14)", "joblib (<1.3.0)", "joblibspark", "lz4", "moto[server]", "polars[timezone] (>=0.20.0)", "protobuf (<4.0.0)", "py7zr", "pyspark (>=3.4)", "pytest", "pytest-datadir", "pytest-xdist", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "soundfile (>=0.12.1)", "soxr (>=0.4.0)", "sqlalchemy", "tiktoken", "torch (>=2.0.0)", "torchdata", "transformers (>=4.42.0)", "zstandard"]
+tests = ["Pillow (>=9.4.0)", "absl-py", "decorator", "decord (==0.6.0)", "elasticsearch (>=7.17.12,<8.0.0)", "faiss-cpu (>=1.8.0.post1)", "jax (>=0.3.14)", "jaxlib (>=0.3.14)", "joblib (<1.3.0)", "joblibspark", "librosa", "lz4", "moto[server]", "polars[timezone] (>=0.20.0)", "protobuf (<4.0.0)", "py7zr", "pyspark (>=3.4)", "pytest", "pytest-datadir", "pytest-xdist", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "soundfile (>=0.12.1)", "soxr (>=0.4.0)", "sqlalchemy", "tensorflow (>=2.16.0)", "tensorflow (>=2.6.0)", "tiktoken", "torch (>=2.0.0)", "torchdata", "transformers (>=4.42.0)", "zstandard"]
+tests-numpy2 = ["Pillow (>=9.4.0)", "absl-py", "decorator", "decord (==0.6.0)", "elasticsearch (>=7.17.12,<8.0.0)", "jax (>=0.3.14)", "jaxlib (>=0.3.14)", "joblib (<1.3.0)", "joblibspark", "lz4", "moto[server]", "polars[timezone] (>=0.20.0)", "protobuf (<4.0.0)", "py7zr", "pyspark (>=3.4)", "pytest", "pytest-datadir", "pytest-xdist", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "soundfile (>=0.12.1)", "soxr (>=0.4.0)", "sqlalchemy", "tiktoken", "torch (>=2.0.0)", "torchdata", "transformers (>=4.42.0)", "zstandard"]
 torch = ["torch"]
 vision = ["Pillow (>=9.4.0)"]
 
@@ -1324,24 +1324,24 @@ pydantic = ">=1.10"
 
 [[package]]
 name = "llama-index"
-version = "0.12.0"
+version = "0.12.5"
 description = "Interface between LLMs and your data"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "llama_index-0.12.0-py3-none-any.whl", hash = "sha256:04110abdab89f69118dab46d63148f5b989f0aea87fd2233cc754196248d3bed"},
-    {file = "llama_index-0.12.0.tar.gz", hash = "sha256:e5676c71e3706624c8165c54baadee9ff88219ea1dff05465dac4fadd3cb0b25"},
+    {file = "llama_index-0.12.5-py3-none-any.whl", hash = "sha256:2bb6d234cf6d7fdb6a308e9aff1a607e83a24210cc7325be62c65bc43493680f"},
+    {file = "llama_index-0.12.5.tar.gz", hash = "sha256:a816f18079c88e17b53fab6efc27f7c3dfb0a7af559afaaeaeef0577654235a4"},
 ]
 
 [package.dependencies]
 llama-index-agent-openai = ">=0.4.0,<0.5.0"
 llama-index-cli = ">=0.4.0,<0.5.0"
-llama-index-core = ">=0.12.0,<0.13.0"
+llama-index-core = ">=0.12.5,<0.13.0"
 llama-index-embeddings-openai = ">=0.3.0,<0.4.0"
 llama-index-indices-managed-llama-cloud = ">=0.4.0"
 llama-index-legacy = ">=0.9.48,<0.10.0"
 llama-index-llms-openai = ">=0.3.0,<0.4.0"
-llama-index-multi-modal-llms-openai = ">=0.3.0,<0.4.0"
+llama-index-multi-modal-llms-openai = ">=0.4.0,<0.5.0"
 llama-index-program-openai = ">=0.3.0,<0.4.0"
 llama-index-question-gen-openai = ">=0.3.0,<0.4.0"
 llama-index-readers-file = ">=0.4.0,<0.5.0"
@@ -1382,13 +1382,13 @@ llama-index-llms-openai = ">=0.3.0,<0.4.0"
 
 [[package]]
 name = "llama-index-core"
-version = "0.12.0"
+version = "0.12.5"
 description = "Interface between LLMs and your data"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "llama_index_core-0.12.0-py3-none-any.whl", hash = "sha256:dc2ac0ca04cad135f72cb5f8cc44dca3f1a74f214ee9f39647e1f7a723cae17a"},
-    {file = "llama_index_core-0.12.0.tar.gz", hash = "sha256:99bb6c953af2de225268f10c70b06e861df394184e9c13ee7c70107ff542439d"},
+    {file = "llama_index_core-0.12.5-py3-none-any.whl", hash = "sha256:1fe6dd39b2dc5a945b4702d780a2f5962a553e187524a255429461dc92a664db"},
+    {file = "llama_index_core-0.12.5.tar.gz", hash = "sha256:1d967323891920579fad3d6497587c137894df3f76718a3ec134f9201f2f4fc0"},
 ]
 
 [package.dependencies]
@@ -1405,11 +1405,11 @@ networkx = ">=3.0"
 nltk = ">3.8.1"
 numpy = "*"
 pillow = ">=9.0.0"
-pydantic = ">=2.7.0,<3.0.0"
+pydantic = ">=2.8.0"
 PyYAML = ">=6.0.1"
 requests = ">=2.31.0"
 SQLAlchemy = {version = ">=1.4.49", extras = ["asyncio"]}
-tenacity = ">=8.2.0,<8.4.0 || >8.4.0,<9.0.0"
+tenacity = ">=8.2.0,<8.4.0 || >8.4.0,<10.0.0"
 tiktoken = ">=0.3.3"
 tqdm = ">=4.66.1,<5.0.0"
 typing-extensions = ">=4.5.0"
@@ -1502,17 +1502,17 @@ openai = ">=1.40.0,<2.0.0"
 
 [[package]]
 name = "llama-index-multi-modal-llms-openai"
-version = "0.3.0"
+version = "0.4.0"
 description = "llama-index multi-modal-llms openai integration"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "llama_index_multi_modal_llms_openai-0.3.0-py3-none-any.whl", hash = "sha256:9b7e3e39b19b2668b9c75014bcb90795bb546f0f9e1af8b7f1087f8687805763"},
-    {file = "llama_index_multi_modal_llms_openai-0.3.0.tar.gz", hash = "sha256:71e983c7771c39088e4058cd78029219315a0fb631b9e12b903e53243b9a3fd6"},
+    {file = "llama_index_multi_modal_llms_openai-0.4.0-py3-none-any.whl", hash = "sha256:c5bda1b3c6d14eee87a819ba72b122d82877829695dce8f90a8c600ac16ce243"},
+    {file = "llama_index_multi_modal_llms_openai-0.4.0.tar.gz", hash = "sha256:11c3ac7e2d7ace9dbcdd9a662f27bca5fefce98c5682abaffb7dd01d59776658"},
 ]
 
 [package.dependencies]
-llama-index-core = ">=0.12.0,<0.13.0"
+llama-index-core = ">=0.12.3,<0.13.0"
 llama-index-llms-openai = ">=0.3.0,<0.4.0"
 
 [[package]]
@@ -1991,13 +1991,13 @@ files = [
 
 [[package]]
 name = "openai"
-version = "1.55.1"
+version = "1.57.2"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "openai-1.55.1-py3-none-any.whl", hash = "sha256:d10d96a4f9dc5f05d38dea389119ec8dcd24bc9698293c8357253c601b4a77a5"},
-    {file = "openai-1.55.1.tar.gz", hash = "sha256:471324321e7739214f16a544e801947a046d3c5d516fae8719a317234e4968d3"},
+    {file = "openai-1.57.2-py3-none-any.whl", hash = "sha256:f7326283c156fdee875746e7e54d36959fb198eadc683952ee05e3302fbd638d"},
+    {file = "openai-1.57.2.tar.gz", hash = "sha256:5f49fd0f38e9f2131cda7deb45dafdd1aee4f52a637e190ce0ecf40147ce8cee"},
 ]
 
 [package.dependencies]
@@ -2498,13 +2498,13 @@ test = ["cffi", "hypothesis", "pandas", "pytest", "pytz"]
 
 [[package]]
 name = "pydantic"
-version = "2.10.1"
+version = "2.10.3"
 description = "Data validation using Python type hints"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pydantic-2.10.1-py3-none-any.whl", hash = "sha256:a8d20db84de64cf4a7d59e899c2caf0fe9d660c7cfc482528e7020d7dd189a7e"},
-    {file = "pydantic-2.10.1.tar.gz", hash = "sha256:a4daca2dc0aa429555e0656d6bf94873a7dc5f54ee42b1f5873d666fb3f35560"},
+    {file = "pydantic-2.10.3-py3-none-any.whl", hash = "sha256:be04d85bbc7b65651c5f8e6b9976ed9c6f41782a55524cef079a34a0bb82144d"},
+    {file = "pydantic-2.10.3.tar.gz", hash = "sha256:cb5ac360ce894ceacd69c403187900a02c4b20b693a9dd1d643e1effab9eadf9"},
 ]
 
 [package.dependencies]
@@ -2682,13 +2682,13 @@ files = [
 
 [[package]]
 name = "pytest"
-version = "8.3.3"
+version = "8.3.4"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pytest-8.3.3-py3-none-any.whl", hash = "sha256:a6853c7375b2663155079443d2e45de913a911a11d669df02a50814944db57b2"},
-    {file = "pytest-8.3.3.tar.gz", hash = "sha256:70b98107bd648308a7952b06e6ca9a50bc660be218d53c257cc1fc94fda10181"},
+    {file = "pytest-8.3.4-py3-none-any.whl", hash = "sha256:50e16d954148559c9a74109af1eaf0c945ba2d8f30f0a3d3335edde19788b6f6"},
+    {file = "pytest-8.3.4.tar.gz", hash = "sha256:965370d062bce11e73868e0335abac31b4d3de0e82f4007408d242b4f8610761"},
 ]
 
 [package.dependencies]
@@ -2823,13 +2823,13 @@ files = [
 
 [[package]]
 name = "ragas"
-version = "0.2.6"
+version = "0.2.8"
 description = ""
 optional = false
-python-versions = "*"
+python-versions = ">=3.9"
 files = [
-    {file = "ragas-0.2.6-py3-none-any.whl", hash = "sha256:2d40a6af196df7346486e2eeb203bb0a542efa0827e839812f6c66123fd3319f"},
-    {file = "ragas-0.2.6.tar.gz", hash = "sha256:877e723e4bbf29eab8e1b12f7bf6f63bb2145d63ea4c3ce21620b14f9dbfb421"},
+    {file = "ragas-0.2.8-py3-none-any.whl", hash = "sha256:ae267bbd761de59ed1d912e4423f9b111ba73112c79783863708707ad9d711cd"},
+    {file = "ragas-0.2.8.tar.gz", hash = "sha256:95c9b0f7c9cb9851487b6c40f6a2639fcb18791b435a2c8ceb5d4ddcf45fed12"},
 ]
 
 [package.dependencies]
@@ -2838,7 +2838,7 @@ datasets = "*"
 langchain = "*"
 langchain-community = "*"
 langchain-core = "*"
-langchain-openai = "*"
+langchain_openai = "*"
 nest-asyncio = "*"
 numpy = "*"
 openai = ">1"
@@ -2847,8 +2847,10 @@ pysbd = ">=0.3.4"
 tiktoken = "*"
 
 [package.extras]
-all = ["datacompy", "llama-index", "nltk", "pandas", "rapidfuzz", "rouge-score", "sentence-transformers", "transformers"]
+all = ["datacompy", "llama_index", "nltk", "pandas", "rapidfuzz", "rouge_score", "sentence-transformers", "transformers"]
+dev = ["black[jupyter]", "datacompy", "fastembed", "graphene", "isort", "llama_index", "nltk", "notebook", "pandas", "pyright", "rapidfuzz", "rich", "rouge_score", "ruff", "sentence-transformers", "sphinx-autobuild", "transformers"]
 docs = ["mkdocs (>=1.6.1)", "mkdocs-autorefs", "mkdocs-gen-files", "mkdocs-git-committers-plugin-2", "mkdocs-git-revision-date-localized-plugin", "mkdocs-glightbox", "mkdocs-literate-nav", "mkdocs-material", "mkdocs-material[imaging]", "mkdocs-section-index", "mkdocstrings[python]"]
+test = ["llama_index", "nbmake", "pytest", "pytest-asyncio", "pytest-xdist[psutil]"]
 
 [[package]]
 name = "rapidfuzz"
@@ -3788,4 +3790,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9.0"
-content-hash = "ec31a7cc099f3771e505b1fde6380331eb89a1e68e6df5573d08aa1373ec1a1c"
+content-hash = "07bec8ebf5ec5358b3013d8c6379c4a1754641ceafbf4a93e3ed99b1582ddb27"
