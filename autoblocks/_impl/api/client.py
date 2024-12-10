@@ -408,3 +408,32 @@ class AutoblocksAPIClient:
             chosen_output_id=pair.get("chosenOutputId", None),
             test_case_results=test_case_results,
         )
+
+    def add_dataset_item(
+        self, dataset_external_id: str, data: Dict[str, Any], splits: Optional[List[str]] = None
+    ) -> str:
+        split_names = splits or []
+        response = self._client.post(
+            f"/datasets/{encode_uri_component(dataset_external_id)}/items",
+            json={"data": data, "splitNames": split_names},
+        )
+        response.raise_for_status()
+        return str(response.json()["id"])
+
+    def delete_dataset_item(self, dataset_external_id: str, item_id: str) -> str:
+        response = self._client.delete(
+            f"/datasets/{encode_uri_component(dataset_external_id)}/items/{encode_uri_component(item_id)}"
+        )
+        response.raise_for_status()
+        return str(response.json()["id"])
+
+    def update_dataset_item(
+        self, dataset_external_id: str, item_id: str, data: Dict[str, Any], splits: Optional[List[str]] = None
+    ) -> str:
+        split_names = splits or []
+        response = self._client.put(
+            f"/datasets/{encode_uri_component(dataset_external_id)}/items/{encode_uri_component(item_id)}",
+            json={"data": data, "splitNames": split_names},
+        )
+        response.raise_for_status()
+        return str(response.json()["id"])
