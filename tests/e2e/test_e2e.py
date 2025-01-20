@@ -262,8 +262,6 @@ def test_prompt_manager():
                     "temperature": 0.3,
                     "topK": 0,
                     "topP": 1,
-                    "seed": 4096,
-                    "responseFormat": {"type": "json_object"},
                 },
             },
             "templates": [
@@ -327,8 +325,6 @@ def test_prompt_manager_latest():
                     "temperature": 0.3,
                     "topK": 0,
                     "topP": 1,
-                    "seed": 4096,
-                    "responseFormat": {"type": "json_object"},
                 },
             },
             "templates": [
