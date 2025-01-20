@@ -22,6 +22,8 @@ class QuestionAnswererParams(FrozenModel):
     presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
     max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
     model: str = pydantic.Field(..., alias="model")
+    seed: Union[float, int] = pydantic.Field(..., alias="seed")
+    response_format: Dict[str, Any] = pydantic.Field(..., alias="responseFormat")
 
 
 class QuestionAnswererTemplateRenderer(TemplateRenderer):
@@ -95,6 +97,8 @@ class TextSummarizationParams(FrozenModel):
     presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
     max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
     model: str = pydantic.Field(..., alias="model")
+    seed: Union[float, int] = pydantic.Field(..., alias="seed")
+    response_format: Dict[str, Any] = pydantic.Field(..., alias="responseFormat")
 
 
 class TextSummarizationTemplateRenderer(TemplateRenderer):
@@ -179,6 +183,8 @@ class UsedByCiDontDeleteParams(FrozenModel):
     top_k: Union[float, int] = pydantic.Field(..., alias="topK")
     max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
     model: str = pydantic.Field(..., alias="model")
+    seed: Union[float, int] = pydantic.Field(..., alias="seed")
+    response_format: Dict[str, Any] = pydantic.Field(..., alias="responseFormat")
 
 
 class UsedByCiDontDeleteTemplateRenderer(TemplateRenderer):

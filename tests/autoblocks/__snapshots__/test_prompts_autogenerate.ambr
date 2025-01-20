@@ -25,6 +25,8 @@
       presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
       temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
       top_p: Union[float, int] = pydantic.Field(..., alias="topP")
+      seed: Union[float, int] = pydantic.Field(..., alias="seed")
+      response_format: Dict[str, Any] = pydantic.Field(..., alias="responseFormat")
   
   
   class PromptATemplateRenderer(TemplateRenderer):
@@ -92,6 +94,8 @@
       presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
       temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
       top_p: Union[float, int] = pydantic.Field(..., alias="topP")
+      seed: Union[float, int] = pydantic.Field(..., alias="seed")
+      response_format: Dict[str, Any] = pydantic.Field(..., alias="responseFormat")
   
   
   class PromptBTemplateRenderer(TemplateRenderer):
