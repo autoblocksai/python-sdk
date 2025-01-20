@@ -177,7 +177,7 @@ def test_write(httpx_mock, snapshot):
                     "temperature": 0.7,
                     "topP": 1,
                     "seed": 4096,
-                    "responseFormat": {"type": "json_object"},
+                    "responseFormat": "json_object",
                 },
                 "version": "1.0",
             },
@@ -215,7 +215,7 @@ def test_write(httpx_mock, snapshot):
                     "temperature": 0.7,
                     "topP": 1,
                     "seed": 4096,
-                    "responseFormat": {"type": "json_schema"},
+                    "responseFormat": "json_object",
                 },
             },
             "templates": [

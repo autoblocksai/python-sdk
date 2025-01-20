@@ -34,7 +34,7 @@ async def battle(baseline: str, challenger: str, criteria: str, evaluator_id: st
     response = await get_openai_client(evaluator_id=evaluator_id).chat.completions.create(
         model="gpt-4-turbo",
         temperature=0.0,
-        response_format={"type": "json_object"},
+        response_format="json_object",
         messages=[
             dict(
                 role="system",

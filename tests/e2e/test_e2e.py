@@ -231,7 +231,7 @@ def test_prompt_manager():
         assert ctx.params.top_p == 1
         assert ctx.params.top_k == 0
         assert ctx.params.seed == 4096
-        assert ctx.params.response_format == {"type": "json_object"}
+        assert ctx.params.response_format == "json_object"
 
         assert (
             ctx.render_template.template_a(
@@ -294,7 +294,7 @@ def test_prompt_manager_latest():
         assert ctx.params.top_p == 1
         assert ctx.params.top_k == 0
         assert ctx.params.seed == 4096
-        assert ctx.params.response_format == {"type": "json_object"}
+        assert ctx.params.response_format == "json_object"
 
         assert (
             ctx.render_template.template_a(
