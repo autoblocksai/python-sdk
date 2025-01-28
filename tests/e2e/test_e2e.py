@@ -29,6 +29,7 @@ from autoblocks.testing.models import BaseTestEvaluator
 from autoblocks.testing.models import Evaluation
 from autoblocks.testing.run import run_test_suite
 from autoblocks.tracer import AutoblocksTracer
+from tests.e2e.prompts import QuestionAnswererPromptManager
 from tests.e2e.prompts import TextSummarizationPromptManager
 from tests.e2e.prompts import UsedByCiDontDeleteNoParamsPromptManager
 from tests.e2e.prompts import UsedByCiDontDeletePromptManager
@@ -225,10 +226,11 @@ def test_prompt_manager():
 
     with mgr.exec() as ctx:
         assert ctx.params.max_tokens == 256
-        assert ctx.params.model == "llama7b-v2-chat"
+        assert ctx.params.model == "gpt-4"
         assert ctx.params.temperature == 0.3
         assert ctx.params.top_p == 1
-        assert ctx.params.top_k == 0
+        assert ctx.params.frequency_penalty == 0
+        assert ctx.params.presence_penalty == 0.6
         assert ctx.params.seed == 4096
         assert ctx.params.response_format == {"type": "json_object"}
 
@@ -251,16 +253,19 @@ def test_prompt_manager():
 
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
-            "version": "4.0",
-            "revisionId": "clw535icr0003qrvahk0tfd2j",
+            "version": "6.0",
+            "revisionId": "cm6gsq0t60003nbscwcqkdgat",
             "params": {
                 "params": {
                     "maxTokens": 256,
-                    "model": "llama7b-v2-chat",
+                    "model": "gpt-4",
                     "stopSequences": [],
                     "temperature": 0.3,
-                    "topK": 0,
                     "topP": 1,
+                    "frequencyPenalty": 0,
+                    "presencePenalty": 0.6,
+                    "seed": 4096,
+                    "responseFormat": {"type": "json_object"},
                 },
             },
             "templates": [
@@ -277,7 +282,7 @@ def test_prompt_manager():
                     "template": "I am template c and I have no params",
                 },
             ],
-            "tools": None,
+            "tools": [],
         }
 
 
@@ -288,10 +293,13 @@ def test_prompt_manager_latest():
 
     with mgr.exec() as ctx:
         assert ctx.params.max_tokens == 256
-        assert ctx.params.model == "llama7b-v2-chat"
+        assert ctx.params.model == "gpt-4"
         assert ctx.params.temperature == 0.3
         assert ctx.params.top_p == 1
-        assert ctx.params.top_k == 0
+        assert ctx.params.frequency_penalty == 0
+        assert ctx.params.presence_penalty == 0.6
+        assert ctx.params.seed == 4096
+        assert ctx.params.response_format == {"type": "json_object"}
 
         assert (
             ctx.render_template.template_a(
@@ -312,16 +320,19 @@ def test_prompt_manager_latest():
 
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
-            "version": "4.1",
-            "revisionId": "clw53api200031046spnkttha",
+            "version": "6.1",
+            "revisionId": "cm6gswg4z000b11nw5dyqmvqw",
             "params": {
                 "params": {
                     "maxTokens": 256,
-                    "model": "llama7b-v2-chat",
+                    "model": "gpt-4",
                     "stopSequences": [],
                     "temperature": 0.3,
-                    "topK": 0,
                     "topP": 1,
+                    "frequencyPenalty": 0,
+                    "presencePenalty": 0.6,
+                    "seed": 4096,
+                    "responseFormat": {"type": "json_object"},
                 },
             },
             "templates": [
@@ -338,7 +349,7 @@ def test_prompt_manager_latest():
                     "template": "I am template c and I have no params",
                 },
             ],
-            "tools": None,
+            "tools": [],
         }
 
 
@@ -357,8 +368,8 @@ def test_prompt_manager_weighted():
     )
 
     with mgr.exec() as ctx:
-        assert ctx.params.model == "llama7b-v2-chat"
-        assert ctx.track()["version"] in ("4.0", "4.1")
+        assert ctx.params.model == "gpt-4"
+        assert ctx.track()["version"] in ("6.0", "6.1")
 
 
 def test_prompt_manager_no_model_params():
@@ -447,70 +458,20 @@ def test_prompt_manager_undeployed_specific_revision():
     """
     This test uses a revision created in our CI org:
 
-    https://app.autoblocks.ai/prompts/used-by-ci-dont-delete/revisions/cm6grg7lk0003rc2qzr9okfcd/edit
+        https://app.autoblocks.ai/prompts/question-answerer/revisions/clvodtv700003a2z02fumceby/edit
     """
-    mgr = UsedByCiDontDeletePromptManager(
-        minor_version="cm6grg7lk0003rc2qzr9okfcd",
+    mgr = QuestionAnswererPromptManager(
+        # Need to use a user-scoped API key to access undeployed prompts
+        # TODO: allow org-wide keys to retrieve shared prompts
+        api_key=os.environ["AUTOBLOCKS_API_KEY_USER"],
+        # Request a specific revision
+        minor_version="clvodtv700003a2z02fumceby",
     )
 
-    with mgr.exec() as ctx:
-        assert ctx.params.max_tokens == 256
-        assert ctx.params.model == "llama7b-v2-chat"
-        assert ctx.params.temperature == 0.3
-        assert ctx.params.top_p == 1
-        assert ctx.params.top_k == 0
-        assert ctx.params.seed == 4096
-        assert ctx.params.response_format == {"type": "json_object"}
-
-        assert (
-            ctx.render_template.template_a(
-                name="Alice",
-                weather="sunny",
-            )
-            == "Hello, Alice! The weather is sunny today!"
-        )
-
-        assert (
-            ctx.render_template.template_b(
-                name="Alice",
-            )
-            == "Hello ! My name is Alice."
-        )
-
-        assert ctx.render_template.template_c() == "I am template c and I have no params"
-
-        assert ctx.track() == {
-            "id": "used-by-ci-dont-delete",
-            "version": "revision:cm6grg7lk0003rc2qzr9okfcd",
-            "revisionId": "cm6grg7lk0003rc2qzr9okfcd",
-            "params": {
-                "params": {
-                    "maxTokens": 256,
-                    "model": "llama7b-v2-chat",
-                    "stopSequences": [],
-                    "temperature": 0.3,
-                    "topK": 0,
-                    "topP": 1,
-                    "seed": 4096,
-                    "responseFormat": {"type": "json_object"},
-                },
-            },
-            "templates": [
-                {
-                    "id": "template-a",
-                    "template": "Hello, {{ name }}! The weather is {{ weather }} today!",
-                },
-                {
-                    "id": "template-b",
-                    "template": "Hello {{ optional? }}! My name is {{ name }}.",
-                },
-                {
-                    "id": "template-c",
-                    "template": "I am template c and I have no params",
-                },
-            ],
-            "tools": None,
-        }
+    with mgr.exec() as prompt:
+        assert prompt.track()["id"] == "question-answerer"
+        assert prompt.track()["version"] == "revision:clvodtv700003a2z02fumceby"
+        assert prompt.track()["revisionId"] == "clvodtv700003a2z02fumceby"
 
 
 @mock.patch.dict(
@@ -538,13 +499,13 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
             runId="mock-run-id",
             testCaseHash="hash",
             testCaseBody={"x": 1},
-            testCaseOutput="llama7b-v2-chat",
+            testCaseOutput="gpt-4",
             testCaseDurationMs=ANY_NUMBER,
             testCaseRevisionUsage=[
                 dict(
                     entityExternalId="used-by-ci-dont-delete",
                     entityType="prompt",
-                    revisionId="clw53api200031046spnkttha",
+                    revisionId="cm6gswg4z000b11nw5dyqmvqw",
                     usedAt=mock.ANY,
                 ),
             ],
