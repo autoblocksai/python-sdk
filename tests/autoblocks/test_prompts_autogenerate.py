@@ -176,6 +176,8 @@ def test_write(httpx_mock, snapshot):
                     "stopSequences": [],
                     "temperature": 0.7,
                     "topP": 1,
+                    "seed": 4096,
+                    "responseFormat": {"type": "json_object"},
                 },
                 "version": "1.0",
             },
@@ -212,6 +214,8 @@ def test_write(httpx_mock, snapshot):
                     "stopSequences": [],
                     "temperature": 0.7,
                     "topP": 1,
+                    "seed": 4096,
+                    "responseFormat": {"type": "json_object"},
                 },
             },
             "templates": [
