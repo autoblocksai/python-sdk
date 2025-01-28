@@ -127,7 +127,8 @@ def test_infer_type():
     assert infer_type(False) == "bool"
     assert infer_type([""]) == "list[str]"
     assert infer_type([]) is None
-    assert infer_type({}) is None
+    assert infer_type({}) == "Dict[str, Any]"
+    assert infer_type({"a": 1}) == "Dict[str, Any]"
     assert infer_type(None) is None
 
 
