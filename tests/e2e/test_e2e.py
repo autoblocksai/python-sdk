@@ -29,7 +29,6 @@ from autoblocks.testing.models import BaseTestEvaluator
 from autoblocks.testing.models import Evaluation
 from autoblocks.testing.run import run_test_suite
 from autoblocks.tracer import AutoblocksTracer
-from tests.e2e.prompts import QuestionAnswererPromptManager
 from tests.e2e.prompts import TextSummarizationPromptManager
 from tests.e2e.prompts import UsedByCiDontDeleteNoParamsPromptManager
 from tests.e2e.prompts import UsedByCiDontDeletePromptManager
@@ -262,8 +261,6 @@ def test_prompt_manager():
                     "temperature": 0.3,
                     "topK": 0,
                     "topP": 1,
-                    "seed": 4096,
-                    "responseFormat": {"type": "json_object"},
                 },
             },
             "templates": [
@@ -295,8 +292,6 @@ def test_prompt_manager_latest():
         assert ctx.params.temperature == 0.3
         assert ctx.params.top_p == 1
         assert ctx.params.top_k == 0
-        assert ctx.params.seed == 4096
-        assert ctx.params.response_format == {"type": "json_object"}
 
         assert (
             ctx.render_template.template_a(
@@ -327,8 +322,6 @@ def test_prompt_manager_latest():
                     "temperature": 0.3,
                     "topK": 0,
                     "topP": 1,
-                    "seed": 4096,
-                    "responseFormat": {"type": "json_object"},
                 },
             },
             "templates": [
@@ -454,20 +447,70 @@ def test_prompt_manager_undeployed_specific_revision():
     """
     This test uses a revision created in our CI org:
 
-    https://app.autoblocks.ai/prompts/question-answerer/revisions/clvodtv700003a2z02fumceby/edit
+    https://app.autoblocks.ai/prompts/used-by-ci-dont-delete/revisions/cm6grg7lk0003rc2qzr9okfcd/edit
     """
-    mgr = QuestionAnswererPromptManager(
-        # Need to use a user-scoped API key to access undeployed prompts
-        # TODO: allow org-wide keys to retrieve shared prompts
-        api_key=os.environ["AUTOBLOCKS_API_KEY_USER"],
-        # Request a specific revision
-        minor_version="clvodtv700003a2z02fumceby",
+    mgr = UsedByCiDontDeletePromptManager(
+        minor_version="cm6grg7lk0003rc2qzr9okfcd",
     )
 
-    with mgr.exec() as prompt:
-        assert prompt.track()["id"] == "question-answerer"
-        assert prompt.track()["version"] == "revision:clvodtv700003a2z02fumceby"
-        assert prompt.track()["revisionId"] == "clvodtv700003a2z02fumceby"
+    with mgr.exec() as ctx:
+        assert ctx.params.max_tokens == 256
+        assert ctx.params.model == "llama7b-v2-chat"
+        assert ctx.params.temperature == 0.3
+        assert ctx.params.top_p == 1
+        assert ctx.params.top_k == 0
+        assert ctx.params.seed == 4096
+        assert ctx.params.response_format == {"type": "json_object"}
+
+        assert (
+            ctx.render_template.template_a(
+                name="Alice",
+                weather="sunny",
+            )
+            == "Hello, Alice! The weather is sunny today!"
+        )
+
+        assert (
+            ctx.render_template.template_b(
+                name="Alice",
+            )
+            == "Hello ! My name is Alice."
+        )
+
+        assert ctx.render_template.template_c() == "I am template c and I have no params"
+
+        assert ctx.track() == {
+            "id": "used-by-ci-dont-delete",
+            "version": "revision:cm6grg7lk0003rc2qzr9okfcd",
+            "revisionId": "cm6grg7lk0003rc2qzr9okfcd",
+            "params": {
+                "params": {
+                    "maxTokens": 256,
+                    "model": "llama7b-v2-chat",
+                    "stopSequences": [],
+                    "temperature": 0.3,
+                    "topK": 0,
+                    "topP": 1,
+                    "seed": 4096,
+                    "responseFormat": {"type": "json_object"},
+                },
+            },
+            "templates": [
+                {
+                    "id": "template-a",
+                    "template": "Hello, {{ name }}! The weather is {{ weather }} today!",
+                },
+                {
+                    "id": "template-b",
+                    "template": "Hello {{ optional? }}! My name is {{ name }}.",
+                },
+                {
+                    "id": "template-c",
+                    "template": "I am template c and I have no params",
+                },
+            ],
+            "tools": None,
+        }
 
 
 @mock.patch.dict(
