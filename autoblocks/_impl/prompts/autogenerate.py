@@ -128,6 +128,8 @@ def infer_type(value: Any) -> Optional[str]:
     elif isinstance(value, list):
         if len(value) > 0:
             return f"list[{infer_type(value[0])}]"
+    elif isinstance(value, dict):
+        return "Dict[str, Any]"
     return None
 
 

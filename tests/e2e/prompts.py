@@ -176,9 +176,12 @@ class TextSummarizationPromptManager(
 class UsedByCiDontDeleteParams(FrozenModel):
     temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
     top_p: Union[float, int] = pydantic.Field(..., alias="topP")
-    top_k: Union[float, int] = pydantic.Field(..., alias="topK")
+    frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
+    presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
     max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
+    seed: Union[float, int] = pydantic.Field(..., alias="seed")
     model: str = pydantic.Field(..., alias="model")
+    response_format: Dict[str, Any] = pydantic.Field(..., alias="responseFormat")
 
 
 class UsedByCiDontDeleteTemplateRenderer(TemplateRenderer):
@@ -237,7 +240,7 @@ class UsedByCiDontDeletePromptManager(
     AutoblocksPromptManager[UsedByCiDontDeleteExecutionContext],
 ):
     __prompt_id__ = "used-by-ci-dont-delete"
-    __prompt_major_version__ = "4"
+    __prompt_major_version__ = "6"
     __execution_context_class__ = UsedByCiDontDeleteExecutionContext
 
 

@@ -127,7 +127,8 @@ def test_infer_type():
     assert infer_type(False) == "bool"
     assert infer_type([""]) == "list[str]"
     assert infer_type([]) is None
-    assert infer_type({}) is None
+    assert infer_type({}) == "Dict[str, Any]"
+    assert infer_type({"a": 1}) == "Dict[str, Any]"
     assert infer_type(None) is None
 
 
@@ -176,6 +177,8 @@ def test_write(httpx_mock, snapshot):
                     "stopSequences": [],
                     "temperature": 0.7,
                     "topP": 1,
+                    "seed": 4096,
+                    "responseFormat": {"type": "json_object"},
                 },
                 "version": "1.0",
             },
@@ -212,6 +215,8 @@ def test_write(httpx_mock, snapshot):
                     "stopSequences": [],
                     "temperature": 0.7,
                     "topP": 1,
+                    "seed": 4096,
+                    "responseFormat": {"type": "json_object"},
                 },
             },
             "templates": [

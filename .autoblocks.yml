@@ -4,7 +4,7 @@ autogenerate:
 
     prompts:
       - id: used-by-ci-dont-delete
-        major_version: 4
+        major_version: 6
 
       - id: used-by-ci-dont-delete-with-tools
         major_version: 1
