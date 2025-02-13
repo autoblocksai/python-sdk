@@ -29,6 +29,7 @@ from autoblocks._impl.util import ThirdPartyEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import is_ci
 from autoblocks._impl.util import is_cli_running
+from autoblocks._impl.util import is_github_comment_disabled
 
 log = logging.getLogger(__name__)
 
@@ -384,7 +385,7 @@ async def send_slack_notification(
 async def send_github_comment() -> None:
     github_token = ThirdPartyEnvVar.GITHUB_TOKEN.get()
     build_id = AutoblocksEnvVar.CI_TEST_RUN_BUILD_ID.get()
-    if is_cli_running() or not github_token or not build_id or not is_ci():
+    if is_cli_running() or is_github_comment_disabled() or not github_token or not build_id or not is_ci():
         return
 
     log.info(f"Creating GitHub comment for build '{build_id}'.")
