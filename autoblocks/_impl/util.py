@@ -38,6 +38,7 @@ class AutoblocksEnvVar(StrEnum):
     CI_TEST_RUN_BUILD_ID = "AUTOBLOCKS_CI_TEST_RUN_BUILD_ID"
     SLACK_WEBHOOK_URL = "AUTOBLOCKS_SLACK_WEBHOOK_URL"
     TEST_RUN_MESSAGE = "AUTOBLOCKS_TEST_RUN_MESSAGE"
+    DISABLE_GITHUB_COMMENT = "AUTOBLOCKS_DISABLE_GITHUB_COMMENT"
 
     def get(self) -> Optional[str]:
         return os.environ.get(self.value)
@@ -53,6 +54,10 @@ class ThirdPartyEnvVar(StrEnum):
 
 def is_ci() -> bool:
     return os.environ.get("CI") == "true"
+
+
+def is_github_comment_disabled() -> bool:
+    return AutoblocksEnvVar.DISABLE_GITHUB_COMMENT.get() == "1"
 
 
 def encode_uri_component(s: str) -> str:
