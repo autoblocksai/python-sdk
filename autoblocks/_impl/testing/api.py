@@ -23,7 +23,7 @@ from autoblocks._impl.testing.util import serialize_output
 from autoblocks._impl.testing.util import serialize_output_for_human_review
 from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.util import serialize_test_case_for_human_review
-from autoblocks._impl.tracer import test_events
+from autoblocks._impl.tracer.tracer import test_events
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import ThirdPartyEnvVar
 from autoblocks._impl.util import all_settled
