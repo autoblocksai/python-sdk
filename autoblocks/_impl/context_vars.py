@@ -46,6 +46,18 @@ test_case_run_context_var: ContextVar[Optional[TestCaseRunContext]] = ContextVar
 
 
 @dataclasses.dataclass
+class TestRunContext:
+    run_id: str
+    run_message: Optional[str]
+
+
+test_run_context_var: ContextVar[Optional[TestRunContext]] = ContextVar(
+    "autoblocks_sdk_test_run_context_var",
+    default=None,
+)
+
+
+@dataclasses.dataclass
 class EvaluatorRunContext:
     revision_usage: List[RevisionUsage] = dataclasses.field(default_factory=list)
 
