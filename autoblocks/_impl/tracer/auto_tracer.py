@@ -26,7 +26,7 @@ def init_auto_tracer(
     """
     Initialize the OpenTelemetry auto tracer.
     """
-    log.debug("Initializing Autoblocks auto tracer")
+    log.debug(f"Initializing Autoblocks auto tracer with api_endpoint={api_endpoint}")
     set_global_textmap(
         CompositePropagator(
             [
