@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from opentelemetry import trace
@@ -13,16 +14,19 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 
 from autoblocks._impl.tracer.span_processor import ExecutionIdSpanProcessor
 
+log = logging.getLogger(__name__)
+
 
 def init_auto_tracer(
     *,
     api_key: str,
     api_endpoint: Optional[str] = "https://dev-api.autoblocks.ai/v1/traces",
-    batch: Optional[bool] = True,
+    is_batch_disabled: Optional[bool] = False,
 ) -> None:
     """
     Initialize the OpenTelemetry auto tracer.
     """
+    log.debug("Initializing Autoblocks auto tracer")
     set_global_textmap(
         CompositePropagator(
             [
@@ -39,15 +43,16 @@ def init_auto_tracer(
     )
 
     # Create a resource to identify your service (using the semantic 'service.name' attribute)
-    resource = Resource.create({"service.name": "python traces"})
+    resource = Resource.create({"service.name": "autoblocks-auto-tracer"})
 
     # Create the tracer provider and add our custom and exporter span processors.
     provider = TracerProvider(resource=resource)
     provider.add_span_processor(ExecutionIdSpanProcessor())
-    if batch:
-        provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
-    else:
+    if is_batch_disabled:
         provider.add_span_processor(SimpleSpanProcessor(otlp_exporter))
+    else:
+        provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
 
     # Set the global tracer provider
     trace.set_tracer_provider(provider)
+    log.debug("Autoblocks auto tracer initialized")

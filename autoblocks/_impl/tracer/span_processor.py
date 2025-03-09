@@ -8,31 +8,32 @@ from opentelemetry.sdk.trace import SpanProcessor
 
 from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.context_vars import test_run_context_var
+from autoblocks._impl.tracer.util import SpanAttribute
 
 
 # Custom span processor that attaches baggage values to the span on start
 class ExecutionIdSpanProcessor(SpanProcessor):
     def on_start(self, span: Span, parent_context: Optional[Context] = None) -> None:
         # Retrieve baggage values from the parent context
-        execution_id = get_baggage("autoblocksExecutionId", context=parent_context)
-        environment = get_baggage("autoblocksEnvironment", context=parent_context)
-        app_id = get_baggage("autoblocksAppId", context=parent_context)
+        execution_id = get_baggage(SpanAttribute.EXECUTION_ID, context=parent_context)
+        environment = get_baggage(SpanAttribute.ENVIRONMENT, context=parent_context)
+        app_id = get_baggage(SpanAttribute.APP_ID, context=parent_context)
         test_case_run_context = test_case_run_context_var.get()
         test_run_context = test_run_context_var.get()
 
         if execution_id:
-            span.set_attribute("autoblocksExecutionId", str(execution_id))
+            span.set_attribute(SpanAttribute.EXECUTION_ID, str(execution_id))
         if environment:
-            span.set_attribute("autoblocksEnvironment", str(environment))
+            span.set_attribute(SpanAttribute.ENVIRONMENT, str(environment))
         if app_id:
-            span.set_attribute("autoblocksAppId", str(app_id))
+            span.set_attribute(SpanAttribute.APP_ID, str(app_id))
 
         if test_run_context:
-            span.set_attribute("autoblocksRunId", str(test_run_context.run_id))
+            span.set_attribute(SpanAttribute.RUN_ID, str(test_run_context.run_id))
             if test_run_context.run_message:
-                span.set_attribute("autoblocksRunMessage", str(test_run_context.run_message))
+                span.set_attribute(SpanAttribute.RUN_MESSAGE, str(test_run_context.run_message))
         elif test_case_run_context:
-            span.set_attribute("autoblocksTestCaseRunId", str(test_case_run_context.run_id))
+            span.set_attribute(SpanAttribute.RUN_ID, str(test_case_run_context.run_id))
 
     def on_end(self, span: ReadableSpan) -> None:
         pass
