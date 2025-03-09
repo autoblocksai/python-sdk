@@ -1,6 +1,6 @@
 import asyncio
+import dataclasses
 import functools
-import json
 import uuid
 from typing import Any
 from typing import Callable
@@ -11,13 +11,26 @@ from opentelemetry.context import attach
 from opentelemetry.context import detach
 from opentelemetry.context import get_current
 
+from autoblocks._impl.testing.util import serialize as serialize_testing
 from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import cuid_generator
 
 
-def serialize(value: Any) -> str:
+def serialize(value: Any) -> Any:
     try:
-        return json.dumps(value)
+        # See https://docs.python.org/3/library/dataclasses.html#dataclasses.is_dataclass:
+        # isinstance(test_case, type) checks test_case is an instance and not a type
+        if dataclasses.is_dataclass(value) and not isinstance(value, type):
+            serialized: dict[Any, Any] = {}
+            for k, v in dataclasses.asdict(value).items():
+                try:
+                    serialized[k] = serialize_testing(v)
+                except Exception:
+                    # Skip over non-serializable test case attributes
+                    pass
+            return serialized
+
+        return serialize_testing(value)
     except Exception:
         return str(value)
 
