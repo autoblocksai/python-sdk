@@ -254,8 +254,17 @@ class AutoblocksTestCaseResultPairId:
 
 
 @dataclass
-class AutoblocksTestCaseResultPair:
+class AutoblocksTestCaseResultInPair:
     id: str
-    hash: str
-    chosen_output_id: Optional[str]
-    test_case_results: List[AutoblocksTestCaseResult]
+    input_fields: List[HumanReviewField]
+    output_fields: List[HumanReviewField]
+    field_comments: List[HumanReviewFieldComment]
+    input_comments: List[HumanReviewGeneralComment]
+    output_comments: List[HumanReviewGeneralComment]
+
+
+@dataclass
+class AutoblocksTestCaseResultPair:
+    pair_id: str
+    chosen_id: Optional[str]
+    test_cases: List[AutoblocksTestCaseResultInPair]

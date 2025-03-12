@@ -11,8 +11,8 @@ from typing import Union
 import httpx
 
 from autoblocks._impl.api.models import AbsoluteTimeFilter
-from autoblocks._impl.api.models import AutoblocksTestCaseResult
 from autoblocks._impl.api.models import AutoblocksTestCaseResultId
+from autoblocks._impl.api.models import AutoblocksTestCaseResultInPair
 from autoblocks._impl.api.models import AutoblocksTestCaseResultPair
 from autoblocks._impl.api.models import AutoblocksTestCaseResultPairId
 from autoblocks._impl.api.models import AutoblocksTestCaseResultWithEvaluations
@@ -379,34 +379,50 @@ class AutoblocksAPIClient:
         resp = req.json()
         pair = resp["pair"]
 
-        test_case_results = [
-            AutoblocksTestCaseResult(
-                id=result["id"],
-                run_id=result["runId"],
-                hash=result["hash"],
-                dataset_item_id=result.get("datasetItemId", None),
-                duration_ms=result.get("durationMs", None),
-                events=[
-                    Event(
-                        id=event["id"],
-                        trace_id=event["traceId"],
-                        message=event["message"],
-                        timestamp=event["timestamp"],
-                        properties=event.get("properties", None),
-                    )
-                    for event in result.get("events", [])
-                ],
-                body=result["body"],
-                output=result["output"],
-            )
-            for result in pair["testCaseResults"]
-        ]
-
         return AutoblocksTestCaseResultPair(
-            id=pair["id"],
-            hash=pair["hash"],
-            chosen_output_id=pair.get("chosenOutputId", None),
-            test_case_results=test_case_results,
+            pair_id=pair["pairId"],
+            chosen_id=pair.get("chosenId"),
+            test_cases=[
+                AutoblocksTestCaseResultInPair(
+                    id=tc["id"],
+                    input_fields=[
+                        HumanReviewField(id=f["id"], name=f["name"], value=f["value"], content_type=f["contentType"])
+                        for f in tc["inputFields"]
+                    ],
+                    output_fields=[
+                        HumanReviewField(id=f["id"], name=f["name"], value=f["value"], content_type=f["contentType"])
+                        for f in tc["outputFields"]
+                    ],
+                    field_comments=[
+                        HumanReviewFieldComment(
+                            field_id=c["fieldId"],
+                            start_idx=c.get("startIdx"),
+                            end_idx=c.get("endIdx"),
+                            value=c["value"],
+                            in_relation_to_grade_name=c.get("inRelationToGradeName"),
+                            in_relation_to_automated_evaluation_id=c.get("inRelationToAutomatedEvaluationId"),
+                        )
+                        for c in tc["fieldComments"]
+                    ],
+                    input_comments=[
+                        HumanReviewGeneralComment(
+                            value=c["value"],
+                            in_relation_to_grade_name=c.get("inRelationToGradeName"),
+                            in_relation_to_automated_evaluation_id=c.get("inRelationToAutomatedEvaluationId"),
+                        )
+                        for c in tc["inputComments"]
+                    ],
+                    output_comments=[
+                        HumanReviewGeneralComment(
+                            value=c["value"],
+                            in_relation_to_grade_name=c.get("inRelationToGradeName"),
+                            in_relation_to_automated_evaluation_id=c.get("inRelationToAutomatedEvaluationId"),
+                        )
+                        for c in tc["outputComments"]
+                    ],
+                )
+                for tc in pair["testCases"]
+            ],
         )
 
     def add_dataset_item(

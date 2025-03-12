@@ -5,8 +5,8 @@ from httpx import Timeout
 
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks.api.client import AutoblocksAPIClient
-from autoblocks.api.models import AutoblocksTestCaseResult
 from autoblocks.api.models import AutoblocksTestCaseResultId
+from autoblocks.api.models import AutoblocksTestCaseResultInPair
 from autoblocks.api.models import AutoblocksTestCaseResultPair
 from autoblocks.api.models import AutoblocksTestCaseResultPairId
 from autoblocks.api.models import AutoblocksTestCaseResultWithEvaluations
@@ -16,6 +16,10 @@ from autoblocks.api.models import EvaluationWithEvaluatorId
 from autoblocks.api.models import Event
 from autoblocks.api.models import EventFilter
 from autoblocks.api.models import EventFilterOperator
+from autoblocks.api.models import HumanReviewField
+from autoblocks.api.models import HumanReviewFieldComment
+from autoblocks.api.models import HumanReviewFieldContentType
+from autoblocks.api.models import HumanReviewGeneralComment
 from autoblocks.api.models import RelativeTimeFilter
 from autoblocks.api.models import Trace
 from autoblocks.api.models import TraceFilter
@@ -548,46 +552,31 @@ def test_get_human_review_job_pair(httpx_mock):
         status_code=200,
         json={
             "pair": {
-                "id": "pair-456",
-                "hash": "hash-value",
-                "chosenOutputId": "result-1",
-                "testCaseResults": [
+                "pairId": "pair-456",
+                "chosenId": "result-1",
+                "testCases": [
                     {
-                        "id": "result-1",
-                        "runId": "run-1",
-                        "hash": "hash-1",
-                        "datasetItemId": "dataset-1",
-                        "durationMs": 100,
-                        "events": [
+                        "id": "test-1",
+                        "inputFields": [
+                            {"id": "input-1", "name": "prompt", "value": "test input 1", "contentType": "text"}
+                        ],
+                        "outputFields": [
+                            {"id": "output-1", "name": "response", "value": "test output 1", "contentType": "text"}
+                        ],
+                        "fieldComments": [
                             {
-                                "id": "event-1",
-                                "traceId": "trace-1",
-                                "message": "test event 1",
-                                "timestamp": "2024-03-20T10:00:00Z",
-                                "properties": {"key": "value"},
+                                "fieldId": "input-1",
+                                "startIdx": 0,
+                                "endIdx": 10,
+                                "value": "Comment on input",
+                                "inRelationToGradeName": "accuracy",
                             }
                         ],
-                        "body": {"input": "test input 1"},
-                        "output": {"result": "test output 1"},
-                    },
-                    {
-                        "id": "result-2",
-                        "runId": "run-2",
-                        "hash": "hash-2",
-                        "datasetItemId": "dataset-2",
-                        "durationMs": 150,
-                        "events": [
-                            {
-                                "id": "event-2",
-                                "traceId": "trace-2",
-                                "message": "test event 2",
-                                "timestamp": "2024-03-20T10:01:00Z",
-                                "properties": {"key": "value"},
-                            }
+                        "inputComments": [{"value": "General input comment", "inRelationToGradeName": "accuracy"}],
+                        "outputComments": [
+                            {"value": "General output comment", "inRelationToAutomatedEvaluationId": "eval-1"}
                         ],
-                        "body": {"input": "test input 2"},
-                        "output": {"result": "test output 2"},
-                    },
+                    }
                 ],
             }
         },
@@ -599,46 +588,49 @@ def test_get_human_review_job_pair(httpx_mock):
 
     assert isinstance(pair, AutoblocksTestCaseResultPair)
     assert pair == AutoblocksTestCaseResultPair(
-        id="pair-456",
-        hash="hash-value",
-        chosen_output_id="result-1",
-        test_case_results=[
-            AutoblocksTestCaseResult(
-                id="result-1",
-                run_id="run-1",
-                hash="hash-1",
-                dataset_item_id="dataset-1",
-                duration_ms=100,
-                events=[
-                    Event(
-                        id="event-1",
-                        trace_id="trace-1",
-                        message="test event 1",
-                        timestamp="2024-03-20T10:00:00Z",
-                        properties={"key": "value"},
+        pair_id="pair-456",
+        chosen_id="result-1",
+        test_cases=[
+            AutoblocksTestCaseResultInPair(
+                id="test-1",
+                input_fields=[
+                    HumanReviewField(
+                        id="input-1", name="prompt", value="test input 1", content_type=HumanReviewFieldContentType.TEXT
                     )
                 ],
-                body={"input": "test input 1"},
-                output={"result": "test output 1"},
-            ),
-            AutoblocksTestCaseResult(
-                id="result-2",
-                run_id="run-2",
-                hash="hash-2",
-                dataset_item_id="dataset-2",
-                duration_ms=150,
-                events=[
-                    Event(
-                        id="event-2",
-                        trace_id="trace-2",
-                        message="test event 2",
-                        timestamp="2024-03-20T10:01:00Z",
-                        properties={"key": "value"},
+                output_fields=[
+                    HumanReviewField(
+                        id="output-1",
+                        name="response",
+                        value="test output 1",
+                        content_type=HumanReviewFieldContentType.TEXT,
                     )
                 ],
-                body={"input": "test input 2"},
-                output={"result": "test output 2"},
-            ),
+                field_comments=[
+                    HumanReviewFieldComment(
+                        field_id="input-1",
+                        start_idx=0,
+                        end_idx=10,
+                        value="Comment on input",
+                        in_relation_to_grade_name="accuracy",
+                        in_relation_to_automated_evaluation_id=None,
+                    )
+                ],
+                input_comments=[
+                    HumanReviewGeneralComment(
+                        value="General input comment",
+                        in_relation_to_grade_name="accuracy",
+                        in_relation_to_automated_evaluation_id=None,
+                    )
+                ],
+                output_comments=[
+                    HumanReviewGeneralComment(
+                        value="General output comment",
+                        in_relation_to_grade_name=None,
+                        in_relation_to_automated_evaluation_id="eval-1",
+                    )
+                ],
+            )
         ],
     )
 

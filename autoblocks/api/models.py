@@ -1,6 +1,7 @@
 from autoblocks._impl.api.models import AbsoluteTimeFilter
 from autoblocks._impl.api.models import AutoblocksTestCaseResult
 from autoblocks._impl.api.models import AutoblocksTestCaseResultId
+from autoblocks._impl.api.models import AutoblocksTestCaseResultInPair
 from autoblocks._impl.api.models import AutoblocksTestCaseResultPair
 from autoblocks._impl.api.models import AutoblocksTestCaseResultPairId
 from autoblocks._impl.api.models import AutoblocksTestCaseResultWithEvaluations
@@ -61,9 +62,10 @@ __all__ = [
     "AutoblocksTestRun",
     "AutoblocksTestCaseResultId",
     "AutoblocksTestCaseResult",
+    "AutoblocksTestCaseResultInPair",
+    "AutoblocksTestCaseResultPair",
     "EvaluationWithEvaluatorId",
     "EvaluationAssertion",
     "AutoblocksTestCaseResultPairId",
-    "AutoblocksTestCaseResultPair",
     "AutoblocksTestCaseResultWithEvaluations",
 ]
