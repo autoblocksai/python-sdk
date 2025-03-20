@@ -17,3 +17,12 @@ autogenerate:
 
       - id: question-answerer
         dangerously_use_undeployed_revision: clvodtv700003a2z02fumceby
+
+autogenerate_v2:
+  prompts:
+    outfile: tests/e2e/prompts_v2.py
+    app_id: "nwn7m2i5axch0fen3oqd03da"
+    
+    prompts:
+      - id: question-answerer
+        major_version: 1
