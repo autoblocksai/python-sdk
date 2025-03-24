@@ -3,6 +3,7 @@ from autoblocks._impl.testing.models import BaseEvaluator
 from autoblocks._impl.testing.models import BaseEventEvaluator
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
+from autoblocks._impl.testing.models import CreateHumanReviewJob
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import EvaluationOverride
 from autoblocks._impl.testing.models import EvaluationOverrideComment
@@ -32,4 +33,5 @@ __all__ = [
     "Threshold",
     "TracerEvent",
     "ScoreChoice",
+    "CreateHumanReviewJob",
 ]
