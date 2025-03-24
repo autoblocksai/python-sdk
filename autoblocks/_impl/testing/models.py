@@ -255,3 +255,13 @@ class EvaluationOverride:
     input_fields: list[EvaluationOverrideField]
     output_fields: list[EvaluationOverrideField]
     comments: list[EvaluationOverrideComment]
+
+
+@dataclasses.dataclass
+class CreateHumanReviewJob:
+    """
+    A request to create a human review job.
+    """
+
+    assignee_email_address: str
+    name: str
