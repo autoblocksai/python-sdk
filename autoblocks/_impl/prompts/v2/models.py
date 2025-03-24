@@ -25,31 +25,31 @@ class FrozenModel(pydantic.BaseModel):
 class Template(FrozenModel):
     """Template for a V2 prompt."""
 
-    id: str
-    template: str
+    id: str = pydantic.Field(..., alias="id")
+    template: str = pydantic.Field(..., alias="template")
 
 
 class ToolParams(FrozenModel):
     """Tool parameters for a V2 prompt."""
 
-    name: str
-    params: List[str]
+    name: str = pydantic.Field(..., alias="name")
+    params: List[str] = pydantic.Field(..., alias="params")
 
 
 class PromptParams(FrozenModel):
     """Parameters for a V2 prompt."""
 
-    params: Dict[str, Any]
+    params: Optional[Dict[str, Any]] = pydantic.Field(None, alias="params")
 
 
 class MajorVersion(FrozenModel):
     """Major version of a V2 prompt."""
 
-    major_version: str
-    minor_versions: List[str]
-    templates: List[Template]
-    tools_params: Optional[List[ToolParams]] = None
-    params: Optional[PromptParams] = None
+    major_version: str = pydantic.Field(..., alias="majorVersion")
+    minor_versions: List[str] = pydantic.Field(..., alias="minorVersions")
+    templates: List[Template] = pydantic.Field(..., alias="templates")
+    tools_params: Optional[List[ToolParams]] = pydantic.Field(None, alias="toolsParams")
+    params: Optional[PromptParams] = pydantic.Field(None, alias="params")
 
 
 class Prompt(FrozenModel):
