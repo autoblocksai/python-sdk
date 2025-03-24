@@ -1126,6 +1126,7 @@ def test_async_evaluators(httpx_mock):
     os.environ,
     {
         "AUTOBLOCKS_API_KEY": "mock-api-key",
+        "CI": "false",
     },
 )
 def test_creates_human_review_job(httpx_mock):
