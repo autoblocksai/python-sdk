@@ -12,3 +12,5 @@ dist/
 .vscode
 
 .venv/
+
+.mypy_cache/

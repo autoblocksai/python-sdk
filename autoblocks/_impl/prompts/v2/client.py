@@ -7,7 +7,7 @@ from typing import Optional
 
 import httpx
 
-from autoblocks._impl.config.constants import API_ENDPOINT
+from autoblocks._impl.config.constants import API_ENDPOINT_V2
 from autoblocks._impl.prompts.v2.models import Prompt
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import encode_uri_component
@@ -42,7 +42,7 @@ class PromptsAPIClient:
         Returns:
             A list of prompt objects with their apps and major versions
         """
-        url = f"{API_ENDPOINT}/v2/prompts/types"
+        url = f"{API_ENDPOINT_V2}/prompts/types"
 
         with httpx.Client() as client:
             response = client.get(
@@ -135,4 +135,4 @@ class PromptsAPIClient:
         major_version = encode_uri_component(major_version)
         minor_version = encode_uri_component(minor_version)
 
-        return f"{API_ENDPOINT}/v2/apps/{app_id}/prompts/{prompt_id}/major/{major_version}/minor/{minor_version}"
+        return f"{API_ENDPOINT_V2}/apps/{app_id}/prompts/{prompt_id}/major/{major_version}/minor/{minor_version}"
