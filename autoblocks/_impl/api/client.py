@@ -236,7 +236,10 @@ class AutoblocksAPIClient:
             name=resp["name"],
             schema_version=f"{resp['schemaVersion']}",
             revision_id=resp["revisionId"],
-            items=[DatasetItem(id=item["id"], splits=item["splits"], data=item["data"]) for item in resp["items"]],
+            items=[
+                DatasetItem(id=item["id"], revision_id=resp["revisionId"], splits=item["splits"], data=item["data"])
+                for item in resp["items"]
+            ],
         )
 
     def get_local_test_runs(self, test_external_id: str) -> List[AutoblocksTestRun]:
