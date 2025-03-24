@@ -69,10 +69,10 @@ def generate(config_path: Optional[str], api_version: str) -> None:
             raise click.ClickException(msg.strip())
 
     config = read_config(config_path)
-    
+
     # Track if we've processed any section
     processed_any = False
-    
+
     # Handle V1 prompts
     if api_version in ["v1", "all"] and AutoblocksEnvVar.API_KEY.get():
         if config.autogenerate and config.autogenerate.prompts:
@@ -82,7 +82,7 @@ def generate(config_path: Optional[str], api_version: str) -> None:
                 click.echo(f"Successfully generated V1 prompts at {config.autogenerate.prompts.outfile}")
             except Exception as e:
                 click.echo(f"Error generating V1 prompts: {str(e)}")
- 
+
     if not processed_any:
         click.echo("Warning: No prompt configurations were processed")
 
@@ -98,10 +98,10 @@ def generate(config_path: Optional[str], api_version: str) -> None:
     required=True,
     help="Output directory for generated files (e.g., 'autoblocks/prompts/v2')",
 )
-def generate_v2(api_key: Optional[str] = None, output_dir: str = None) -> None:
+def generate_v2(api_key: Optional[str] = None, output_dir: Optional[str] = None) -> None:
     """Generate V2 prompt modules from the API."""
     from autoblocks._impl.prompts.v2.discovery import generate_all_prompt_modules
-    
+
     # Check for V2 API key
     if not api_key:
         api_key = AutoblocksEnvVar.V2_API_KEY.get()
@@ -110,7 +110,7 @@ def generate_v2(api_key: Optional[str] = None, output_dir: str = None) -> None:
                 f"You must either pass in the API key via '--api-key' or "
                 f"set the {AutoblocksEnvVar.V2_API_KEY} environment variable."
             )
-    
+
     try:
         generate_all_prompt_modules(api_key, output_dir)
         click.echo(f"Successfully generated V2 prompt modules in {output_dir}")
