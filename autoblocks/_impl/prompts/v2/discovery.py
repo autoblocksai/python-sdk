@@ -6,6 +6,7 @@ from typing import List
 from typing import Optional
 from typing import cast
 
+from autoblocks._impl.config.constants import REVISION_UNDEPLOYED
 from autoblocks._impl.prompts.v2.client import PromptsAPIClient
 from autoblocks._impl.prompts.v2.models import Prompt
 from autoblocks._impl.prompts.v2.utils import indent
@@ -353,6 +354,51 @@ def generate_prompt_implementations(app_id: str, app_name: str, prompt_data: Pro
 
     implementations.append(f"# Implementations for {prompt_id}")
 
+    # Handle undeployed prompts (empty major_versions)
+    if prompt_data.is_undeployed:
+        # Generate undeployed manager class
+        undeployed_manager = f"class _{title_case_id}UndeployedPromptManager(AutoblocksPromptManager):\n"
+        undeployed_manager += f'{indent()}"""Manager for undeployed version of {prompt_id}"""\n'
+        undeployed_manager += f'{indent()}__prompt_id__ = "{prompt_id}"\n'
+        undeployed_manager += f'{indent()}__prompt_major_version__ = "{REVISION_UNDEPLOYED}"\n'
+        undeployed_manager += f'{indent()}__app_id__ = "{app_id}"\n'
+        implementations.append(undeployed_manager)
+
+        # Generate factory class for undeployed prompt
+        factory_class = f"class {title_case_id}Factory:\n"
+        factory_class += f"{indent()}@staticmethod\n"
+        factory_class += f"{indent()}def create(\n"
+        factory_class += f'{indent(2)}major_version="{REVISION_UNDEPLOYED}",\n'
+        factory_class += f"{indent(2)}minor_version='0',\n"
+        factory_class += f"{indent(2)}api_key=None,\n"
+        factory_class += f"{indent(2)}init_timeout=None,\n"
+        factory_class += f"{indent(2)}refresh_timeout=None,\n"
+        factory_class += f"{indent(2)}refresh_interval=None,\n"
+        factory_class += f"{indent(2)}):\n"
+
+        factory_class += f"{indent(2)}kwargs = {{}}\n"
+        factory_class += f"{indent(2)}if api_key is not None:\n"
+        factory_class += f"{indent(3)}kwargs['api_key'] = api_key\n"
+        factory_class += f"{indent(2)}if init_timeout is not None:\n"
+        factory_class += f"{indent(3)}kwargs['init_timeout'] = init_timeout\n"
+        factory_class += f"{indent(2)}if refresh_timeout is not None:\n"
+        factory_class += f"{indent(3)}kwargs['refresh_timeout'] = refresh_timeout\n"
+        factory_class += f"{indent(2)}if refresh_interval is not None:\n"
+        factory_class += f"{indent(3)}kwargs['refresh_interval'] = refresh_interval\n\n"
+
+        factory_class += f"{indent(2)}# Prompt has no deployed versions\n"
+        factory_class += f'{indent(2)}if major_version != "{REVISION_UNDEPLOYED}":\n'
+        factory_class += (
+            f'{indent(3)}raise ValueError(f"Unsupported major version: {{major_version}}. '
+            f'This prompt has no deployed versions.")\n'
+        )
+        factory_class += (
+            f"{indent(2)}return _{title_case_id}UndeployedPromptManager(minor_version=minor_version, **kwargs)\n"
+        )
+        implementations.append(factory_class)
+
+        return "\n\n".join(implementations)
+
     # Generate implementation for each major version
     for major_version in prompt_data.major_versions:
         version = major_version.major_version
@@ -383,7 +429,7 @@ def generate_prompt_implementations(app_id: str, app_name: str, prompt_data: Pro
         manager_class = generate_manager_class_code(title_case_id, version, prompt_id, app_id)
         implementations.append(manager_class)
 
-    # Generate factory class
+    # Only generate factory class for deployed prompts
     factory_class = generate_factory_class_code(title_case_id, prompt_id, major_versions, app_id)
     implementations.append(factory_class)
 
@@ -449,8 +495,12 @@ def generate_app_init(app_name: str, app_id: str, prompts: List[Prompt], output_
         snake_case = to_snake_case(prompt_id)
         function_name = f"{snake_case}_prompt_manager"
 
-        major_versions = [mv.major_version for mv in prompt.major_versions]
-        major_versions_str = "[" + ", ".join(f"'{v}'" for v in major_versions) + "]"
+        if prompt.is_undeployed:
+            # For undeployed prompts, use "undeployed" as the version
+            major_versions_str = f"['{REVISION_UNDEPLOYED}']"
+        else:
+            major_versions = [mv.major_version for mv in prompt.major_versions]
+            major_versions_str = "[" + ", ".join(f"'{v}'" for v in major_versions) + "]"
 
         init_code.append("PromptRegistry.register_prompt(")
         init_code.append(f"    app_normalized_name='{normalized_name}',")

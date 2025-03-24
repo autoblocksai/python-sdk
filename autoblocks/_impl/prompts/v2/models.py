@@ -60,6 +60,11 @@ class Prompt(FrozenModel):
     app_name: str = pydantic.Field(..., alias="appName")
     major_versions: List[MajorVersion] = pydantic.Field(..., alias="majorVersions")
 
+    @property
+    def is_undeployed(self) -> bool:
+        """Check if this prompt has no deployed versions (empty major_versions list)."""
+        return len(self.major_versions) == 0
+
 
 class WeightedMinorVersion(FrozenModel):
     """Weighted minor version for A/B testing."""
