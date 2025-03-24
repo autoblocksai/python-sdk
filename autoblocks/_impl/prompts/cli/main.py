@@ -35,7 +35,7 @@ def prompts() -> None:
     default="v1",
     help="API version to generate prompts for",
 )
-def generate(config_path: Optional[str], api_version: str, app_id: Optional[str]) -> None:
+def generate(config_path: Optional[str], api_version: str) -> None:
     """Generate code for prompts based on configuration file."""
     # Check V1 API key if needed
     if api_version in ["v1", "all"]:
@@ -84,10 +84,38 @@ def generate(config_path: Optional[str], api_version: str, app_id: Optional[str]
                 click.echo(f"Error generating V1 prompts: {str(e)}")
  
     if not processed_any:
-        if app_id:
-            click.echo(f"Warning: No matching configurations found for app_id: {app_id}")
-        else:
-            click.echo("Warning: No prompt configurations were processed")
+        click.echo("Warning: No prompt configurations were processed")
+
+
+@prompts.command()
+@click.option(
+    "--api-key",
+    envvar="AUTOBLOCKS_V2_API_KEY",
+    help="API key for V2 API. If not provided, the AUTOBLOCKS_V2_API_KEY environment variable is used.",
+)
+@click.option(
+    "--output-dir",
+    required=True,
+    help="Output directory for generated files (e.g., 'autoblocks/prompts/v2')",
+)
+def generate_v2(api_key: Optional[str] = None, output_dir: str = None) -> None:
+    """Generate V2 prompt modules from the API."""
+    from autoblocks._impl.prompts.v2.discovery import generate_all_prompt_modules
+    
+    # Check for V2 API key
+    if not api_key:
+        api_key = AutoblocksEnvVar.V2_API_KEY.get()
+        if not api_key:
+            raise click.ClickException(
+                f"You must either pass in the API key via '--api-key' or "
+                f"set the {AutoblocksEnvVar.V2_API_KEY} environment variable."
+            )
+    
+    try:
+        generate_all_prompt_modules(api_key, output_dir)
+        click.echo(f"Successfully generated V2 prompt modules in {output_dir}")
+    except Exception as e:
+        raise click.ClickException(f"Error generating V2 prompts: {str(e)}")
 
 
 def main() -> None:
