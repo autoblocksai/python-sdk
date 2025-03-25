@@ -14,6 +14,7 @@ from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import REVISION_LATEST
+from autoblocks._impl.config.constants import REVISION_UNDEPLOYED
 from autoblocks._impl.prompts.v2.client import PromptsAPIClient
 from autoblocks._impl.prompts.v2.context import PromptExecutionContext
 from autoblocks._impl.prompts.v2.models import PromptMinorVersion
@@ -96,7 +97,10 @@ class AutoblocksPromptManager(
         self._init()
 
         # Set up periodic refresh for latest versions
-        if REVISION_LATEST in self._minor_version.all_minor_versions:
+        if (
+            REVISION_LATEST in self._minor_version.all_minor_versions
+            or self.__prompt_major_version__ == REVISION_UNDEPLOYED
+        ):
             log.info(f"Refreshing latest prompt every {refresh_seconds} seconds")
             if running_loop := get_running_loop():
                 running_loop.create_task(self._refresh_loop())
@@ -187,7 +191,8 @@ class AutoblocksPromptManager(
     async def _refresh_latest_minor_versions(self) -> None:
         """Refresh all prompts with "latest" minor version."""
         for minor_version in list(self._minor_version_to_prompt.keys()):
-            if minor_version == REVISION_LATEST:
+            # Refresh prompts with "latest" minor version or if this is an undeployed prompt
+            if minor_version == REVISION_LATEST or self.__prompt_major_version__ == REVISION_UNDEPLOYED:
                 try:
                     new_prompt = await self._get_prompt(minor_version, self._refresh_timeout)
                     if new_prompt.get("revisionId") != self._minor_version_to_prompt[minor_version].get("revisionId"):

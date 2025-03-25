@@ -8,6 +8,8 @@ from typing import Optional
 import httpx
 
 from autoblocks._impl.config.constants import API_ENDPOINT_V2
+from autoblocks._impl.config.constants import REVISION_LATEST
+from autoblocks._impl.config.constants import REVISION_UNDEPLOYED
 from autoblocks._impl.prompts.v2.models import Prompt
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import encode_uri_component
@@ -79,6 +81,22 @@ class PromptsAPIClient:
             # Cast the response to the correct type
             result: Dict[str, Any] = response.json()
             return result
+
+    def get_undeployed_prompt(
+        self, app_id: str, prompt_id: str, minor_version: str = REVISION_LATEST
+    ) -> Dict[str, Any]:
+        """
+        Get an undeployed prompt.
+
+        Args:
+            app_id: The app ID
+            prompt_id: The prompt ID
+            minor_version: The minor version (defaults to 'latest')
+
+        Returns:
+            The undeployed prompt data
+        """
+        return self.get_prompt(app_id, prompt_id, REVISION_UNDEPLOYED, minor_version)
 
     async def get_prompt_async(
         self,
