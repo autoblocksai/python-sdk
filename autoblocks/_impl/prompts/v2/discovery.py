@@ -113,7 +113,7 @@ def generate_params_class_code(title_case_id: str, version: str, params: Dict[st
     return auto
 
 
-def generate_renderer_code(
+def generate_code(
     title_case_id: str,
     version: str,
     items: List[Dict[str, Any]],
@@ -184,14 +184,14 @@ def generate_renderer_code(
 
 def generate_template_renderer_class_code(title_case_id: str, version: str, templates: List[Dict[str, str]]) -> str:
     """Generate code for a template renderer class."""
-    return generate_renderer_code(
+    return generate_code(
         title_case_id, version, templates, "TemplateRenderer", "id", "template", "str", parse_placeholders_from_template
     )
 
 
 def generate_tool_renderer_class_code(title_case_id: str, version: str, tools: List[Dict[str, Any]]) -> str:
     """Generate code for a tool renderer class."""
-    return generate_renderer_code(
+    return generate_code(
         title_case_id,
         version,
         tools or [],
@@ -418,7 +418,7 @@ def generate_prompt_implementations(
     prompt_id = prompt_data.id
     title_case_id = to_title_case(prompt_id)
 
-    implementations = [f"# Implementations for {prompt_id}"]
+    implementations = []
 
     # Get necessary prompt data
     data = get_prompt_data(prompt_data, api_client)
@@ -438,6 +438,7 @@ def generate_prompt_implementations(
                 undeployed_data["templates"],
                 undeployed_data["tools"],
             )
+
             implementations.extend(version_impls)
         else:
             # Generate a simple manager without execution context
@@ -474,7 +475,7 @@ def generate_prompt_implementations(
         )
         implementations.append(factory_class)
 
-    return "\n\n".join(implementations)
+    return "\n".join(implementations)
 
 
 def ensure_directory_exists(directory_path: str) -> None:
@@ -594,9 +595,14 @@ def generate_app_prompts(
 
     # Add imports at the beginning of the file
     imports = [
-        "# Imports",
-        "from typing import Any, Dict, List, Optional, Union",
+        "from typing import Any",
+        "from typing import Dict",
+        "from typing import List",
+        "from typing import Optional",
+        "from typing import Union",
+        "",
         "import pydantic",
+        "",
         "from autoblocks.prompts.v2.models import FrozenModel",
         "from autoblocks.prompts.v2.context import PromptExecutionContext",
         "from autoblocks.prompts.v2.manager import AutoblocksPromptManager",
@@ -604,23 +610,17 @@ def generate_app_prompts(
         "",
     ]
 
-    # Generate implementations for each prompt, removing imports
+    # Generate implementations for each prompt, removing any existing imports
     prompt_impls = []
     for prompt in prompts:
         implementation = generate_prompt_implementations(app_id, app_name, prompt, api_client)
 
-        # Skip the imports section if it exists
-        if implementation.startswith("# Imports"):
-            # Find where the imports section ends (after blank line)
-            sections = implementation.split("\n\n")
-            if len(sections) > 1:
-                implementation = "\n\n".join(sections[1:])
-
+        # No need to check for imports since we've removed them in generate_prompt_implementations
         prompt_impls.append(implementation)
 
-    # Write to file
+    # Write to file with single empty line between classes
     with open(f"{app_dir}/prompts.py", "w") as f:
-        f.write("\n".join(imports) + "\n" + "\n\n".join(prompt_impls))
+        f.write("\n".join(imports) + "\n" + "\n".join(prompt_impls))
 
 
 def generate_all_prompt_modules(api_key: Optional[str] = None, output_dir: Optional[str] = None) -> None:
