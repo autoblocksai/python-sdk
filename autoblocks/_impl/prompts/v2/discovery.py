@@ -312,16 +312,28 @@ def generate_factory_class_code(
 
     # Prepare method signature and body
     params = [
-        'major_version="' + REVISION_UNDEPLOYED + '"' if is_undeployed else "major_version=None",
-        'minor_version="' + REVISION_LATEST + '"' if is_undeployed else 'minor_version="0"',
-        "api_key=None",
-        "init_timeout=None",
-        "refresh_timeout=None",
-        "refresh_interval=None",
+        (
+            'major_version: str = "' + REVISION_UNDEPLOYED + '"'
+            if is_undeployed
+            else "major_version: Optional[str] = None"
+        ),
+        'minor_version: str = "' + REVISION_LATEST + '"' if is_undeployed else 'minor_version: str = "0"',
+        "api_key: Optional[str] = None",
+        "init_timeout: Optional[float] = None",
+        "refresh_timeout: Optional[float] = None",
+        "refresh_interval: Optional[float] = None",
     ]
 
+    # Determine return type
+    if is_undeployed:
+        return_type = f"_{title_case_id}UndeployedPromptManager"
+    elif len(major_versions) == 1:
+        return_type = f"_{title_case_id}V{major_versions[0]}PromptManager"
+    else:
+        return_type = f"Union[{', '.join([f'_{title_case_id}V{v}PromptManager' for v in sorted(major_versions)])}]"
+
     body_lines = [
-        "kwargs = {}",
+        "kwargs: Dict[str, Any] = {}",
         "if api_key is not None:",
         "    kwargs['api_key'] = api_key",
         "if init_timeout is not None:",
@@ -367,18 +379,19 @@ def generate_factory_class_code(
         # Add error handling for the last version
         available_versions = ", ".join(sorted(major_versions))
         body_lines.append("")  # Add blank line for readability
-        body_lines.append(f'raise ValueError(f"Unsupported major version. Available versions: {available_versions}")')
+        body_lines.append(f'raise ValueError("Unsupported major version. Available versions: {available_versions}")')
 
     # Generate the class
     auto = f"class {class_name}:\n"
     auto += f"{indent()}@staticmethod\n"
     auto += f"{indent()}def create(\n"
 
-    # Add self parameter and parameters with proper indentation
-    auto += f"{indent(2)}self,\n"
+    # Add parameters with proper indentation
     for param in params:
         auto += f"{indent(2)}{param},\n"
-    auto += f"{indent(1)}):\n"
+
+    # Add return type
+    auto += f"{indent(1)}) -> {return_type}:\n"
 
     # Add method body with proper indentation
     for line in body_lines:
@@ -575,6 +588,9 @@ def generate_app_init(app_name: str, app_id: str, prompts: List[Prompt], output_
 
     init_code = [
         "# Auto-generated prompt module for app: " + app_name,
+        "from typing import Any",
+        "from typing import Optional",
+        "",
         "from . import prompts",
         "",
     ]
@@ -589,16 +605,21 @@ def generate_app_init(app_name: str, app_id: str, prompts: List[Prompt], output_
         # Function parameters with defaults
         init_code.extend(
             [
-                f"def {function_name}(major_version=None, minor_version='0',",
-                "                  api_key=None, init_timeout=None,",
-                "                  refresh_timeout=None, refresh_interval=None):",
+                f"def {function_name}(",
+                "    major_version: Optional[str] = None,",
+                "    minor_version: str = '0',",
+                "    api_key: Optional[str] = None,",
+                "    init_timeout: Optional[float] = None,",
+                "    refresh_timeout: Optional[float] = None,",
+                "    refresh_interval: Optional[float] = None,",
+                ") -> Any:",
                 f"    return prompts.{title_case_id}Factory.create(",
                 "        major_version=major_version,",
                 "        minor_version=minor_version,",
                 "        api_key=api_key,",
                 "        init_timeout=init_timeout,",
                 "        refresh_timeout=refresh_timeout,",
-                "        refresh_interval=refresh_interval",
+                "        refresh_interval=refresh_interval,",
                 "    )",
                 "",
             ]

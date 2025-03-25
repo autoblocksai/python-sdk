@@ -97,9 +97,18 @@ def infer_type(value: Any) -> Optional[str]:
         # which will use the most specific type possible.
         return "Union[float, int]"
     elif isinstance(value, list):
-        if len(value) > 0:
-            return f"list[{infer_type(value[0])}]"
-        return "list"
+        if not value:
+            return "List[Any]"  # Empty list should have a type parameter
+
+        # Check if all items have the same type
+        first_type = type(value[0])
+        if all(isinstance(item, first_type) for item in value):
+            element_type = infer_type(value[0])
+            if element_type:
+                return f"List[{element_type}]"
+
+        # Mixed types or unknown
+        return "List[Any]"
     elif isinstance(value, dict):
         return "Dict[str, Any]"
     return None
