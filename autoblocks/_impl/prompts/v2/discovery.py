@@ -51,12 +51,12 @@ class CodeGenerator:
     def generate_dict_entries(entries: Dict[str, str], level: int = 2) -> str:
         """Generate dictionary entries with proper indentation."""
         if not entries:
-            return f"{indent()}__name_mapper__ = {{}}\n\n"
+            return f"{indent()}__name_mapper__ = {{}}\n"
 
         result = f"{indent()}__name_mapper__ = {{\n"
         for key, value in sorted(entries.items()):
             result += f'{indent(level)}"{key}": "{value}",\n'
-        result += f"{indent()}}}\n\n"
+        result += f"{indent()}}}\n"
         return result
 
     @staticmethod
@@ -81,7 +81,6 @@ class CodeGenerator:
         for line in body:
             result += f"{indent(2)}{line}\n"
 
-        result += "\n"
         return result
 
 
@@ -93,7 +92,11 @@ def parse_placeholders_from_template(template: str) -> List[str]:
 
 def generate_params_class_code(title_case_id: str, version: str, params: Dict[str, Any]) -> str:
     """Generate code for a params class."""
-    class_name = f"_{title_case_id}V{version}Params"
+    # For undeployed versions, don't include the 'V' prefix
+    if version == "Undeployed":
+        class_name = f"_{title_case_id}{version}Params"
+    else:
+        class_name = f"_{title_case_id}V{version}Params"
 
     if not params:
         return f"class {class_name}(FrozenModel):\n{indent()}pass\n"
@@ -125,7 +128,11 @@ def generate_code(
     is_tool: bool = False,
 ) -> str:
     """Generate code for a renderer class (template or tool)."""
-    class_name = f"_{title_case_id}V{version}{base_class}"
+    # For undeployed versions, don't include the 'V' prefix
+    if version == REVISION_UNDEPLOYED:
+        class_name = f"_{title_case_id}{version}{base_class}"
+    else:
+        class_name = f"_{title_case_id}V{version}{base_class}"
 
     # Build a map of placeholder names
     placeholders = {}
@@ -206,10 +213,17 @@ def generate_tool_renderer_class_code(title_case_id: str, version: str, tools: L
 
 def generate_execution_context_class_code(title_case_id: str, version: str) -> str:
     """Generate code for an execution context class."""
-    class_name = f"_{title_case_id}V{version}ExecutionContext"
-    params_class = f"_{title_case_id}V{version}Params"
-    template_renderer = f"_{title_case_id}V{version}TemplateRenderer"
-    tool_renderer = f"_{title_case_id}V{version}ToolRenderer"
+    # For undeployed versions, don't include the 'V' prefix
+    if version == REVISION_UNDEPLOYED:
+        class_name = f"_{title_case_id}{version}ExecutionContext"
+        params_class = f"_{title_case_id}{version}Params"
+        template_renderer = f"_{title_case_id}{version}TemplateRenderer"
+        tool_renderer = f"_{title_case_id}{version}ToolRenderer"
+    else:
+        class_name = f"_{title_case_id}V{version}ExecutionContext"
+        params_class = f"_{title_case_id}V{version}Params"
+        template_renderer = f"_{title_case_id}V{version}TemplateRenderer"
+        tool_renderer = f"_{title_case_id}V{version}ToolRenderer"
 
     auto = CodeGenerator.generate_class_header(
         class_name, "PromptExecutionContext", [params_class, template_renderer, tool_renderer]
@@ -226,24 +240,33 @@ def generate_execution_context_class_code(title_case_id: str, version: str) -> s
 
 
 def generate_manager_class_code(
-    title_case_id: str, version: str, prompt_id: str, app_id: str, execution_context_class: Optional[str] = None
+    title_case_id: str,
+    version: str,
+    prompt_id: str,
+    app_id: str,
+    execution_context_class: Optional[str] = None,
 ) -> str:
     """Generate code for a prompt manager class."""
-    class_name = f"_{title_case_id}V{version}PromptManager"
+    # For undeployed versions, don't include the 'V' prefix
+    if version == REVISION_UNDEPLOYED:
+        class_name = f"_{title_case_id}UndeployedPromptManager"
 
-    if execution_context_class:
-        auto = CodeGenerator.generate_class_header(class_name, "AutoblocksPromptManager", [execution_context_class])
+        if execution_context_class is None:
+            execution_context_class = f"_{title_case_id}UndeployedExecutionContext"
     else:
-        auto = CodeGenerator.generate_class_header(class_name, "AutoblocksPromptManager")
+        class_name = f"_{title_case_id}V{version}PromptManager"
+
+        if execution_context_class is None:
+            execution_context_class = f"_{title_case_id}V{version}ExecutionContext"
+
+    auto = CodeGenerator.generate_class_header(class_name, "AutoblocksPromptManager", [execution_context_class])
 
     attributes = {
         "__app_id__": f'"{app_id}"',
         "__prompt_id__": f'"{prompt_id}"',
         "__prompt_major_version__": f'"{version}"',
+        "__execution_context_class__": execution_context_class,
     }
-
-    if execution_context_class:
-        attributes["__execution_context_class__"] = execution_context_class
 
     auto += CodeGenerator.generate_class_attributes(attributes)
     return auto
@@ -475,7 +498,7 @@ def generate_prompt_implementations(
         )
         implementations.append(factory_class)
 
-    return "\n".join(implementations)
+    return "\n\n".join(implementations)
 
 
 def ensure_directory_exists(directory_path: str) -> None:
@@ -608,6 +631,7 @@ def generate_app_prompts(
         "from autoblocks.prompts.v2.manager import AutoblocksPromptManager",
         "from autoblocks.prompts.v2.renderer import TemplateRenderer, ToolRenderer",
         "",
+        "",
     ]
 
     # Generate implementations for each prompt, removing any existing imports
@@ -618,7 +642,7 @@ def generate_app_prompts(
         # No need to check for imports since we've removed them in generate_prompt_implementations
         prompt_impls.append(implementation)
 
-    # Write to file with single empty line between classes
+    # Write to file with two empty lines between classes
     with open(f"{app_dir}/prompts.py", "w") as f:
         f.write("\n".join(imports) + "\n" + "\n".join(prompt_impls))
 
