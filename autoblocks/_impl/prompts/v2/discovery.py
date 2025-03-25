@@ -92,7 +92,7 @@ def parse_placeholders_from_template(template: str) -> List[str]:
 
 def generate_params_class_code(title_case_id: str, version: str, params: Dict[str, Any]) -> str:
     """Generate code for a params class."""
-    # For undeployed versions, don't include the 'V' prefix
+
     if version == "Undeployed":
         class_name = f"_{title_case_id}{version}Params"
     else:
@@ -128,9 +128,8 @@ def generate_code(
     is_tool: bool = False,
 ) -> str:
     """Generate code for a renderer class (template or tool)."""
-    # For undeployed versions, don't include the 'V' prefix
     if version == REVISION_UNDEPLOYED:
-        class_name = f"_{title_case_id}{version}{base_class}"
+        class_name = f"_{title_case_id}Undeployed{base_class}"
     else:
         class_name = f"_{title_case_id}V{version}{base_class}"
 
@@ -212,30 +211,42 @@ def generate_tool_renderer_class_code(title_case_id: str, version: str, tools: L
 
 
 def generate_execution_context_class_code(title_case_id: str, version: str) -> str:
-    """Generate code for an execution context class."""
-    # For undeployed versions, don't include the 'V' prefix
-    if version == REVISION_UNDEPLOYED:
-        class_name = f"_{title_case_id}{version}ExecutionContext"
-        params_class = f"_{title_case_id}{version}Params"
-        template_renderer = f"_{title_case_id}{version}TemplateRenderer"
-        tool_renderer = f"_{title_case_id}{version}ToolRenderer"
-    else:
-        class_name = f"_{title_case_id}V{version}ExecutionContext"
-        params_class = f"_{title_case_id}V{version}Params"
-        template_renderer = f"_{title_case_id}V{version}TemplateRenderer"
-        tool_renderer = f"_{title_case_id}V{version}ToolRenderer"
+    """Generate code for an execution context class.
 
+    This class serves as a container for the params, template renderer, and tool renderer
+    classes, and is used by the prompt manager to execute prompts.
+
+    Args:
+        title_case_id: The prompt ID in title case
+        version: The version string for this prompt
+
+    Returns:
+        Generated code for the execution context class
+    """
+    # Determine class names based on version
+    version_prefix = "Undeployed" if version == REVISION_UNDEPLOYED else f"V{version}"
+
+    # Define class names for all components
+    class_name = f"_{title_case_id}{version_prefix}ExecutionContext"
+    params_class = f"_{title_case_id}{version_prefix}Params"
+    template_renderer = f"_{title_case_id}{version_prefix}TemplateRenderer"
+    tool_renderer = f"_{title_case_id}{version_prefix}ToolRenderer"
+
+    # Generate the class header with generic parameters
     auto = CodeGenerator.generate_class_header(
         class_name, "PromptExecutionContext", [params_class, template_renderer, tool_renderer]
     )
 
+    # Define class attributes
     attributes = {
         "__params_class__": params_class,
         "__template_renderer_class__": template_renderer,
         "__tool_renderer_class__": tool_renderer,
     }
 
+    # Add attributes to the class
     auto += CodeGenerator.generate_class_attributes(attributes)
+
     return auto
 
 
@@ -246,21 +257,35 @@ def generate_manager_class_code(
     app_id: str,
     execution_context_class: Optional[str] = None,
 ) -> str:
-    """Generate code for a prompt manager class."""
-    # For undeployed versions, don't include the 'V' prefix
-    if version == REVISION_UNDEPLOYED:
-        class_name = f"_{title_case_id}UndeployedPromptManager"
+    """Generate code for a prompt manager class.
 
-        if execution_context_class is None:
-            execution_context_class = f"_{title_case_id}UndeployedExecutionContext"
-    else:
-        class_name = f"_{title_case_id}V{version}PromptManager"
+    This class is the main entry point for working with a prompt. It handles communication
+    with the Autoblocks API and provides methods for executing the prompt.
 
-        if execution_context_class is None:
-            execution_context_class = f"_{title_case_id}V{version}ExecutionContext"
+    Args:
+        title_case_id: The prompt ID in title case
+        version: The version string for this prompt
+        prompt_id: The original prompt ID
+        app_id: The ID of the app that contains this prompt
+        execution_context_class: Optional override for the execution context class name
 
+    Returns:
+        Generated code for the prompt manager class
+    """
+    # Determine version prefix for class names
+    version_prefix = "Undeployed" if version == REVISION_UNDEPLOYED else f"V{version}"
+
+    # Define class name
+    class_name = f"_{title_case_id}{version_prefix}PromptManager"
+
+    # Use provided execution context class or generate the default name
+    if execution_context_class is None:
+        execution_context_class = f"_{title_case_id}{version_prefix}ExecutionContext"
+
+    # Generate the class header with execution context as generic parameter
     auto = CodeGenerator.generate_class_header(class_name, "AutoblocksPromptManager", [execution_context_class])
 
+    # Define class attributes
     attributes = {
         "__app_id__": f'"{app_id}"',
         "__prompt_id__": f'"{prompt_id}"',
@@ -268,20 +293,19 @@ def generate_manager_class_code(
         "__execution_context_class__": execution_context_class,
     }
 
+    # Add attributes to class
     auto += CodeGenerator.generate_class_attributes(attributes)
+
     return auto
 
 
 def generate_factory_class_code(
     title_case_id: str,
-    prompt_id: str,
     major_versions: List[str],
-    app_id: str,
     is_undeployed: bool = False,
 ) -> str:
     """Generate code for a factory class."""
     class_name = f"{title_case_id}Factory"
-    version_str = "Undeployed" if is_undeployed else None
 
     # Prepare method signature and body
     params = [
@@ -313,7 +337,7 @@ def generate_factory_class_code(
                 "# Prompt has no deployed versions",
                 f'if major_version != "{REVISION_UNDEPLOYED}":',
                 '    raise ValueError("Unsupported major version. This prompt has no deployed versions.")',
-                f"return _{title_case_id}{version_str}PromptManager(minor_version=minor_version, **kwargs)",
+                f"return _{title_case_id}UndeployedPromptManager(minor_version=minor_version, **kwargs)",
             ]
         )
     else:
@@ -447,7 +471,7 @@ def generate_prompt_implementations(
     data = get_prompt_data(prompt_data, api_client)
 
     if data["is_undeployed"]:
-        version_str = "Undeployed"
+        version_str = REVISION_UNDEPLOYED
 
         # Generate classes for the undeployed prompt if we have data
         if data["undeployed_data"]:
@@ -469,9 +493,7 @@ def generate_prompt_implementations(
             implementations.append(manager_class)
 
         # Generate factory class for undeployed prompt
-        factory_class = generate_factory_class_code(
-            title_case_id=title_case_id, prompt_id=prompt_id, major_versions=[], app_id=app_id, is_undeployed=True
-        )
+        factory_class = generate_factory_class_code(title_case_id=title_case_id, major_versions=[], is_undeployed=True)
         implementations.append(factory_class)
     else:
         # Generate implementation for each major version
@@ -493,9 +515,7 @@ def generate_prompt_implementations(
             implementations.extend(version_impls)
 
         # Generate factory class for deployed prompts
-        factory_class = generate_factory_class_code(
-            title_case_id=title_case_id, prompt_id=prompt_id, major_versions=major_versions, app_id=app_id
-        )
+        factory_class = generate_factory_class_code(title_case_id=title_case_id, major_versions=major_versions)
         implementations.append(factory_class)
 
     return "\n\n".join(implementations)
@@ -644,7 +664,7 @@ def generate_app_prompts(
 
     # Write to file with two empty lines between classes
     with open(f"{app_dir}/prompts.py", "w") as f:
-        f.write("\n".join(imports) + "\n" + "\n".join(prompt_impls))
+        f.write("\n".join(imports) + "\n" + "\n\n".join(prompt_impls))
 
 
 def generate_all_prompt_modules(api_key: Optional[str] = None, output_dir: Optional[str] = None) -> None:
