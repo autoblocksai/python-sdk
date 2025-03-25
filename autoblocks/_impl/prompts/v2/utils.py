@@ -1,28 +1,30 @@
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
+from typing import Optional
+
 
 def normalize_app_name(app_name: str) -> str:
     """
     Convert app name to a valid Python identifier.
-    
+
     Args:
         app_name: The original app name
-        
+
     Returns:
         A normalized name suitable for use as a Python identifier
-        
+
     Examples:
         "My App" -> "my_app"
         "Test-ApP" -> "test_app"
         "123 Service" -> "app_123_service"
     """
     # Replace non-alphanumeric chars with underscores
-    normalized = re.sub(r'[^a-zA-Z0-9]+', '_', app_name)
-    
+    normalized = re.sub(r"[^a-zA-Z0-9]+", "_", app_name)
+
     # Ensure it starts with a letter
     if not normalized[0].isalpha():
-        normalized = 'app_' + normalized
-    
+        normalized = "app_" + normalized
+
     # Make it lowercase for consistency
     return normalized.lower()
 
@@ -30,10 +32,10 @@ def normalize_app_name(app_name: str) -> str:
 def to_snake_case(s: str) -> str:
     """
     Convert a string to snake_case.
-    
+
     Args:
         s: The string to convert
-        
+
     Returns:
         The snake_case version of the string
     """
@@ -59,19 +61,19 @@ def to_snake_case(s: str) -> str:
 def to_title_case(s: str) -> str:
     """
     Convert a string to TitleCase.
-    
+
     Args:
         s: The string to convert
-        
+
     Returns:
         The TitleCase version of the string
     """
     # Remove leading numbers
     s = re.sub(r"^\d+", "", s)
-    
+
     # Replace all non-alphanumeric characters with underscores
     s = re.sub(r"[^a-zA-Z0-9]+", "_", s)
-    
+
     # Replace all underscores with capital letter of next word
     return re.sub(r"(?:^|_)(.)", lambda m: m.group(1).upper(), s)
 
@@ -79,10 +81,10 @@ def to_title_case(s: str) -> str:
 def infer_type(value: Any) -> Optional[str]:
     """
     Infer the Python type of a value for code generation.
-    
+
     Args:
         value: The value to infer the type of
-        
+
     Returns:
         A string representation of the type, or None if the type can't be inferred
     """
@@ -106,12 +108,12 @@ def infer_type(value: Any) -> Optional[str]:
 def indent(times: int = 1, size: int = 4) -> str:
     """
     Create an indentation string.
-    
+
     Args:
         times: Number of indentation levels
         size: Size of each indentation level in spaces
-        
+
     Returns:
         A string with the specified indentation
     """
-    return " " * size * times 
+    return " " * size * times
