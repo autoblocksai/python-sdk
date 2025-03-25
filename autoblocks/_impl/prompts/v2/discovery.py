@@ -314,21 +314,28 @@ def generate_factory_class_code(
                 ]
             )
 
-        # Add error handling
+        # Add error handling for the last version
         available_versions = ", ".join(sorted(major_versions))
-        body_lines.append(
-            '    raise ValueError("Unsupported major version: " + '
-            f'f"{{major_version}}. Available versions: {available_versions}")'
-        )
+        body_lines.append("")  # Add blank line for readability
+        body_lines.append(f'raise ValueError(f"Unsupported major version. Available versions: {available_versions}")')
 
     # Generate the class
     auto = f"class {class_name}:\n"
-    auto += CodeGenerator.generate_method("create", params, body_lines, star_args=False)
-    # Fix indentation by replacing the first newline
-    auto = auto.replace("\n\n", "\n", 1)
+    auto += f"{indent()}@staticmethod\n"
+    auto += f"{indent()}def create(\n"
 
-    # Add @staticmethod decorator
-    auto = auto.replace("def create", "@staticmethod\ndef create")
+    # Add self parameter and parameters with proper indentation
+    auto += f"{indent(2)}self,\n"
+    for param in params:
+        auto += f"{indent(2)}{param},\n"
+    auto += f"{indent(1)}):\n"
+
+    # Add method body with proper indentation
+    for line in body_lines:
+        if line:
+            auto += f"{indent(2)}{line}\n"
+        else:
+            auto += "\n"
 
     return auto
 
@@ -411,15 +418,7 @@ def generate_prompt_implementations(
     prompt_id = prompt_data.id
     title_case_id = to_title_case(prompt_id)
 
-    implementations = ["# Imports"]
-    implementations.append("from typing import Any, Dict, List, Optional, Union")
-    implementations.append("import pydantic")
-    implementations.append("from autoblocks.prompts.v2.models import FrozenModel")
-    implementations.append("from autoblocks.prompts.v2.context import PromptExecutionContext")
-    implementations.append("from autoblocks.prompts.v2.manager import AutoblocksPromptManager")
-    implementations.append("from autoblocks.prompts.v2.renderer import TemplateRenderer, ToolRenderer")
-    implementations.append("")
-    implementations.append(f"# Implementations for {prompt_id}")
+    implementations = [f"# Implementations for {prompt_id}"]
 
     # Get necessary prompt data
     data = get_prompt_data(prompt_data, api_client)
@@ -593,12 +592,35 @@ def generate_app_prompts(
     app_dir = f"{output_dir}/apps/{normalized_name}"
     ensure_directory_exists(app_dir)
 
-    # Generate implementations for each prompt
-    prompt_impls = [generate_prompt_implementations(app_id, app_name, prompt, api_client) for prompt in prompts]
+    # Add imports at the beginning of the file
+    imports = [
+        "# Imports",
+        "from typing import Any, Dict, List, Optional, Union",
+        "import pydantic",
+        "from autoblocks.prompts.v2.models import FrozenModel",
+        "from autoblocks.prompts.v2.context import PromptExecutionContext",
+        "from autoblocks.prompts.v2.manager import AutoblocksPromptManager",
+        "from autoblocks.prompts.v2.renderer import TemplateRenderer, ToolRenderer",
+        "",
+    ]
+
+    # Generate implementations for each prompt, removing imports
+    prompt_impls = []
+    for prompt in prompts:
+        implementation = generate_prompt_implementations(app_id, app_name, prompt, api_client)
+
+        # Skip the imports section if it exists
+        if implementation.startswith("# Imports"):
+            # Find where the imports section ends (after blank line)
+            sections = implementation.split("\n\n")
+            if len(sections) > 1:
+                implementation = "\n\n".join(sections[1:])
+
+        prompt_impls.append(implementation)
 
     # Write to file
     with open(f"{app_dir}/prompts.py", "w") as f:
-        f.write("\n\n".join(prompt_impls))
+        f.write("\n".join(imports) + "\n" + "\n\n".join(prompt_impls))
 
 
 def generate_all_prompt_modules(api_key: Optional[str] = None, output_dir: Optional[str] = None) -> None:
