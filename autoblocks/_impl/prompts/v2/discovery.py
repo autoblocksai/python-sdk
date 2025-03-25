@@ -93,10 +93,9 @@ def parse_placeholders_from_template(template: str) -> List[str]:
 def generate_params_class_code(title_case_id: str, version: str, params: Dict[str, Any]) -> str:
     """Generate code for a params class."""
 
-    if version == "Undeployed":
-        class_name = f"_{title_case_id}{version}Params"
-    else:
-        class_name = f"_{title_case_id}V{version}Params"
+    version_prefix = "Undeployed" if version == REVISION_UNDEPLOYED else f"V{version}"
+
+    class_name = f"_{title_case_id}{version_prefix}Params"
 
     if not params:
         return f"class {class_name}(FrozenModel):\n{indent()}pass\n"
@@ -128,10 +127,10 @@ def generate_code(
     is_tool: bool = False,
 ) -> str:
     """Generate code for a renderer class (template or tool)."""
-    if version == REVISION_UNDEPLOYED:
-        class_name = f"_{title_case_id}Undeployed{base_class}"
-    else:
-        class_name = f"_{title_case_id}V{version}{base_class}"
+
+    version_prefix = "Undeployed" if version == REVISION_UNDEPLOYED else f"V{version}"
+
+    class_name = f"_{title_case_id}{version_prefix}{base_class}"
 
     # Build a map of placeholder names
     placeholders = {}
@@ -191,7 +190,14 @@ def generate_code(
 def generate_template_renderer_class_code(title_case_id: str, version: str, templates: List[Dict[str, str]]) -> str:
     """Generate code for a template renderer class."""
     return generate_code(
-        title_case_id, version, templates, "TemplateRenderer", "id", "template", "str", parse_placeholders_from_template
+        title_case_id,
+        version,
+        templates,
+        "TemplateRenderer",
+        "id",
+        "template",
+        "str",
+        parse_placeholders_from_template,
     )
 
 
@@ -255,7 +261,6 @@ def generate_manager_class_code(
     version: str,
     prompt_id: str,
     app_id: str,
-    execution_context_class: Optional[str] = None,
 ) -> str:
     """Generate code for a prompt manager class.
 
@@ -278,9 +283,7 @@ def generate_manager_class_code(
     # Define class name
     class_name = f"_{title_case_id}{version_prefix}PromptManager"
 
-    # Use provided execution context class or generate the default name
-    if execution_context_class is None:
-        execution_context_class = f"_{title_case_id}{version_prefix}ExecutionContext"
+    execution_context_class = f"_{title_case_id}{version_prefix}ExecutionContext"
 
     # Generate the class header with execution context as generic parameter
     auto = CodeGenerator.generate_class_header(class_name, "AutoblocksPromptManager", [execution_context_class])
@@ -406,7 +409,10 @@ def generate_version_implementations(
 
     # Generate manager class
     manager_class = generate_manager_class_code(
-        title_case_id, version, prompt_id, app_id, execution_context_class=f"_{title_case_id}V{version}ExecutionContext"
+        title_case_id,
+        version,
+        prompt_id,
+        app_id,
     )
     implementations.append(manager_class)
 
