@@ -1,12 +1,9 @@
 import pytest
 
-from autoblocks._impl.tracer import AutoblocksTracer
 from tests.e2e.autoblocks_prompts import app_sdk_test
 from tests.e2e.autoblocks_prompts import sdk_test_app_v3
 
 pytestmark = pytest.mark.httpx_mock(non_mocked_hosts=["dev-api.autoblocks.ai"])
-
-tracer = AutoblocksTracer()
 
 
 def test_app_sdk_test_prompt_basic_v1():
