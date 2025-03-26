@@ -1,9 +1,7 @@
-import random
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
 
 try:
     import pydantic
@@ -66,58 +64,7 @@ class Prompt(FrozenModel):
         return len(self.major_versions) == 0
 
 
-class WeightedMinorVersion(FrozenModel):
-    """Weighted minor version for A/B testing."""
-
-    version: str
-    weight: float = pydantic.Field(..., gt=0)
-
-
 class PromptMinorVersion(FrozenModel):
     """Minor version configuration for a prompt."""
 
-    version: Union[str, List[WeightedMinorVersion]]
-
-    @property
-    def str_version(self) -> Optional[str]:
-        if isinstance(self.version, list):
-            return None
-        return self.version
-
-    @property
-    def weighted_versions(self) -> Optional[List[WeightedMinorVersion]]:
-        if isinstance(self.version, list):
-            return self.version
-        return None
-
-    @property
-    def all_minor_versions(self) -> set[str]:
-        versions: set[str] = set()
-        if weighted_versions := self.weighted_versions:
-            for v in weighted_versions:
-                versions.add(v.version)
-        elif str_version := self.str_version:
-            versions.add(str_version)
-        return versions
-
-    def choose_version(self) -> str:
-        """
-        Choose a version based on weights.
-
-        Returns:
-            The chosen version string
-        """
-        if weighted_versions := self.weighted_versions:
-            # Minor version is a weighted list; choose one according
-            # to their weights.
-            (rand_str_version,) = random.choices(
-                population=[v.version for v in weighted_versions],
-                weights=[v.weight for v in weighted_versions],
-                k=1,
-            )
-            return rand_str_version
-        elif str_version := self.str_version:
-            # Minor version is a constant; return it.
-            return str_version
-
-        raise RuntimeError("Minor version should either be a string or a list of weighted versions.")
+    version: str

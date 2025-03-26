@@ -7,10 +7,8 @@ from typing import Any
 from typing import Dict
 from typing import Generic
 from typing import Iterator
-from typing import List
 from typing import Optional
 from typing import TypeVar
-from typing import Union
 
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import REVISION_LATEST
@@ -18,7 +16,6 @@ from autoblocks._impl.config.constants import REVISION_UNDEPLOYED
 from autoblocks._impl.prompts.v2.client import PromptsAPIClient
 from autoblocks._impl.prompts.v2.context import PromptExecutionContext
 from autoblocks._impl.prompts.v2.models import PromptMinorVersion
-from autoblocks._impl.prompts.v2.models import WeightedMinorVersion
 from autoblocks._impl.util import AnyTask
 from autoblocks._impl.util import get_running_loop
 
@@ -58,10 +55,7 @@ class AutoblocksPromptManager(
 
     def __init__(
         self,
-        minor_version: Union[
-            str,
-            List[WeightedMinorVersion],
-        ],
+        minor_version: str,
         api_key: Optional[str] = None,
         init_timeout: timedelta = timedelta(seconds=30),
         refresh_timeout: timedelta = timedelta(seconds=30),
@@ -71,7 +65,7 @@ class AutoblocksPromptManager(
         Initialize the prompt manager.
 
         Args:
-            minor_version: The minor version to use, or a list of weighted minor versions for A/B testing
+            minor_version: The minor version to use
             api_key: The API key to use. If None, the API key is read from the environment.
             init_timeout: Timeout for initialization
             refresh_timeout: Timeout for refreshing the prompt
@@ -97,10 +91,7 @@ class AutoblocksPromptManager(
         self._init()
 
         # Set up periodic refresh for latest versions
-        if (
-            REVISION_LATEST in self._minor_version.all_minor_versions
-            or self.__prompt_major_version__ == REVISION_UNDEPLOYED
-        ):
+        if self._minor_version.version == REVISION_LATEST or self.__prompt_major_version__ == REVISION_UNDEPLOYED:
             log.info(f"Refreshing latest prompt every {refresh_seconds} seconds")
             if running_loop := get_running_loop():
                 running_loop.create_task(self._refresh_loop())
@@ -135,27 +126,16 @@ class AutoblocksPromptManager(
 
     async def _init_async(self) -> None:
         """Initialize the prompt manager asynchronously."""
-        # Convert all_minor_versions (which is a set) to a sorted list
-        # to guarantee we get the same order both when fetching
-        # via gather and zipping together the minor versions to
-        # their results.
-        minor_versions = sorted(self._minor_version.all_minor_versions)
+        # No longer need to extract from all_minor_versions since we only have a single version
         try:
-            prompts = await asyncio.gather(
-                *[self._get_prompt(minor_version, self._init_timeout) for minor_version in minor_versions],
-            )
+            prompt = await self._get_prompt(self._minor_version.version, self._init_timeout)
         except Exception as err:
             log.error(f"Failed to initialize prompt manager for prompt '{self.__prompt_id__}': {err}")
             raise err
 
-        for minor_version, prompt in zip(minor_versions, prompts):
-            # Note that the key here is the minor version from the zipped
-            # tuple, not `prompt.minor_version`. This is because the
-            # latter will contain the actual version number, which may be
-            # different from the minor version we requested (in the case
-            # where we requested LATEST).
-            self._minor_version_to_prompt[minor_version] = prompt
-            log.info(f"Successfully fetched version '{prompt.get('version')}' of prompt '{self.__prompt_id__}'")
+        # Store the prompt data
+        self._minor_version_to_prompt[self._minor_version.version] = prompt
+        log.info(f"Successfully fetched version '{prompt.get('version')}' of prompt '{self.__prompt_id__}'")
 
     def _init(self) -> None:
         """Initialize the prompt manager."""
@@ -190,16 +170,16 @@ class AutoblocksPromptManager(
 
     async def _refresh_latest_minor_versions(self) -> None:
         """Refresh all prompts with "latest" minor version."""
-        for minor_version in list(self._minor_version_to_prompt.keys()):
-            # Refresh prompts with "latest" minor version or if this is an undeployed prompt
-            if minor_version == REVISION_LATEST or self.__prompt_major_version__ == REVISION_UNDEPLOYED:
-                try:
-                    new_prompt = await self._get_prompt(minor_version, self._refresh_timeout)
-                    if new_prompt.get("revisionId") != self._minor_version_to_prompt[minor_version].get("revisionId"):
-                        log.info(f"Refreshed latest prompt for '{self.__prompt_id__}'")
-                        self._minor_version_to_prompt[minor_version] = new_prompt
-                except Exception as e:
-                    log.error(f"Failed to refresh latest prompt for '{self.__prompt_id__}': {e}")
+        minor_version = self._minor_version.version
+        # Refresh prompts with "latest" minor version or if this is an undeployed prompt
+        if minor_version == REVISION_LATEST or self.__prompt_major_version__ == REVISION_UNDEPLOYED:
+            try:
+                new_prompt = await self._get_prompt(minor_version, self._refresh_timeout)
+                if new_prompt.get("revisionId") != self._minor_version_to_prompt[minor_version].get("revisionId"):
+                    log.info(f"Refreshed latest prompt for '{self.__prompt_id__}'")
+                    self._minor_version_to_prompt[minor_version] = new_prompt
+            except Exception as e:
+                log.error(f"Failed to refresh latest prompt for '{self.__prompt_id__}': {e}")
 
     @contextlib.contextmanager
     def exec(self) -> Iterator[ExecutionContextType]:
@@ -209,7 +189,7 @@ class AutoblocksPromptManager(
         Returns:
             A context manager that yields an execution context
         """
-        version = self._minor_version.choose_version()
+        version = self._minor_version.version
         prompt = self._minor_version_to_prompt[version]
         context = self.__execution_context_class__(prompt)
         try:
