@@ -72,9 +72,4 @@ class PromptExecutionContext(abc.ABC, Generic[ParamsType, TemplateRendererType, 
 
     def track(self) -> Dict[str, Any]:
         """Get tracking data for this prompt execution."""
-        return {
-            "id": self._prompt_data.get("id"),
-            "version": self._prompt_data.get("version"),
-            "revisionId": self._prompt_data.get("revisionId"),
-            "appId": self._prompt_data.get("appId"),
-        }
+        return self._prompt_data

@@ -80,6 +80,10 @@ class PromptsAPIClient:
 
             # Cast the response to the correct type
             result: Dict[str, Any] = response.json()
+
+            # Include the app_id in the result
+            result["appId"] = app_id
+
             return result
 
     def get_undeployed_prompt(
@@ -133,6 +137,10 @@ class PromptsAPIClient:
 
             # Cast the response to the correct type
             result: Dict[str, Any] = response.json()
+
+            # Include the app_id in the result
+            result["appId"] = app_id
+
             return result
 
     def _make_prompt_url(self, app_id: str, prompt_id: str, major_version: str, minor_version: str) -> str:
