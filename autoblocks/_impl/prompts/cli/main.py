@@ -6,6 +6,7 @@ import yaml
 
 from autoblocks._impl.prompts.autogenerate import write_generated_code_for_config
 from autoblocks._impl.prompts.cli.models import YamlConfig
+from autoblocks._impl.prompts.v2.discovery import generate_all_prompt_modules
 from autoblocks._impl.util import AutoblocksEnvVar
 
 
@@ -89,27 +90,21 @@ def generate(config_path: Optional[str], api_version: str) -> None:
 
 @prompts.command()
 @click.option(
-    "--api-key",
-    envvar="AUTOBLOCKS_V2_API_KEY",
-    help="API key for V2 API. If not provided, the AUTOBLOCKS_V2_API_KEY environment variable is used.",
-)
-@click.option(
     "--output-dir",
     required=True,
     help="Output directory for generated files (e.g., 'autoblocks/prompts/v2')",
 )
 def generate_v2(api_key: Optional[str] = None, output_dir: Optional[str] = None) -> None:
     """Generate V2 prompt modules from the API."""
-    from autoblocks._impl.prompts.v2.discovery import generate_all_prompt_modules
 
     # Check for V2 API key
+    api_key = AutoblocksEnvVar.V2_API_KEY.get()
+
     if not api_key:
-        api_key = AutoblocksEnvVar.V2_API_KEY.get()
-        if not api_key:
-            raise click.ClickException(
-                f"You must either pass in the API key via '--api-key' or "
-                f"set the {AutoblocksEnvVar.V2_API_KEY} environment variable."
-            )
+        raise click.ClickException(
+            f"You must either pass in the API key via '--api-key' or "
+            f"set the {AutoblocksEnvVar.V2_API_KEY} environment variable."
+        )
 
     try:
         generate_all_prompt_modules(api_key, output_dir)
