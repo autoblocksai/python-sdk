@@ -11,13 +11,13 @@ from typing import cast
 
 from autoblocks._impl.config.constants import REVISION_LATEST
 from autoblocks._impl.config.constants import REVISION_UNDEPLOYED
+from autoblocks._impl.prompts.utils import indent
+from autoblocks._impl.prompts.utils import infer_type
+from autoblocks._impl.prompts.utils import normalize_app_name
+from autoblocks._impl.prompts.utils import to_snake_case
+from autoblocks._impl.prompts.utils import to_title_case
 from autoblocks._impl.prompts.v2.client import PromptsAPIClient
 from autoblocks._impl.prompts.v2.models import Prompt
-from autoblocks._impl.prompts.v2.utils import indent
-from autoblocks._impl.prompts.v2.utils import infer_type
-from autoblocks._impl.prompts.v2.utils import normalize_app_name
-from autoblocks._impl.prompts.v2.utils import to_snake_case
-from autoblocks._impl.prompts.v2.utils import to_title_case
 
 log = logging.getLogger(__name__)
 

@@ -3,32 +3,6 @@ from typing import Any
 from typing import Optional
 
 
-def normalize_app_name(app_name: str) -> str:
-    """
-    Convert app name to a valid Python identifier.
-
-    Args:
-        app_name: The original app name
-
-    Returns:
-        A normalized name suitable for use as a Python identifier
-
-    Examples:
-        "My App" -> "my_app"
-        "Test-ApP" -> "test_app"
-        "123 Service" -> "app_123_service"
-    """
-    # Replace non-alphanumeric chars with underscores
-    normalized = re.sub(r"[^a-zA-Z0-9]+", "_", app_name)
-
-    # Ensure it starts with a letter
-    if not normalized[0].isalpha():
-        normalized = "app_" + normalized
-
-    # Make it lowercase for consistency
-    return normalized.lower()
-
-
 def to_snake_case(s: str) -> str:
     """
     Convert a string to snake_case.
@@ -126,3 +100,29 @@ def indent(times: int = 1, size: int = 4) -> str:
         A string with the specified indentation
     """
     return " " * size * times
+
+
+def normalize_app_name(app_name: str) -> str:
+    """
+    Convert app name to a valid Python identifier.
+
+    Args:
+        app_name: The original app name
+
+    Returns:
+        A normalized name suitable for use as a Python identifier
+
+    Examples:
+        "My App" -> "my_app"
+        "Test-ApP" -> "test_app"
+        "123 Service" -> "app_123_service"
+    """
+    # Replace non-alphanumeric chars with underscores
+    normalized = re.sub(r"[^a-zA-Z0-9]+", "_", app_name)
+
+    # Ensure it starts with a letter
+    if not normalized[0].isalpha():
+        normalized = "app_" + normalized
+
+    # Make it lowercase for consistency
+    return normalized.lower()

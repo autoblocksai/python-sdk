@@ -2,14 +2,14 @@ import os
 from unittest import mock
 
 from autoblocks._impl.config.constants import API_ENDPOINT
-from autoblocks._impl.prompts.autogenerate import infer_type
-from autoblocks._impl.prompts.autogenerate import to_snake_case
-from autoblocks._impl.prompts.autogenerate import to_title_case
 from autoblocks._impl.prompts.autogenerate import write_generated_code_for_config
 from autoblocks._impl.prompts.models import AutogeneratePromptConfig
 from autoblocks._impl.prompts.models import AutogeneratePromptsConfig
 from autoblocks._impl.prompts.placeholders import TemplatePlaceholder
 from autoblocks._impl.prompts.placeholders import parse_placeholders_from_template
+from autoblocks._impl.prompts.utils import infer_type
+from autoblocks._impl.prompts.utils import to_snake_case
+from autoblocks._impl.prompts.utils import to_title_case
 
 # Show full diff in unittest
 # import unittest
