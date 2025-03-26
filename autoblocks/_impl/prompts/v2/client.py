@@ -37,6 +37,26 @@ class PromptsAPIClient:
         self._api_key = api_key
         self._headers = {"Authorization": f"Bearer {self._api_key}"}
 
+    def _make_prompt_url(self, app_id: str, prompt_id: str, major_version: str, minor_version: str) -> str:
+        """
+        Construct the URL for a prompt API request.
+
+        Args:
+            app_id: The app ID
+            prompt_id: The prompt ID
+            major_version: The major version
+            minor_version: The minor version
+
+        Returns:
+            The full URL
+        """
+        app_id = encode_uri_component(app_id)
+        prompt_id = encode_uri_component(prompt_id)
+        major_version = encode_uri_component(major_version)
+        minor_version = encode_uri_component(minor_version)
+
+        return f"{API_ENDPOINT_V2}/apps/{app_id}/prompts/{prompt_id}/major/{major_version}/minor/{minor_version}"
+
     def get_all_prompts(self) -> List[Prompt]:
         """
         Get all prompts from all apps.
@@ -142,23 +162,3 @@ class PromptsAPIClient:
             result["appId"] = app_id
 
             return result
-
-    def _make_prompt_url(self, app_id: str, prompt_id: str, major_version: str, minor_version: str) -> str:
-        """
-        Construct the URL for a prompt API request.
-
-        Args:
-            app_id: The app ID
-            prompt_id: The prompt ID
-            major_version: The major version
-            minor_version: The minor version
-
-        Returns:
-            The full URL
-        """
-        app_id = encode_uri_component(app_id)
-        prompt_id = encode_uri_component(prompt_id)
-        major_version = encode_uri_component(major_version)
-        minor_version = encode_uri_component(minor_version)
-
-        return f"{API_ENDPOINT_V2}/apps/{app_id}/prompts/{prompt_id}/major/{major_version}/minor/{minor_version}"
