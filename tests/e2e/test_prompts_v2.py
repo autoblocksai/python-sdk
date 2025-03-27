@@ -42,7 +42,7 @@ def test_app_sdk_test_prompt_basic_v1():
 
         assert track_info["id"] == "prompt-basic"
         assert track_info["version"].startswith("1.")
-        assert track_info["appId"] == "jqg74mpzzovssq38j055yien"
+        assert track_info["appId"] == "r12a493gwnntlv17i61kryc6"
         assert "templates" in track_info
         assert len(track_info["templates"]) == 2
 
@@ -72,7 +72,7 @@ def test_app_sdk_test_prompt_basic_v2():
         track_info = ctx.track()
         assert track_info["id"] == "prompt-basic"
         assert track_info["version"].startswith("2.")
-        assert track_info["appId"] == "jqg74mpzzovssq38j055yien"
+        assert track_info["appId"] == "r12a493gwnntlv17i61kryc6"
         assert "templates" in track_info
         assert len(track_info["templates"]) == 1
 
@@ -88,7 +88,7 @@ def test_sdk_test_app_v3_prompt_basic():
         track_info = ctx.track()
         assert track_info["id"] == "prompt-basic"
         assert track_info["version"].startswith("1.")
-        assert track_info["appId"] == "n8qq0j4izc3t7p00gcx8apcg"
+        assert track_info["appId"] == "h12a6fsmomuar1ww4fuxbjgl"
 
 
 def test_sdk_test_app_v3_undeployed_prompt():
@@ -103,4 +103,4 @@ def test_sdk_test_app_v3_undeployed_prompt():
         print(track_info)
         assert track_info["id"] == "do-not-deploy"
         assert track_info["version"] == "revision:bgp4ilyn5xx8dmndw1yi95pw"
-        assert track_info["appId"] == "n8qq0j4izc3t7p00gcx8apcg"
+        assert track_info["appId"] == "h12a6fsmomuar1ww4fuxbjgl"

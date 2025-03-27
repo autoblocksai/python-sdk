@@ -47,7 +47,7 @@ class _PromptBasicV2ExecutionContext(
 
 
 class _PromptBasicV2PromptManager(AutoblocksPromptManager[_PromptBasicV2ExecutionContext]):
-    __app_id__ = "jqg74mpzzovssq38j055yien"
+    __app_id__ = "r12a493gwnntlv17i61kryc6"
     __prompt_id__ = "prompt-basic"
     __prompt_major_version__ = "2"
     __execution_context_class__ = _PromptBasicV2ExecutionContext
@@ -105,7 +105,7 @@ class _PromptBasicV1ExecutionContext(
 
 
 class _PromptBasicV1PromptManager(AutoblocksPromptManager[_PromptBasicV1ExecutionContext]):
-    __app_id__ = "jqg74mpzzovssq38j055yien"
+    __app_id__ = "r12a493gwnntlv17i61kryc6"
     __prompt_id__ = "prompt-basic"
     __prompt_major_version__ = "1"
     __execution_context_class__ = _PromptBasicV1ExecutionContext

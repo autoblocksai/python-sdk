@@ -41,7 +41,7 @@ class _DoNotDeployUndeployedExecutionContext(
 
 
 class _DoNotDeployUndeployedPromptManager(AutoblocksPromptManager[_DoNotDeployUndeployedExecutionContext]):
-    __app_id__ = "n8qq0j4izc3t7p00gcx8apcg"
+    __app_id__ = "h12a6fsmomuar1ww4fuxbjgl"
     __prompt_id__ = "do-not-deploy"
     __prompt_major_version__ = "undeployed"
     __execution_context_class__ = _DoNotDeployUndeployedExecutionContext
@@ -101,7 +101,7 @@ class _PromptBasicV1ExecutionContext(
 
 
 class _PromptBasicV1PromptManager(AutoblocksPromptManager[_PromptBasicV1ExecutionContext]):
-    __app_id__ = "n8qq0j4izc3t7p00gcx8apcg"
+    __app_id__ = "h12a6fsmomuar1ww4fuxbjgl"
     __prompt_id__ = "prompt-basic"
     __prompt_major_version__ = "1"
     __execution_context_class__ = _PromptBasicV1ExecutionContext
