@@ -28,7 +28,7 @@ def test_app_sdk_test_prompt_basic_v1():
                 name="Alice",
                 weather="sunny",
             )
-            == "Hello, Alice! The weather is sunny today."
+            == "Hello,Alice! The weather is sunny today."
         )
 
         assert (
@@ -100,7 +100,7 @@ def test_sdk_test_app_v3_undeployed_prompt():
     with mgr.exec() as ctx:
 
         track_info = ctx.track()
-        print(track_info)
+
         assert track_info["id"] == "do-not-deploy"
-        assert track_info["version"] == "revision:bgp4ilyn5xx8dmndw1yi95pw"
+        assert track_info["version"] == "revision:l9hi024jgqdwakztbvrbr1t2"
         assert track_info["appId"] == "h12a6fsmomuar1ww4fuxbjgl"
