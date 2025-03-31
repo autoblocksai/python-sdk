@@ -58,10 +58,13 @@ class PromptModulesGenerator:
             Dictionary mapping app IDs to app data.
         """
         apps_map: Dict[str, AppData] = {}
+
         for prompt in prompts:
             app_id = prompt.app_id
+
             if app_id not in apps_map:
                 apps_map[app_id] = {"app_id": app_id, "app_name": prompt.app_name, "prompts": []}
+
             prompts_list = cast(List[Prompt], apps_map[app_id]["prompts"])
             prompts_list.append(prompt)
         return apps_map

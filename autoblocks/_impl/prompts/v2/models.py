@@ -55,7 +55,7 @@ class Prompt(FrozenModel):
 
     id: str
     app_id: str = pydantic.Field(..., alias="appId")
-    app_name: str = pydantic.Field(..., alias="appName")
+    app_name: str = pydantic.Field(..., alias="slug")
     major_versions: List[MajorVersion] = pydantic.Field(..., alias="majorVersions")
 
     @property
