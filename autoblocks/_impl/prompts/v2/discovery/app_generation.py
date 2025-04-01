@@ -45,7 +45,9 @@ class AppGenerator:
             init_code.extend(
                 [
                     f"def {function_name}(",
-                    "    major_version: Optional[str] = None,",
+                    "    major_version: "
+                    + ('str = "undeployed"' if prompt.is_undeployed else "Optional[str] = None")
+                    + ",",
                     "    minor_version: str = '0',",
                     "    api_key: Optional[str] = None,",
                     "    init_timeout: Optional[float] = None,",
