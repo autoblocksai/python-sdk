@@ -93,7 +93,7 @@ def test_sdk_test_app_v3_prompt_basic():
 
 def test_sdk_test_app_v3_undeployed_prompt():
     """Test an undeployed prompt from sdk_test_app_v3."""
-    mgr = sdk_test_app_v3.do_not_deploy_prompt_manager(
+    mgr = sdk_test_app_v3.prompt_basic_prompt_manager(
         minor_version="latest",
     )
 
