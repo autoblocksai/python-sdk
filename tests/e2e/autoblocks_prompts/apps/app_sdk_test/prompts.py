@@ -13,8 +13,7 @@ from autoblocks.prompts.v2.renderer import ToolRenderer
 
 
 class _PromptBasicV2Params(FrozenModel):
-    top_k: Union[float, int] = pydantic.Field(..., alias="topK")
-    seed: Union[float, int] = pydantic.Field(..., alias="seed")
+    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
     model: str = pydantic.Field(..., alias="model")
 
 
@@ -47,19 +46,13 @@ class _PromptBasicV2ExecutionContext(
 
 
 class _PromptBasicV2PromptManager(AutoblocksPromptManager[_PromptBasicV2ExecutionContext]):
-    __app_id__ = "r12a493gwnntlv17i61kryc6"
+    __app_id__ = "uu95770k1muazxpbi4gazisr"
     __prompt_id__ = "prompt-basic"
     __prompt_major_version__ = "2"
     __execution_context_class__ = _PromptBasicV2ExecutionContext
 
 
 class _PromptBasicV1Params(FrozenModel):
-    temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
-    top_p: Union[float, int] = pydantic.Field(..., alias="topP")
-    frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
-    presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
-    stop_sequences: list[str] = pydantic.Field(..., alias="stopSequences")
     model: str = pydantic.Field(..., alias="model")
 
 
@@ -81,16 +74,6 @@ class _PromptBasicV1TemplateRenderer(TemplateRenderer):
             weather=weather,
         )
 
-    def template_b(
-        self,
-        *,
-        name: str,
-    ) -> str:
-        return self._render(
-            "template-b",
-            name=name,
-        )
-
 
 class _PromptBasicV1ToolRenderer(ToolRenderer):
     __name_mapper__ = {}
@@ -105,7 +88,7 @@ class _PromptBasicV1ExecutionContext(
 
 
 class _PromptBasicV1PromptManager(AutoblocksPromptManager[_PromptBasicV1ExecutionContext]):
-    __app_id__ = "r12a493gwnntlv17i61kryc6"
+    __app_id__ = "uu95770k1muazxpbi4gazisr"
     __prompt_id__ = "prompt-basic"
     __prompt_major_version__ = "1"
     __execution_context_class__ = _PromptBasicV1ExecutionContext

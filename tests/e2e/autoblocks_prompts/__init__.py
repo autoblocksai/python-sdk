@@ -6,5 +6,5 @@ from .apps import app_sdk_test
 from .apps import sdk_test_app_v3
 
 # Make apps available at top level
-sdk_test_app_v3 = sdk_test_app_v3
 app_sdk_test = app_sdk_test
+sdk_test_app_v3 = sdk_test_app_v3
