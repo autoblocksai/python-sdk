@@ -1193,6 +1193,85 @@ def test_creates_human_review_job(httpx_mock):
     )
 
 
+@mock.patch.dict(
+    os.environ,
+    {
+        "AUTOBLOCKS_API_KEY": "mock-api-key",
+        "CI": "false",
+    },
+)
+def test_creates_human_review_jobs(httpx_mock):
+    mock_run_id = str(uuid.uuid4())
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id=mock_run_id),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId=mock_run_id,
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
+        ),
+        json=dict(id="mock-result-id-1"),
+    )
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+            runId=mock_run_id,
+        ),
+    )
+    expect_api_post_request(
+        httpx_mock,
+        path=f"/testing/local/runs/{mock_run_id}/human-review-job",
+        body=dict(
+            assigneeEmailAddress="test@test.com",
+            name="test",
+        ),
+    )
+    expect_api_post_request(
+        httpx_mock,
+        path=f"/testing/local/runs/{mock_run_id}/human-review-job",
+        body=dict(
+            assigneeEmailAddress="test2@test.com",
+            name="test",
+        ),
+    )
+
+    async def test_fn(test_case: MyTestCase) -> str:
+        return test_case.input + "!"
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+        human_review_job=CreateHumanReviewJob(
+            assignee_email_address=["test@test.com", "test2@test.com"],
+            name="test",
+        ),
+    )
+
+
 def test_serializes(httpx_mock):
     mock_run_id = str(uuid.uuid4())
     expect_cli_post_request(
