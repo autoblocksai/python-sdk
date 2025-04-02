@@ -420,11 +420,13 @@ async def run_test_suite_for_grid_combo(
 
     if human_review_job is not None:
         try:
-            await send_create_human_review_job(
-                run_id=run_id,
-                assignee_email_address=human_review_job.assignee_email_address,
-                name=human_review_job.name,
-            )
+            assignee_email_addresses = human_review_job.get_assignee_email_addresses()
+            for assignee_email_address in assignee_email_addresses:
+                await send_create_human_review_job(
+                    run_id=run_id,
+                    assignee_email_address=assignee_email_address,
+                    name=human_review_job.name,
+                )
         except Exception as err:
             log.warn(f"Failed to create human review job for test run '{run_id}'", exc_info=err)
 
