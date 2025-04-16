@@ -17,7 +17,7 @@ class ExecutionIdSpanProcessor(SpanProcessor):
         # Retrieve baggage values from the parent context
         execution_id = get_baggage(SpanAttribute.EXECUTION_ID, context=parent_context)
         environment = get_baggage(SpanAttribute.ENVIRONMENT, context=parent_context)
-        app_id = get_baggage(SpanAttribute.APP_ID, context=parent_context)
+        app_slug = get_baggage(SpanAttribute.APP_SLUG, context=parent_context)
         test_case_run_context = test_case_run_context_var.get()
         test_run_context = test_run_context_var.get()
 
@@ -25,8 +25,8 @@ class ExecutionIdSpanProcessor(SpanProcessor):
             span.set_attribute(SpanAttribute.EXECUTION_ID, str(execution_id))
         if environment:
             span.set_attribute(SpanAttribute.ENVIRONMENT, str(environment))
-        if app_id:
-            span.set_attribute(SpanAttribute.APP_ID, str(app_id))
+        if app_slug:
+            span.set_attribute(SpanAttribute.APP_SLUG, str(app_slug))
 
         if test_run_context:
             span.set_attribute(SpanAttribute.RUN_ID, str(test_run_context.run_id))

@@ -40,7 +40,7 @@ def serialize(value: Any) -> str:
         return "\\{\\}"
 
 
-def trace_app(app_id: str, environment: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator that wraps a function call in a new span with baggage attributes.
     """
@@ -56,17 +56,17 @@ def trace_app(app_id: str, environment: str) -> Callable[[Callable[..., Any]], C
                 ctx = get_current()
                 ctx = set_baggage(SpanAttribute.EXECUTION_ID, execution_id, context=ctx)
                 ctx = set_baggage(SpanAttribute.ENVIRONMENT, environment, context=ctx)
-                ctx = set_baggage(SpanAttribute.APP_ID, app_id, context=ctx)
+                ctx = set_baggage(SpanAttribute.APP_SLUG, app_slug, context=ctx)
 
                 tracer = trace.get_tracer("AUTOBLOCKS_TRACER")
                 token = attach(ctx)
-                with tracer.start_as_current_span(app_id, context=ctx) as span:
+                with tracer.start_as_current_span(app_slug, context=ctx) as span:
                     try:
                         # Set span attributes before function execution
                         span.set_attribute(SpanAttribute.IS_ROOT, True)
                         span.set_attribute(SpanAttribute.EXECUTION_ID, execution_id)
                         span.set_attribute(SpanAttribute.ENVIRONMENT, environment)
-                        span.set_attribute(SpanAttribute.APP_ID, app_id)
+                        span.set_attribute(SpanAttribute.APP_SLUG, app_slug)
                         span.set_attribute(SpanAttribute.INPUT, serialize({"args": args, "kwargs": kwargs}))
 
                         result = await fn(*args, **kwargs)
@@ -87,16 +87,16 @@ def trace_app(app_id: str, environment: str) -> Callable[[Callable[..., Any]], C
                 ctx = get_current()
                 ctx = set_baggage(SpanAttribute.EXECUTION_ID, execution_id, context=ctx)
                 ctx = set_baggage(SpanAttribute.ENVIRONMENT, environment, context=ctx)
-                ctx = set_baggage(SpanAttribute.APP_ID, app_id, context=ctx)
+                ctx = set_baggage(SpanAttribute.APP_SLUG, app_slug, context=ctx)
 
                 tracer = trace.get_tracer("AUTOBLOCKS_TRACER")
                 token = attach(ctx)
-                with tracer.start_as_current_span(app_id, context=ctx) as span:
+                with tracer.start_as_current_span(app_slug, context=ctx) as span:
                     try:
                         span.set_attribute(SpanAttribute.IS_ROOT, True)
                         span.set_attribute(SpanAttribute.EXECUTION_ID, execution_id)
                         span.set_attribute(SpanAttribute.ENVIRONMENT, environment)
-                        span.set_attribute(SpanAttribute.APP_ID, app_id)
+                        span.set_attribute(SpanAttribute.APP_SLUG, app_slug)
                         span.set_attribute(SpanAttribute.INPUT, serialize({"args": args, "kwargs": kwargs}))
 
                         result = fn(*args, **kwargs)

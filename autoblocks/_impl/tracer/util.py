@@ -5,7 +5,7 @@ class SpanAttribute(StrEnum):
     IS_ROOT = "autoblocksIsRoot"
     EXECUTION_ID = "autoblocksExecutionId"
     ENVIRONMENT = "autoblocksEnvironment"
-    APP_ID = "autoblocksAppId"
+    APP_SLUG = "autoblocksAppSlug"
     INPUT = "autoblocksInput"
     OUTPUT = "autoblocksOutput"
     RUN_ID = "autoblocksRunId"
