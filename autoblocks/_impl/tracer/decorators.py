@@ -1,7 +1,6 @@
 import asyncio
 import functools
 import traceback
-import uuid
 from typing import Any
 from typing import Callable
 
@@ -83,7 +82,8 @@ def trace_app(app_id: str, environment: str) -> Callable[[Callable[..., Any]], C
             # Synchronous function support
             @functools.wraps(fn)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-                execution_id = str(uuid.uuid4())
+                execution_id = cuid_generator()
+                # Get current context and set baggage
                 ctx = get_current()
                 ctx = set_baggage(SpanAttribute.EXECUTION_ID, execution_id, context=ctx)
                 ctx = set_baggage(SpanAttribute.ENVIRONMENT, environment, context=ctx)
