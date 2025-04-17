@@ -13,14 +13,15 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from autoblocks._impl.tracer.span_processor import ExecutionIdSpanProcessor
+from autoblocks._impl.util import AutoblocksEnvVar
 
 log = logging.getLogger(__name__)
 
 
 def init_auto_tracer(
     *,
-    api_key: str,
-    api_endpoint: Optional[str] = "https://dev-api.autoblocks.ai/v1/traces",
+    api_key: Optional[str] = None,
+    api_endpoint: Optional[str] = "https://api-v2.autoblocks.ai/v1/traces",
     is_batch_disabled: Optional[bool] = False,
 ) -> None:
     """
@@ -35,11 +36,13 @@ def init_auto_tracer(
             ]
         )
     )
-
+    loaded_api_key = api_key or AutoblocksEnvVar.V2_API_KEY.get()
+    if not loaded_api_key:
+        raise ValueError(f"You must provide an api_key or set the {AutoblocksEnvVar.V2_API_KEY} environment variable.")
     # Configure the OTLP exporter with your endpoint and headers.
     otlp_exporter = OTLPSpanExporter(
         endpoint=api_endpoint,
-        headers={"Authorization": f"Bearer {api_key}"},
+        headers={"Authorization": f"Bearer {loaded_api_key}"},
     )
 
     # Create a resource to identify your service (using the semantic 'service.name' attribute)
