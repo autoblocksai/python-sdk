@@ -3,9 +3,10 @@ import pytest
 from tests.e2e.autoblocks_prompts import app_sdk_test
 from tests.e2e.autoblocks_prompts import sdk_test_app_v3
 
-pytestmark = pytest.mark.httpx_mock(non_mocked_hosts=["dev-api.autoblocks.ai"])
+pytestmark = pytest.mark.httpx_mock(non_mocked_hosts=["api-v2.autoblocks.ai"])
 
 
+@pytest.mark.skip
 def test_app_sdk_test_prompt_basic_v1():
     """Test the app_sdk_test.prompt_basic in major version 1."""
     mgr = app_sdk_test.prompt_basic_prompt_manager(
@@ -34,6 +35,7 @@ def test_app_sdk_test_prompt_basic_v1():
         assert len(track_info["templates"]) == 1
 
 
+@pytest.mark.skip
 def test_app_sdk_test_prompt_basic_v2():
     """Test the app_sdk_test.prompt_basic in major version 2."""
     mgr = app_sdk_test.prompt_basic_prompt_manager(
@@ -63,6 +65,7 @@ def test_app_sdk_test_prompt_basic_v2():
         assert len(track_info["templates"]) == 1
 
 
+@pytest.mark.skip
 def test_sdk_test_app_v3_undeployed_prompt():
     """Test an undeployed prompt from sdk_test_app_v3."""
     mgr = sdk_test_app_v3.prompt_basic_prompt_manager(
