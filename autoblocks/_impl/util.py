@@ -12,10 +12,14 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+from cuid2 import cuid_wrapper
+
 log = logging.getLogger(__name__)
 
 
 AnyTask = Union[asyncio.Task[Any], Future[Any]]
+
+cuid_generator = cuid_wrapper()
 
 
 class StrEnum(str, Enum):
