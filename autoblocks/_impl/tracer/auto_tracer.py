@@ -12,6 +12,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
+from autoblocks._impl.config.constants import API_ENDPOINT_V2
 from autoblocks._impl.tracer.span_processor import ExecutionIdSpanProcessor
 from autoblocks._impl.util import AutoblocksEnvVar
 
@@ -21,7 +22,7 @@ log = logging.getLogger(__name__)
 def init_auto_tracer(
     *,
     api_key: Optional[str] = None,
-    api_endpoint: Optional[str] = "https://api-v2.autoblocks.ai/v1/traces",
+    api_endpoint: Optional[str] = f"{API_ENDPOINT_V2}/otel/v1/traces",
     is_batch_disabled: Optional[bool] = False,
 ) -> None:
     """
