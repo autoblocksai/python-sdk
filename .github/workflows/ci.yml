@@ -90,13 +90,18 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Run e2e tests
-        run: poetry run pytest tests/e2e
+        run: poetry run pytest tests/e2e/test_e2e.py
         env:
           # Org-scoped API key
           AUTOBLOCKS_API_KEY: ${{ secrets.CI_AUTOBLOCKS_API_KEY }}
           # User-scoped API key
           AUTOBLOCKS_API_KEY_USER: ${{ secrets.CI_AUTOBLOCKS_API_KEY_USER_NICOLE }}
           AUTOBLOCKS_INGESTION_KEY: ${{ secrets.CI_AUTOBLOCKS_INGESTION_KEY }}
+
+      - name: Run e2e prompts v2 tests
+        run: poetry run pytest tests/e2e/test_prompts_v2.py
+        env:
+          AUTOBLOCKS_V2_API_KEY: ${{ secrets.CI_AUTOBLOCKS_V2_API_KEY }}
 
   notify:
     needs:

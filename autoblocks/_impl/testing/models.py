@@ -255,3 +255,18 @@ class EvaluationOverride:
     input_fields: list[EvaluationOverrideField]
     output_fields: list[EvaluationOverrideField]
     comments: list[EvaluationOverrideComment]
+
+
+@dataclasses.dataclass
+class CreateHumanReviewJob:
+    """
+    A request to create a human review job.
+    """
+
+    assignee_email_address: Union[str, list[str]]
+    name: str
+
+    def get_assignee_email_addresses(self) -> list[str]:
+        if isinstance(self.assignee_email_address, str):
+            return [self.assignee_email_address]
+        return self.assignee_email_address

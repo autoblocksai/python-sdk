@@ -210,6 +210,7 @@ class AutoblocksPromptManager(
         # via gather and zipping together the minor versions to
         # their results.
         minor_versions = sorted(self._minor_version.all_minor_versions)
+
         try:
             prompts = await asyncio.gather(
                 *[self._get_prompt(minor_version, self._init_timeout) for minor_version in minor_versions],
