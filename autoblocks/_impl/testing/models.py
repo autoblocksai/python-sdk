@@ -187,6 +187,34 @@ class BaseTestEvaluator(abc.ABC):
         pass
 
 
+class BaseAutoTracerEvaluator(abc.ABC):
+    """
+    An ABC for users that are implementing an evaluator that will only be run against the result of
+    an auto tracer application.
+    """
+
+    # Controls how many concurrent evaluations can be run for this evaluator
+    max_concurrency = 10
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if not isinstance(cls.max_concurrency, int):
+            raise TypeError(f"{cls.__name__}.max_concurrency must be an int")
+
+    @property
+    @abc.abstractmethod
+    def id(self) -> str:
+        pass
+
+    @abc.abstractmethod
+    def evaluate_result(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[Optional[Evaluation], Awaitable[Optional[Evaluation]]]:
+        pass
+
+
 class BaseEventEvaluator(abc.ABC):
     """
     An ABC for users that are implementing an evaluator that will only be run against production events.

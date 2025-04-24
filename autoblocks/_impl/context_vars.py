@@ -4,8 +4,10 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Union
 
+from autoblocks._impl.testing.models import BaseAutoTracerEvaluator
 from autoblocks._impl.util import StrEnum
 from autoblocks._impl.util import now_iso_8601
 
@@ -49,6 +51,7 @@ test_case_run_context_var: ContextVar[Optional[TestCaseRunContext]] = ContextVar
 class TestRunContext:
     run_id: str
     run_message: Optional[str]
+    evaluators: Optional[Sequence[BaseAutoTracerEvaluator]]
 
 
 test_run_context_var: ContextVar[Optional[TestRunContext]] = ContextVar(
