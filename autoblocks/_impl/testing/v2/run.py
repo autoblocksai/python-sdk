@@ -535,10 +535,8 @@ def run_test_suite(
 ) -> None:
     if not global_state.is_auto_tracer_initialized():
         log.error(
-            """
-            Autoblocks auto tracer is not initialized and is required for test suite runs.
-            Please call init_auto_tracer() first.
-            """
+            "Autoblocks auto tracer is not initialized and is required for test suite runs."
+            "Please call init_auto_tracer() first."
         )
         return
     log.info(f"Running test suite '{id}'")
