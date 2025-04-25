@@ -241,7 +241,7 @@ async def run_test_case_unsafe(
                     log.error(f"Error running evaluator for test case '{test_case_ctx.hash()}'", exc_info=result)
                 elif isinstance(result, Evaluation):
                     evaluator_results.append(result)
-
+                    log.info(f"appending evaluation {result} to {evaluator_results}")
             span.set_attribute(SpanAttribute.EVALUATORS, serialize(evaluator_results))
 
     detach(token)
