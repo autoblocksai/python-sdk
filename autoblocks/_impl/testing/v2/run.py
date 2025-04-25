@@ -552,3 +552,8 @@ def run_test_suite(
     ).result()
 
     log.info(f"Finished running test suite '{id}'")
+
+    # Force flush the tracer provider to send all results to Autoblocks
+    provider = trace.get_tracer_provider()
+    if hasattr(provider, "force_flush"):
+        provider.force_flush()
