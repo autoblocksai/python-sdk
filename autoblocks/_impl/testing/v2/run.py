@@ -533,6 +533,14 @@ def run_test_suite(
     grid_search_params: Optional[GridSearchParams] = None,
     human_review_job: Optional[CreateHumanReviewJob] = None,
 ) -> None:
+    if not global_state.is_auto_tracer_initialized():
+        log.error(
+            """
+            Autoblocks auto tracer is not initialized and is required for test suite runs.
+            Please call init_auto_tracer() first.
+            """
+        )
+        return
     log.info(f"Running test suite '{id}'")
     global_state.init()
 

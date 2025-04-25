@@ -13,6 +13,7 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from autoblocks._impl.config.constants import API_ENDPOINT_V2
+from autoblocks._impl.global_state import init_auto_tracer as init_auto_tracer_global_state
 from autoblocks._impl.tracer.span_processor import ExecutionIdSpanProcessor
 from autoblocks._impl.util import AutoblocksEnvVar
 
@@ -60,3 +61,4 @@ def init_auto_tracer(
     # Set the global tracer provider
     trace.set_tracer_provider(provider)
     log.debug("Autoblocks auto tracer initialized")
+    init_auto_tracer_global_state()
