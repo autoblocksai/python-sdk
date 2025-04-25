@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import traceback
 import urllib.parse
 from concurrent.futures import Future
 from datetime import datetime
@@ -12,6 +13,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+import orjson
 from cuid2 import cuid_wrapper
 
 log = logging.getLogger(__name__)
@@ -101,3 +103,31 @@ def now_iso_8601() -> str:
 
 def is_cli_running() -> bool:
     return AutoblocksEnvVar.CLI_SERVER_ADDRESS.get() is not None
+
+
+def orjson_default(o: Any) -> Any:
+    if hasattr(o, "model_dump_json") and callable(o.model_dump_json):
+        # pydantic v2
+        return orjson.loads(o.model_dump_json())
+    elif hasattr(o, "json") and callable(o.json):
+        # pydantic v1
+        return orjson.loads(o.json())
+    elif isinstance(o, Exception):
+        return "".join(
+            traceback.format_exception(
+                type(o),
+                o,
+                o.__traceback__,
+            )
+        )
+    raise TypeError
+
+
+def serialize(value: Any) -> str:
+    """
+    Serializes an unknown value to a string.
+    """
+    try:
+        return orjson.dumps(value, default=orjson_default).decode("utf-8")
+    except Exception:
+        return "\\{\\}"

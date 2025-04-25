@@ -4,7 +4,6 @@ import functools
 import inspect
 import json
 import logging
-import traceback
 from typing import Any
 from typing import Awaitable
 from typing import Callable
@@ -13,7 +12,6 @@ from typing import Sequence
 from typing import Union
 from typing import overload
 
-import orjson
 from opentelemetry import trace
 from opentelemetry.baggage import set_baggage
 from opentelemetry.context import attach
@@ -43,6 +41,7 @@ from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import cuid_generator
+from autoblocks._impl.util import serialize
 
 log = logging.getLogger(__name__)
 
@@ -50,31 +49,6 @@ test_case_semaphore_registry: dict[str, asyncio.Semaphore] = {}  # test_id -> se
 evaluator_semaphore_registry: dict[str, dict[str, asyncio.Semaphore]] = {}  # test_id -> evaluator_id -> semaphore
 
 DEFAULT_MAX_TEST_CASE_CONCURRENCY = 10
-
-
-def orjson_default(o: Any) -> Any:
-    if hasattr(o, "model_dump_json") and callable(o.model_dump_json):
-        # pydantic v2
-        return orjson.loads(o.model_dump_json())
-    elif hasattr(o, "json") and callable(o.json):
-        # pydantic v1
-        return orjson.loads(o.json())
-    elif isinstance(o, Exception):
-        return "".join(
-            traceback.format_exception(
-                type(o),
-                o,
-                o.__traceback__,
-            )
-        )
-    raise TypeError
-
-
-def serialize(value: Any) -> str:
-    try:
-        return orjson.dumps(value, default=orjson_default).decode("utf-8")
-    except Exception:
-        return "\\{\\}"
 
 
 def tests_and_hashes_overrides_map() -> Optional[dict[str, list[str]]]:
