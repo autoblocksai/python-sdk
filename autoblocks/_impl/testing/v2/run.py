@@ -10,7 +10,6 @@ from typing import Awaitable
 from typing import Callable
 from typing import Optional
 from typing import Sequence
-from typing import Tuple
 from typing import Union
 from typing import overload
 
@@ -32,6 +31,7 @@ from autoblocks._impl.context_vars import test_run_context_var
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import CreateHumanReviewJob
+from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.util import GridSearchParams
@@ -42,7 +42,6 @@ from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import cuid_generator
-from autoblocks._impl.util import is_cli_running
 
 log = logging.getLogger(__name__)
 
@@ -102,17 +101,16 @@ def filters_test_suites_list() -> list[str]:
 
 async def run_evaluator_unsafe(
     test_id: str,
-    run_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
     output: Any,
     hook_results: Any,
     evaluator: BaseTestEvaluator,
-    test_case_result_id: str,
-) -> None:
+) -> Optional[Evaluation]:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
     """
+    evaluation: Optional[Evaluation] | Awaitable[Optional[Evaluation]] = None
     async with evaluator_semaphore_registry[test_id][evaluator.id]:
         if hook_results is not None:
             kwargs = dict(hook_results=hook_results)
@@ -133,37 +131,36 @@ async def run_evaluator_unsafe(
                     **kwargs,
                 ),
             )
-
-    if evaluation is None:
-        return
+    if isinstance(evaluation, Awaitable):
+        evaluation = await evaluation
+    return evaluation
 
 
 async def run_evaluator(
     test_id: str,
-    run_id: str,
     test_case_ctx: TestCaseContext[TestCaseType],
     output: Any,
     hook_results: Any,
     evaluator: BaseTestEvaluator,
-    test_case_result_id: str,
-) -> None:
+) -> Optional[Evaluation]:
     reset_token = evaluator_run_context_var.set(
         EvaluatorRunContext(),
     )
+    evaluation: Evaluation | None = None
     try:
-        await run_evaluator_unsafe(
+        evaluation = await run_evaluator_unsafe(
             test_id=test_id,
-            run_id=run_id,
             test_case_ctx=test_case_ctx,
             output=output,
             hook_results=hook_results,
             evaluator=evaluator,
-            test_case_result_id=test_case_result_id,
         )
     except Exception as err:
         log.error(f"Error running evaluator '{evaluator.id}' for test case '{test_case_ctx.hash()}'", exc_info=err)
     finally:
         evaluator_run_context_var.reset(reset_token)
+
+    return evaluation
 
 
 async def run_test_case_unsafe(
@@ -172,7 +169,8 @@ async def run_test_case_unsafe(
     test_case_ctx: TestCaseContext[TestCaseType],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
-) -> Tuple[Any, Any]:
+    evaluators: Sequence[BaseTestEvaluator],
+) -> None:
     """
     This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
@@ -225,8 +223,28 @@ async def run_test_case_unsafe(
                         output,
                     )
 
+            evaluator_results_futures = await all_settled(
+                [
+                    run_evaluator(
+                        test_id=test_id,
+                        test_case_ctx=test_case_ctx,
+                        output=output,
+                        hook_results=hook_results,
+                        evaluator=evaluator,
+                    )
+                    for evaluator in evaluators
+                ],
+            )
+            evaluator_results: list[Evaluation] = []
+            for result in evaluator_results_futures:
+                if isinstance(result, Exception):
+                    log.error(f"Error running evaluator for test case '{test_case_ctx.hash()}'", exc_info=result)
+                elif isinstance(result, Evaluation):
+                    evaluator_results.append(result)
+
+            span.set_attribute(SpanAttribute.EVALUATORS, serialize(evaluator_results))
+
     detach(token)
-    return output, hook_results
 
 
 async def run_test_case(
@@ -246,38 +264,19 @@ async def run_test_case(
         ),
     )
     try:
-        output, hook_results = await run_test_case_unsafe(
+        await run_test_case_unsafe(
             test_id=test_id,
             app_slug=app_slug,
             test_case_ctx=test_case_ctx,
             fn=fn,
             before_evaluators_hook=before_evaluators_hook,
+            evaluators=evaluators,
         )
     except Exception as err:
         log.error(f"Error running test case '{test_case_ctx.hash()}'", exc_info=err)
         return
-
-    test_case_run_context_var.reset(reset_token)
-
-    # try:
-    #     await all_settled(
-    #         [
-    #             run_evaluator(
-    #                 test_id=test_id,
-    #                 run_id=run_id,
-    #                 test_case_ctx=test_case_ctx,
-    #                 output=output,
-    #                 hook_results=hook_results,
-    #                 evaluator=evaluator,
-    #                 test_case_result_id=test_case_result_id,
-    #             )
-    #             for evaluator in evaluators
-    #         ],
-    #     )
-    # except Exception as err:
-    #     log.error(f"Error running test case '{test_case_ctx.hash()}'", exc_info=err)
-    # finally:
-    #     test_case_run_context_var.reset(reset_token)
+    finally:
+        test_case_run_context_var.reset(reset_token)
 
 
 def validate_test_suite_inputs(
@@ -363,13 +362,12 @@ async def run_test_suite_for_grid_combo(
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
-    grid_search_run_group_id: Optional[str],
     grid_search_params_combo: Optional[GridSearchParamsCombo],
     human_review_job: Optional[CreateHumanReviewJob],
 ) -> None:
     run_id = cuid_generator()
     test_run_reset_token = test_run_context_var.set(
-        TestRunContext(run_id=run_id, run_message=AutoblocksEnvVar.TEST_RUN_MESSAGE.get())
+        TestRunContext(run_id=run_id, run_message=AutoblocksEnvVar.TEST_RUN_MESSAGE.get(), test_id=test_id)
     )
     grid_search_reset_token = (
         grid_search_context_var.set(grid_search_params_combo) if grid_search_params_combo else None
@@ -483,26 +481,11 @@ async def async_run_test_suite(
                 evaluators=evaluators,
                 fn=fn,
                 before_evaluators_hook=before_evaluators_hook,
-                grid_search_run_group_id=None,
                 grid_search_params_combo=None,
                 human_review_job=human_review_job,
             )
         except Exception as err:
             log.error(f"Error running test suite '{test_id}'", exc_info=err)
-        return
-
-    try:
-        log.debug(f"Starting grid search run for test suite '{test_id}'")
-        # grid_search_run_group_id = await send_start_grid_search_run(
-        #     grid_search_params=grid_search_params,
-        # )
-    except Exception as err:
-        # Don't allow the run to continue if /grid failed, since all subsequent
-        # requests will fail if the CLI was not able to create the grid.
-        # Also note we don't need to send_error here, since the CLI will
-        # have reported the HTTP error itself.
-        if not is_cli_running():
-            log.error(f"Error starting grid search run for '{test_id}'", exc_info=err)
         return
 
     try:
@@ -515,7 +498,6 @@ async def async_run_test_suite(
                     evaluators=evaluators,
                     fn=fn,
                     before_evaluators_hook=before_evaluators_hook,
-                    grid_search_run_group_id=None,
                     grid_search_params_combo=grid_params_combo,
                     human_review_job=human_review_job,
                 )
@@ -568,8 +550,7 @@ def run_test_suite(
     grid_search_params: Optional[GridSearchParams] = None,
     human_review_job: Optional[CreateHumanReviewJob] = None,
 ) -> None:
-    if not is_cli_running():
-        log.info(f"Running test suite '{id}'")
+    log.info(f"Running test suite '{id}'")
     global_state.init()
 
     asyncio.run_coroutine_threadsafe(
@@ -586,5 +567,5 @@ def run_test_suite(
         ),
         global_state.event_loop(),
     ).result()
-    if not is_cli_running():
-        log.info(f"Finished running test suite '{id}'")
+
+    log.info(f"Finished running test suite '{id}'")

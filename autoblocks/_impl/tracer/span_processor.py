@@ -30,6 +30,7 @@ class ExecutionIdSpanProcessor(SpanProcessor):
 
         if test_run_context:
             span.set_attribute(SpanAttribute.RUN_ID, str(test_run_context.run_id))
+            span.set_attribute(SpanAttribute.TEST_ID, str(test_run_context.test_id))
             if test_run_context.run_message:
                 span.set_attribute(SpanAttribute.RUN_MESSAGE, str(test_run_context.run_message))
         elif test_case_run_context:
