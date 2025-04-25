@@ -11,6 +11,7 @@ from opentelemetry.context import attach
 from opentelemetry.context import detach
 from opentelemetry.context import get_current
 
+from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import cuid_generator
 
@@ -46,11 +47,16 @@ def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]],
     """
 
     def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
+        test_case_run_context = test_case_run_context_var.get()
+
         # Support for async functions
         if asyncio.iscoroutinefunction(fn):
 
             @functools.wraps(fn)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                # In a test case context, the span attributes are handled separately
+                if test_case_run_context is not None:
+                    return await fn(*args, **kwargs)
                 execution_id = cuid_generator()
                 # Get current context and set baggage
                 ctx = get_current()
@@ -82,6 +88,9 @@ def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]],
             # Synchronous function support
             @functools.wraps(fn)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+                # In a test case context, the span attributes are handled separately
+                if test_case_run_context is not None:
+                    return fn(*args, **kwargs)
                 execution_id = cuid_generator()
                 # Get current context and set baggage
                 ctx = get_current()

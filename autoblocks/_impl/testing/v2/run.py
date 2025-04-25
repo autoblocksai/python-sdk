@@ -4,6 +4,7 @@ import functools
 import inspect
 import json
 import logging
+import traceback
 from typing import Any
 from typing import Awaitable
 from typing import Callable
@@ -12,6 +13,13 @@ from typing import Sequence
 from typing import Tuple
 from typing import Union
 from typing import overload
+
+import orjson
+from opentelemetry import trace
+from opentelemetry.baggage import set_baggage
+from opentelemetry.context import attach
+from opentelemetry.context import detach
+from opentelemetry.context import get_current
 
 from autoblocks._impl import global_state
 from autoblocks._impl.context_vars import EvaluatorRunContext
@@ -30,6 +38,7 @@ from autoblocks._impl.testing.util import GridSearchParams
 from autoblocks._impl.testing.util import GridSearchParamsCombo
 from autoblocks._impl.testing.util import yield_grid_search_param_combos
 from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cases
+from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import cuid_generator
@@ -41,6 +50,31 @@ test_case_semaphore_registry: dict[str, asyncio.Semaphore] = {}  # test_id -> se
 evaluator_semaphore_registry: dict[str, dict[str, asyncio.Semaphore]] = {}  # test_id -> evaluator_id -> semaphore
 
 DEFAULT_MAX_TEST_CASE_CONCURRENCY = 10
+
+
+def orjson_default(o: Any) -> Any:
+    if hasattr(o, "model_dump_json") and callable(o.model_dump_json):
+        # pydantic v2
+        return orjson.loads(o.model_dump_json())
+    elif hasattr(o, "json") and callable(o.json):
+        # pydantic v1
+        return orjson.loads(o.json())
+    elif isinstance(o, Exception):
+        return "".join(
+            traceback.format_exception(
+                type(o),
+                o,
+                o.__traceback__,
+            )
+        )
+    raise TypeError
+
+
+def serialize(value: Any) -> str:
+    try:
+        return orjson.dumps(value, default=orjson_default).decode("utf-8")
+    except Exception:
+        return "\\{\\}"
 
 
 def tests_and_hashes_overrides_map() -> Optional[dict[str, list[str]]]:
@@ -134,7 +168,7 @@ async def run_evaluator(
 
 async def run_test_case_unsafe(
     test_id: str,
-    run_id: str,
+    app_slug: str,
     test_case_ctx: TestCaseContext[TestCaseType],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
@@ -143,44 +177,62 @@ async def run_test_case_unsafe(
     This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
     """
+    execution_id = cuid_generator()
+    # Get current context and set baggage
+    otel_ctx = get_current()
+    otel_ctx = set_baggage(SpanAttribute.EXECUTION_ID, execution_id, context=otel_ctx)
+    otel_ctx = set_baggage(SpanAttribute.ENVIRONMENT, "test", context=otel_ctx)
+    otel_ctx = set_baggage(SpanAttribute.APP_SLUG, app_slug, context=otel_ctx)
+    tracer = trace.get_tracer("AUTOBLOCKS_TRACER")
+    token = attach(otel_ctx)
     async with test_case_semaphore_registry[test_id]:
-        if inspect.iscoroutinefunction(fn):
-            output = await fn(test_case_ctx.test_case)
-        else:
-            ctx = contextvars.copy_context()
-            output = await global_state.event_loop().run_in_executor(
-                None,
-                ctx.run,
-                fn,
-                test_case_ctx.test_case,
-            )
-
-        # Run the before-evaluators hook if provided.
-        # Note we run this within the test case semaphore so that
-        # max_test_case_concurrency applies to both fn + before_evaluators_hook.
-        hook_results = None
-        if before_evaluators_hook:
-            if inspect.iscoroutinefunction(before_evaluators_hook):
-                hook_results = await before_evaluators_hook(
-                    test_case_ctx.test_case,
-                    output,
-                )
+        with tracer.start_as_current_span(app_slug, context=otel_ctx) as span:
+            # Set span attributes before function execution
+            span.set_attribute(SpanAttribute.IS_ROOT, True)
+            span.set_attribute(SpanAttribute.EXECUTION_ID, execution_id)
+            span.set_attribute(SpanAttribute.ENVIRONMENT, "test")
+            span.set_attribute(SpanAttribute.APP_SLUG, app_slug)
+            span.set_attribute(SpanAttribute.INPUT, serialize(test_case_ctx.test_case))
+            if inspect.iscoroutinefunction(fn):
+                output = await fn(test_case_ctx.test_case)
             else:
                 ctx = contextvars.copy_context()
-                hook_results = await global_state.event_loop().run_in_executor(
+                output = await global_state.event_loop().run_in_executor(
                     None,
                     ctx.run,
-                    before_evaluators_hook,
+                    fn,
                     test_case_ctx.test_case,
-                    output,
                 )
+            span.set_attribute(SpanAttribute.OUTPUT, serialize(output))
 
+            # Run the before-evaluators hook if provided.
+            # Note we run this within the test case semaphore so that
+            # max_test_case_concurrency applies to both fn + before_evaluators_hook.
+            hook_results = None
+            if before_evaluators_hook:
+                if inspect.iscoroutinefunction(before_evaluators_hook):
+                    hook_results = await before_evaluators_hook(
+                        test_case_ctx.test_case,
+                        output,
+                    )
+                else:
+                    ctx = contextvars.copy_context()
+                    hook_results = await global_state.event_loop().run_in_executor(
+                        None,
+                        ctx.run,
+                        before_evaluators_hook,
+                        test_case_ctx.test_case,
+                        output,
+                    )
+
+    detach(token)
     return output, hook_results
 
 
 async def run_test_case(
     test_id: str,
     run_id: str,
+    app_slug: str,
     test_case_ctx: TestCaseContext[TestCaseType],
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
@@ -196,7 +248,7 @@ async def run_test_case(
     try:
         output, hook_results = await run_test_case_unsafe(
             test_id=test_id,
-            run_id=run_id,
+            app_slug=app_slug,
             test_case_ctx=test_case_ctx,
             fn=fn,
             before_evaluators_hook=before_evaluators_hook,
@@ -306,6 +358,7 @@ def filter_test_cases_for_alignment_mode(
 
 async def run_test_suite_for_grid_combo(
     test_id: str,
+    app_slug: str,
     test_cases: Sequence[TestCaseType],
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
@@ -328,6 +381,7 @@ async def run_test_suite_for_grid_combo(
                 run_test_case(
                     test_id=test_id,
                     run_id=run_id,
+                    app_slug=app_slug,
                     test_case_ctx=test_case_ctx,
                     evaluators=evaluators,
                     fn=fn,
@@ -370,6 +424,7 @@ async def run_test_suite_for_grid_combo(
 
 async def async_run_test_suite(
     test_id: str,
+    app_slug: str,
     test_cases: Sequence[TestCaseType],
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
@@ -423,6 +478,7 @@ async def async_run_test_suite(
             log.debug(f"No grid search params provided for test suite '{test_id}'")
             await run_test_suite_for_grid_combo(
                 test_id=test_id,
+                app_slug=app_slug,
                 test_cases=test_cases,
                 evaluators=evaluators,
                 fn=fn,
@@ -454,6 +510,7 @@ async def async_run_test_suite(
             [
                 run_test_suite_for_grid_combo(
                     test_id=test_id,
+                    app_slug=app_slug,
                     test_cases=test_cases,
                     evaluators=evaluators,
                     fn=fn,
@@ -473,7 +530,7 @@ async def async_run_test_suite(
 @overload
 def run_test_suite(
     id: str,
-    app_name: str,
+    app_slug: str,
     test_cases: Sequence[TestCaseType],
     fn: Callable[[TestCaseType], Any],
     evaluators: Optional[Sequence[BaseTestEvaluator]] = None,
@@ -488,7 +545,7 @@ def run_test_suite(
 @overload
 def run_test_suite(
     id: str,
-    app_name: str,
+    app_slug: str,
     test_cases: Sequence[TestCaseType],
     fn: Callable[[TestCaseType], Awaitable[Any]],
     evaluators: Optional[Sequence[BaseTestEvaluator]] = None,
@@ -501,7 +558,7 @@ def run_test_suite(
 
 def run_test_suite(
     id: str,
-    app_name: str,
+    app_slug: str,
     test_cases: Sequence[TestCaseType],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     evaluators: Optional[Sequence[BaseTestEvaluator]] = None,
@@ -518,6 +575,7 @@ def run_test_suite(
     asyncio.run_coroutine_threadsafe(
         async_run_test_suite(
             test_id=id,
+            app_slug=app_slug,
             test_cases=test_cases,
             evaluators=evaluators or [],
             fn=fn,
