@@ -9,6 +9,7 @@ from opentelemetry.sdk.trace import SpanProcessor
 from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.context_vars import test_run_context_var
 from autoblocks._impl.tracer.util import SpanAttribute
+from autoblocks._impl.util import AutoblocksEnvVar
 
 
 # Custom span processor that attaches baggage values to the span on start
@@ -29,6 +30,9 @@ class ExecutionIdSpanProcessor(SpanProcessor):
             span.set_attribute(SpanAttribute.APP_SLUG, str(app_slug))
 
         if test_run_context:
+            build_id = AutoblocksEnvVar.CI_TEST_RUN_BUILD_ID.get()
+            if build_id:
+                span.set_attribute(SpanAttribute.BUILD_ID, str(build_id))
             span.set_attribute(SpanAttribute.RUN_ID, str(test_run_context.run_id))
             span.set_attribute(SpanAttribute.TEST_ID, str(test_run_context.test_id))
             if test_run_context.run_message:

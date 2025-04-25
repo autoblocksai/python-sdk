@@ -12,3 +12,4 @@ class SpanAttribute(StrEnum):
     RUN_MESSAGE = "autoblocksRunMessage"
     TEST_ID = "autoblocksTestId"
     EVALUATORS = "autoblocksEvaluators"
+    BUILD_ID = "autoblocksBuildId"
