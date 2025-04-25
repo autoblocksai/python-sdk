@@ -32,6 +32,7 @@ from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
 from autoblocks._impl.testing.models import CreateHumanReviewJob
 from autoblocks._impl.testing.models import Evaluation
+from autoblocks._impl.testing.models import EvaluationWithId
 from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.util import GridSearchParams
@@ -142,7 +143,7 @@ async def run_evaluator(
     output: Any,
     hook_results: Any,
     evaluator: BaseTestEvaluator,
-) -> Optional[Evaluation]:
+) -> Optional[EvaluationWithId]:
     reset_token = evaluator_run_context_var.set(
         EvaluatorRunContext(),
     )
@@ -160,7 +161,16 @@ async def run_evaluator(
     finally:
         evaluator_run_context_var.reset(reset_token)
 
-    return evaluation
+    if evaluation is None:
+        return None
+
+    return EvaluationWithId(
+        id=evaluator.id,
+        score=evaluation.score,
+        threshold=evaluation.threshold,
+        metadata=evaluation.metadata,
+        assertions=evaluation.assertions,
+    )
 
 
 async def run_test_case_unsafe(
@@ -235,13 +245,12 @@ async def run_test_case_unsafe(
                     for evaluator in evaluators
                 ],
             )
-            evaluator_results: list[Evaluation] = []
+            evaluator_results: list[EvaluationWithId] = []
             for result in evaluator_results_futures:
                 if isinstance(result, Exception):
                     log.error(f"Error running evaluator for test case '{test_case_ctx.hash()}'", exc_info=result)
-                elif isinstance(result, Evaluation):
+                elif isinstance(result, EvaluationWithId):
                     evaluator_results.append(result)
-                    log.info(f"appending evaluation {result} to {evaluator_results}")
             span.set_attribute(SpanAttribute.EVALUATORS, serialize(evaluator_results))
 
     detach(token)
