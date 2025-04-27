@@ -30,7 +30,7 @@ class ExecutionIdSpanProcessor(SpanProcessor):
             span.set_attribute(SpanAttribute.APP_SLUG, str(app_slug))
 
         if test_run_context:
-            build_id = AutoblocksEnvVar.CI_TEST_RUN_BUILD_ID.get()
+            build_id = AutoblocksEnvVar.V2_CI_TEST_RUN_BUILD_ID.get()
             if build_id:
                 span.set_attribute(SpanAttribute.BUILD_ID, str(build_id))
             span.set_attribute(SpanAttribute.RUN_ID, str(test_run_context.run_id))
