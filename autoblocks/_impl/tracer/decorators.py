@@ -21,7 +21,6 @@ def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]],
     """
 
     def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
-        test_case_run_context = test_case_run_context_var.get()
 
         # Support for async functions
         if asyncio.iscoroutinefunction(fn):
@@ -29,6 +28,7 @@ def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]],
             @functools.wraps(fn)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 # In a test case context, the span attributes are handled separately
+                test_case_run_context = test_case_run_context_var.get()
                 if test_case_run_context is not None:
                     return await fn(*args, **kwargs)
                 execution_id = cuid_generator()
@@ -63,6 +63,7 @@ def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]],
             @functools.wraps(fn)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                 # In a test case context, the span attributes are handled separately
+                test_case_run_context = test_case_run_context_var.get()
                 if test_case_run_context is not None:
                     return fn(*args, **kwargs)
                 execution_id = cuid_generator()

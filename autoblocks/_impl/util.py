@@ -129,5 +129,6 @@ def serialize(value: Any) -> str:
     """
     try:
         return orjson.dumps(value, default=orjson_default).decode("utf-8")
-    except Exception:
+    except Exception as e:
+        log.debug(f"Failed to serialize value: {value}", exc_info=e)
         return "\\{\\}"
