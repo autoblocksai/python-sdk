@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import traceback
 import urllib.parse
 from concurrent.futures import Future
 from datetime import datetime
@@ -12,6 +13,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+import orjson
 from cuid2 import cuid_wrapper
 
 log = logging.getLogger(__name__)
@@ -41,6 +43,7 @@ class AutoblocksEnvVar(StrEnum):
     OVERRIDES_TESTS_AND_HASHES = "AUTOBLOCKS_OVERRIDES_TESTS_AND_HASHES"
     TRACER_THROW_ON_ERROR = "AUTOBLOCKS_TRACER_THROW_ON_ERROR"
     CI_TEST_RUN_BUILD_ID = "AUTOBLOCKS_CI_TEST_RUN_BUILD_ID"
+    V2_CI_TEST_RUN_BUILD_ID = "AUTOBLOCKS_V2_CI_TEST_RUN_BUILD_ID"
     SLACK_WEBHOOK_URL = "AUTOBLOCKS_SLACK_WEBHOOK_URL"
     TEST_RUN_MESSAGE = "AUTOBLOCKS_TEST_RUN_MESSAGE"
     DISABLE_GITHUB_COMMENT = "AUTOBLOCKS_DISABLE_GITHUB_COMMENT"
@@ -101,3 +104,32 @@ def now_iso_8601() -> str:
 
 def is_cli_running() -> bool:
     return AutoblocksEnvVar.CLI_SERVER_ADDRESS.get() is not None
+
+
+def orjson_default(o: Any) -> Any:
+    if hasattr(o, "model_dump_json") and callable(o.model_dump_json):
+        # pydantic v2
+        return orjson.loads(o.model_dump_json())
+    elif hasattr(o, "json") and callable(o.json):
+        # pydantic v1
+        return orjson.loads(o.json())
+    elif isinstance(o, Exception):
+        return "".join(
+            traceback.format_exception(
+                type(o),
+                o,
+                o.__traceback__,
+            )
+        )
+    raise TypeError
+
+
+def serialize(value: Any) -> str:
+    """
+    Serializes an unknown value to a string.
+    """
+    try:
+        return orjson.dumps(value, default=orjson_default).decode("utf-8")
+    except Exception as e:
+        log.debug(f"Failed to serialize value: {value}", exc_info=e)
+        return "\\{\\}"

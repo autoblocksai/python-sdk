@@ -21,6 +21,7 @@ _background_tasks: Set[AnyTask] = set()
 _main_thread_has_finished: bool = False
 _test_run_api_semaphore: Optional[asyncio.Semaphore] = None
 _github_comment_semaphore: Optional[asyncio.Semaphore] = None
+_is_auto_tracer_initialized: bool = False
 
 
 def _run_event_loop(_event_loop: asyncio.AbstractEventLoop) -> None:
@@ -131,6 +132,15 @@ def init() -> None:
     ).result()
 
     _started = True
+
+
+def init_auto_tracer() -> None:
+    global _is_auto_tracer_initialized
+    _is_auto_tracer_initialized = True
+
+
+def is_auto_tracer_initialized() -> bool:
+    return _is_auto_tracer_initialized
 
 
 async def init_semaphores() -> None:

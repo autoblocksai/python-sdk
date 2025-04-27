@@ -49,6 +49,7 @@ test_case_run_context_var: ContextVar[Optional[TestCaseRunContext]] = ContextVar
 class TestRunContext:
     run_id: str
     run_message: Optional[str]
+    test_id: str
 
 
 test_run_context_var: ContextVar[Optional[TestRunContext]] = ContextVar(

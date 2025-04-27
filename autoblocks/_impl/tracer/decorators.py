@@ -1,43 +1,18 @@
 import asyncio
 import functools
-import traceback
 from typing import Any
 from typing import Callable
 
-import orjson
 from opentelemetry import trace
 from opentelemetry.baggage import set_baggage
 from opentelemetry.context import attach
 from opentelemetry.context import detach
 from opentelemetry.context import get_current
 
+from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import cuid_generator
-
-
-def orjson_default(o: Any) -> Any:
-    if hasattr(o, "model_dump_json") and callable(o.model_dump_json):
-        # pydantic v2
-        return orjson.loads(o.model_dump_json())
-    elif hasattr(o, "json") and callable(o.json):
-        # pydantic v1
-        return orjson.loads(o.json())
-    elif isinstance(o, Exception):
-        return "".join(
-            traceback.format_exception(
-                type(o),
-                o,
-                o.__traceback__,
-            )
-        )
-    raise TypeError
-
-
-def serialize(value: Any) -> str:
-    try:
-        return orjson.dumps(value, default=orjson_default).decode("utf-8")
-    except Exception:
-        return "\\{\\}"
+from autoblocks._impl.util import serialize
 
 
 def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -46,11 +21,16 @@ def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]],
     """
 
     def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
+
         # Support for async functions
         if asyncio.iscoroutinefunction(fn):
 
             @functools.wraps(fn)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                # In a test case context, the span attributes are handled separately
+                test_case_run_context = test_case_run_context_var.get()
+                if test_case_run_context is not None:
+                    return await fn(*args, **kwargs)
                 execution_id = cuid_generator()
                 # Get current context and set baggage
                 ctx = get_current()
@@ -82,6 +62,10 @@ def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]],
             # Synchronous function support
             @functools.wraps(fn)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+                # In a test case context, the span attributes are handled separately
+                test_case_run_context = test_case_run_context_var.get()
+                if test_case_run_context is not None:
+                    return fn(*args, **kwargs)
                 execution_id = cuid_generator()
                 # Get current context and set baggage
                 ctx = get_current()
