@@ -107,8 +107,6 @@ class DatasetsClient:
         """
         url = f"{self.base_url}/{path}"
 
-        print(f"URL: {url}")
-
         # If the data is a Pydantic model, serialize it
         json_data: Optional[Any] = None
         if data is not None and hasattr(data, "model_dump"):
@@ -175,7 +173,7 @@ class DatasetsClient:
         """
         path = self._build_app_path("datasets")
         response = self._make_request("GET", path)
-        return deserialize_model_list(DatasetListItem, response["datasets"])
+        return deserialize_model_list(DatasetListItem, response)
 
     def create(
         self,
@@ -220,6 +218,7 @@ class DatasetsClient:
             except Exception as e:
                 raise ValidationError(f"Invalid schema property at index {i}: {str(e)}")
 
+        # Use the field alias to ensure it's sent as 'schema' to the API
         data["schema"] = processed_schema
 
         # Make the API call
@@ -273,7 +272,7 @@ class DatasetsClient:
 
         path = self._build_app_path("datasets", external_id, "items")
         response = self._make_request("GET", path)
-        return deserialize_model_list(DatasetItem, response["items"])
+        return deserialize_model_list(DatasetItem, response)
 
     def create_items(
         self,
@@ -347,7 +346,7 @@ class DatasetsClient:
             "datasets", dataset_id, "revisions", revision_id, "items", query_params=query_params
         )
         response = self._make_request("GET", path)
-        return deserialize_model_list(DatasetItem, response["items"])
+        return deserialize_model_list(DatasetItem, response)
 
     def get_items_by_schema_version(
         self, *, dataset_id: str, schema_version: int, splits: Optional[List[str]] = None
@@ -371,7 +370,7 @@ class DatasetsClient:
             "datasets", dataset_id, "schema", str(schema_version), "items", query_params=query_params
         )
         response = self._make_request("GET", path)
-        return deserialize_model_list(DatasetItem, response["items"])
+        return deserialize_model_list(DatasetItem, response)
 
     def update_item(
         self,

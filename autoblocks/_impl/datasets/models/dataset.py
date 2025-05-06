@@ -25,9 +25,12 @@ class Dataset(BaseModel):
 
     id: str
     external_id: str = Field(alias="externalId")
-    name: str
+    name: Optional[str] = None
     description: Optional[str] = None
-    created_at: str = Field(alias="createdAt")
+    created_at: Optional[str] = Field(default=None, alias="createdAt")
+    latest_revision_id: Optional[str] = Field(default=None, alias="latestRevisionId")
+    schema_version: Optional[int] = Field(default=None, alias="schemaVersion")
+    schema_properties: Optional[List[SchemaProperty]] = Field(default=None, alias="schema")
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -40,9 +43,11 @@ class DatasetListItem(BaseModel):
 
     id: str
     external_id: str = Field(alias="externalId")
-    name: str
+    name: Optional[str] = None
     description: Optional[str] = None
     latest_revision_id: Optional[str] = Field(default=None, alias="latestRevisionId")
+    schema_version: Optional[int] = Field(default=None, alias="schemaVersion")
+    schema_properties: Optional[List[Any]] = Field(default=None, alias="schema")
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -56,7 +61,7 @@ class DatasetSchema(BaseModel):
     id: str
     external_id: str = Field(alias="externalId")
     description: Optional[str] = None
-    schema_properties: List[SchemaProperty] = Field(alias="schema")
+    schema_properties: Optional[List[SchemaProperty]] = Field(default=None, alias="schema")
     schema_version: int = Field(alias="schemaVersion")
 
     model_config = ConfigDict(
@@ -84,7 +89,7 @@ class CreateDatasetRequest(BaseModel):
 
     name: str
     description: Optional[str] = None
-    schema: SchemaPropertyList  # type: ignore
+    schema_properties: SchemaPropertyList = Field(alias="schema")
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -102,8 +107,8 @@ class CreateDatasetRequest(BaseModel):
     @model_validator(mode="after")
     def validate_schema(self) -> "CreateDatasetRequest":
         """Ensure schema properties have IDs"""
-        if self.schema:
-            for i, prop in enumerate(self.schema):
+        if self.schema_properties:
+            for i, prop in enumerate(self.schema_properties):
                 # If it's a dict, ensure it has an id
                 if isinstance(prop, dict) and "id" not in prop:
                     prop["id"] = cuid_generator()
