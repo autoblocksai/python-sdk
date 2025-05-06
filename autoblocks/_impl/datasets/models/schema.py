@@ -80,6 +80,14 @@ class ListOfStringsProperty(BaseSchemaProperty):
     type: Literal[SchemaPropertyType.LIST_OF_STRINGS]
 
 
+# Shared options validation method
+def validate_options(class_name: str, v: List[str]) -> List[str]:
+    """Validate that options is not empty"""
+    if not v:
+        raise ValueError(f"Options cannot be empty for {class_name}")
+    return v
+
+
 class SelectProperty(BaseSchemaProperty):
     """Select property"""
 
@@ -90,9 +98,7 @@ class SelectProperty(BaseSchemaProperty):
     @classmethod
     def validate_options(cls, v: List[str]) -> List[str]:
         """Validate that options is not empty"""
-        if not v:
-            raise ValueError("Options cannot be empty for SelectProperty")
-        return v
+        return validate_options("SelectProperty", v)
 
 
 class MultiSelectProperty(BaseSchemaProperty):
@@ -105,9 +111,7 @@ class MultiSelectProperty(BaseSchemaProperty):
     @classmethod
     def validate_options(cls, v: List[str]) -> List[str]:
         """Validate that options is not empty"""
-        if not v:
-            raise ValueError("Options cannot be empty for MultiSelectProperty")
-        return v
+        return validate_options("MultiSelectProperty", v)
 
 
 class ValidJSONProperty(BaseSchemaProperty):
@@ -137,7 +141,19 @@ SchemaProperty = Union[
 
 
 # Type mapping for factory function
-PROPERTY_TYPE_MAP: Dict[SchemaPropertyType, Type[BaseSchemaProperty]] = {
+PROPERTY_TYPE_MAP: Dict[
+    SchemaPropertyType,
+    Type[
+        StringProperty
+        | NumberProperty
+        | BooleanProperty
+        | ListOfStringsProperty
+        | SelectProperty
+        | MultiSelectProperty
+        | ValidJSONProperty
+        | ConversationProperty
+    ],
+] = {
     SchemaPropertyType.STRING: StringProperty,
     SchemaPropertyType.NUMBER: NumberProperty,
     SchemaPropertyType.BOOLEAN: BooleanProperty,
@@ -185,4 +201,4 @@ def create_schema_property(data: Dict[str, Any]) -> SchemaProperty:
 
     # Validate and create the model
     property_instance = model_class.model_validate(data)
-    return property_instance  # type: ignore
+    return property_instance

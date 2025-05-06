@@ -46,7 +46,7 @@ class DatasetListItem(BaseModel):
     description: Optional[str] = None
     latest_revision_id: Optional[str] = Field(default=None, alias="latestRevisionId")
     schema_version: Optional[int] = Field(default=None, alias="schemaVersion")
-    schema_properties: Optional[List[Any]] = Field(default=None, alias="schema")
+    schema_properties: Optional[List[SchemaPropertyList]] = Field(default=None, alias="schema")
 
     model_config = ConfigDict(
         populate_by_name=True,

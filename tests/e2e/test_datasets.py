@@ -153,6 +153,7 @@ class TestConversationSchemaType:
 
         # Since conversation is stored as JSON, compare the structure
         assert "conversation" in retrieved_items[0].data
+        assert retrieved_items[0].data["conversation"] == conversation_data
 
 
 class TestDatasetItemsOperations:

@@ -1,12 +1,10 @@
 """AutoblocksAppClient for app-specific operations requiring an app_slug."""
 
+from datetime import timedelta
 from typing import Optional
-from typing import TypeVar
 
 from autoblocks._impl.datasets.client import DatasetsClient
 from autoblocks._impl.util import AutoblocksEnvVar
-
-T = TypeVar("T")
 
 
 class AutoblocksAppClient:
@@ -17,14 +15,16 @@ class AutoblocksAppClient:
     working with datasets.
     """
 
-    def __init__(self, app_slug: str, api_key: Optional[str] = None, timeout_ms: int = 60000) -> None:
+    def __init__(
+        self, app_slug: str, api_key: Optional[str] = None, timeout: timedelta = timedelta(seconds=10)
+    ) -> None:
         """
         Initialize the app client.
 
         Args:
             app_slug: The app slug to use for all operations
             api_key: Autoblocks API key (optional, will use V2_API_KEY env var if not provided)
-            timeout_ms: Request timeout in milliseconds (default: 60000)
+            timeout: Request timeout as a timedelta (default: 10 seconds)
         """
         # Get API key from env var if not provided
         self.api_key = api_key or AutoblocksEnvVar.V2_API_KEY.get()
@@ -38,14 +38,14 @@ class AutoblocksAppClient:
             raise ValueError("app_slug is required")
 
         self.app_slug = app_slug
-        self.timeout_ms = timeout_ms
+        self.timeout = timeout
 
         # Initialize datasets client lazily
         self._datasets = DatasetsClient(
             {
                 "api_key": self.api_key,
                 "app_slug": self.app_slug,
-                "timeout_ms": self.timeout_ms,
+                "timeout_ms": int(timeout.total_seconds() * 1000),
             }
         )
 

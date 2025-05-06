@@ -143,10 +143,10 @@ class DatasetsClient:
                 if response.status_code == 400:
                     try:
                         error_content = response.json()
-                        print(f"Error response (400 Bad Request): {json.dumps(error_content, indent=2)}")
+                        log.error(f"Error response (400 Bad Request): {json.dumps(error_content, indent=2)}")
                     except Exception as e:
-                        print(f"Error response (400 Bad Request): {response.text}")
-                        print(f"Failed to parse JSON: {str(e)}")
+                        log.error(f"Error response (400 Bad Request): {response.text}")
+                        log.error(f"Failed to parse JSON: {str(e)}")
 
                 self._handle_response_error(response)
 

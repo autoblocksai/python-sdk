@@ -1,5 +1,6 @@
 """Helper functions for dataset operations."""
 
+import urllib.parse
 from typing import Any
 from typing import Dict
 from typing import Generator
@@ -20,14 +21,17 @@ def build_path(*parts: str, query_params: Optional[Dict[str, Any]] = None) -> st
     Returns:
         Built path with encoded query parameters if any
     """
-    path = "/".join(part.strip("/") for part in parts if part)
+    # URL encode each path part
+    path = "/".join(urllib.parse.quote(part.strip("/")) for part in parts if part)
 
     # Add query parameters if provided
     if query_params:
         # Filter out None values
         filtered_params = {k: v for k, v in query_params.items() if v is not None}
         if filtered_params:
-            query_string = "&".join(f"{k}={v}" for k, v in filtered_params.items())
+            query_string = "&".join(
+                f"{urllib.parse.quote(str(k))}={urllib.parse.quote(str(v))}" for k, v in filtered_params.items()
+            )
             path = f"{path}?{query_string}"
 
     return path
