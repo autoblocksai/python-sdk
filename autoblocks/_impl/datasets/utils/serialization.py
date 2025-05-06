@@ -4,16 +4,15 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Type
-from typing import TypeAlias
 from typing import TypeVar
 from typing import Union
 
 from pydantic import BaseModel
 
 # Type aliases for cleaner code
-JsonDict: TypeAlias = Dict[str, Any]
-JsonList: TypeAlias = List[Any]
-JsonValue: TypeAlias = Union[str, int, float, bool, None, JsonDict, JsonList]
+JsonDict = Dict[str, Any]
+JsonList = List[Any]
+JsonValue = Union[str, int, float, bool, None, JsonDict, JsonList]
 
 T = TypeVar("T", bound=BaseModel)
 
