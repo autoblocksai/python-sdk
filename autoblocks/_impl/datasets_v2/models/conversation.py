@@ -3,6 +3,7 @@
 from typing import List
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import field_validator
 from pydantic import model_validator
 
@@ -15,9 +16,10 @@ class ConversationMessage(BaseModel):
     role: str
     content: str
 
-    class Config:
-        populate_by_name = True
-        extra = "forbid"
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )
 
     @field_validator("role")
     @classmethod
@@ -44,9 +46,10 @@ class ConversationTurn(BaseModel):
     turn: int
     messages: List[ConversationMessage]
 
-    class Config:
-        populate_by_name = True
-        extra = "forbid"
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )
 
     @field_validator("turn")
     @classmethod
@@ -73,9 +76,10 @@ class Conversation(BaseModel):
     roles: List[str]
     turns: List[ConversationTurn]
 
-    class Config:
-        populate_by_name = True
-        extra = "forbid"
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )
 
     @field_validator("roles")
     @classmethod

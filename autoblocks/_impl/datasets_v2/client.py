@@ -1,26 +1,27 @@
 """Datasets V2 API Client."""
 
 import functools
+import json
 import logging
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Type
 from typing import TypeVar
+from typing import Union
 
 import httpx
+from pydantic import BaseModel
 
 from autoblocks._impl.config.constants import API_ENDPOINT_V2
 from autoblocks._impl.datasets_v2.exceptions import APIError
-from autoblocks._impl.datasets_v2.exceptions import AuthenticationError
-from autoblocks._impl.datasets_v2.exceptions import RateLimitError
-from autoblocks._impl.datasets_v2.exceptions import ResourceNotFoundError
 from autoblocks._impl.datasets_v2.exceptions import ValidationError
+from autoblocks._impl.datasets_v2.exceptions import parse_error_response
 from autoblocks._impl.datasets_v2.models.dataset import CreateDatasetItemsV2Request
 from autoblocks._impl.datasets_v2.models.dataset import CreateDatasetV2Request
-from autoblocks._impl.datasets_v2.models.dataset import DatasetItemsResponseV2
 from autoblocks._impl.datasets_v2.models.dataset import DatasetItemsSuccessResponse
 from autoblocks._impl.datasets_v2.models.dataset import DatasetItemV2
 from autoblocks._impl.datasets_v2.models.dataset import DatasetListItemV2
@@ -28,15 +29,20 @@ from autoblocks._impl.datasets_v2.models.dataset import DatasetSchemaV2
 from autoblocks._impl.datasets_v2.models.dataset import DatasetV2
 from autoblocks._impl.datasets_v2.models.dataset import SuccessResponse
 from autoblocks._impl.datasets_v2.models.dataset import UpdateItemV2Request
+from autoblocks._impl.datasets_v2.models.schema import PROPERTY_TYPE_MAP
+from autoblocks._impl.datasets_v2.models.schema import SchemaProperty
+from autoblocks._impl.datasets_v2.models.schema import SchemaPropertyType
 from autoblocks._impl.datasets_v2.utils.helpers import batch
 from autoblocks._impl.datasets_v2.utils.helpers import build_path
 from autoblocks._impl.datasets_v2.utils.serialization import deserialize_model
 from autoblocks._impl.datasets_v2.utils.serialization import deserialize_model_list
 from autoblocks._impl.datasets_v2.utils.serialization import serialize_model
+from autoblocks._impl.util import cuid_generator
 
 log = logging.getLogger(__name__)
 
 T = TypeVar("T")
+ModelT = TypeVar("ModelT", bound="BaseModel")
 
 
 def require_model(model_class: Type[Any]) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -136,30 +142,8 @@ class DatasetsV2Client:
             RateLimitError: For 429 Too Many Requests
             APIError: For other errors
         """
-        status_code = response.status_code
-        error_info = {}
-
-        # Try to parse error details from response
-        try:
-            error_info = response.json()
-        except Exception:
-            # If parsing fails, use the response text
-            error_info = {"message": response.text}
-
-        message = error_info.get("message", response.reason_phrase)
-
-        if status_code == 401:
-            raise AuthenticationError(message, response)
-        elif status_code == 404:
-            # Try to extract resource info from URL
-            url_parts = response.url.path.split("/")
-            resource_type = url_parts[-2] if len(url_parts) >= 2 else "Resource"
-            resource_id = url_parts[-1] if len(url_parts) >= 1 else "unknown"
-            raise ResourceNotFoundError(resource_type, resource_id, response)
-        elif status_code == 429:
-            raise RateLimitError(message, response)
-        else:
-            raise APIError(status_code, message, response, error_info)
+        # Parse error response and raise appropriate exception
+        raise parse_error_response(response)
 
     def _make_request(self, method: str, path: str, data: Optional[Any] = None) -> Any:
         """
@@ -176,7 +160,9 @@ class DatasetsV2Client:
         Raises:
             APIError: If the request fails
         """
-        url = f"{self.base_url}{path}"
+        url = f"{self.base_url}/{path}"
+
+        print(f"URL: {url}")
 
         # If the data is a Pydantic model, serialize it
         json_data: Optional[Any] = None
@@ -185,6 +171,12 @@ class DatasetsV2Client:
         else:
             json_data = data
 
+        # Log request details at debug level
+        if log.isEnabledFor(logging.DEBUG):
+            log.debug(f"Request: {method} {url}")
+            if json_data:
+                log.debug(f"Request Data: {json.dumps(json_data, indent=2)}")
+
         try:
             response = self._client.request(
                 method=method,
@@ -192,8 +184,27 @@ class DatasetsV2Client:
                 json=json_data,
             )
 
-            # Handle error responses
+            # Log response details at debug level
+            if log.isEnabledFor(logging.DEBUG):
+                log.debug(f"Response Status: {response.status_code}")
+                log.debug(f"Response Headers: {dict(response.headers)}")
+                if response.content:
+                    try:
+                        response_json = response.json()
+                        log.debug(f"Response Body: {json.dumps(response_json, indent=2)}")
+                    except Exception:  # Handle all exceptions but with a type
+                        log.debug(f"Response Body (text): {response.text}")
+
+            # Handle error responses with better debugging
             if response.is_error:
+                if response.status_code == 400:
+                    try:
+                        error_content = response.json()
+                        print(f"Error response (400 Bad Request): {json.dumps(error_content, indent=2)}")
+                    except Exception as e:
+                        print(f"Error response (400 Bad Request): {response.text}")
+                        print(f"Failed to parse JSON: {str(e)}")
+
                 self._handle_response_error(response)
 
             # Parse and return the response
@@ -210,6 +221,40 @@ class DatasetsV2Client:
             # Network errors, timeouts, etc.
             raise APIError(0, f"Request failed: {str(e)}")
 
+    def create_schema_property(
+        self, *, property_type: SchemaPropertyType, name: str, required: bool = True, **kwargs: Any
+    ) -> SchemaProperty:
+        """
+        Helper to create schema properties with auto-generated IDs.
+
+        Args:
+            property_type: The type of schema property
+            name: The name of the property
+            required: Whether the property is required (default: True)
+            **kwargs: Additional property-specific arguments
+
+        Returns:
+            A schema property instance
+        """
+        property_id = kwargs.pop("id", cuid_generator())
+
+        # Get the property class from the type mapping
+        prop_class = PROPERTY_TYPE_MAP.get(property_type)
+        if not prop_class:
+            raise ValueError(f"Unknown schema property type: {property_type}")
+
+        # Create a properly formed property dict
+        property_data = {
+            "id": property_id,
+            "name": name,
+            "type": property_type.value,  # Use string value of enum
+            "required": required,
+            **kwargs,
+        }
+
+        # Create and validate the property using the model's validation method
+        return prop_class.model_validate(property_data)  # type: ignore
+
     def list(self) -> List[DatasetListItemV2]:
         """
         List all datasets in the app.
@@ -221,206 +266,363 @@ class DatasetsV2Client:
         response = self._make_request("GET", path)
         return deserialize_model_list(response, DatasetListItemV2)
 
-    @require_model(CreateDatasetV2Request)
-    def create(self, dataset: CreateDatasetV2Request) -> DatasetV2:
+    def create(
+        self,
+        dataset: Optional[Union[CreateDatasetV2Request, Dict[str, Any]]] = None,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        schema: Optional[Sequence[Union[Dict[str, Any], SchemaProperty]]] = None,
+    ) -> DatasetV2:
         """
         Create a new dataset.
 
         Args:
-            dataset: Dataset creation request
+            dataset: Dataset creation request object or dictionary
+            name: Dataset name (ignored if dataset is provided)
+            description: Dataset description (ignored if dataset is provided)
+            schema: Dataset schema properties (ignored if dataset is provided)
 
         Returns:
             Created dataset
         """
+        if dataset is None:
+            # Create from individual parameters
+            if name is None:
+                raise ValueError("Either dataset object or name parameter must be provided")
+
+            # Convert any dict schema properties to model instances
+            schema_props: List[SchemaProperty] = []
+            if schema:
+                for prop in schema:
+                    if isinstance(prop, dict):
+                        # Ensure the dict has an ID
+                        if "id" not in prop:
+                            prop["id"] = cuid_generator()
+                        # Create property from dict
+                        from autoblocks._impl.datasets_v2.models.schema import create_schema_property
+
+                        schema_props.append(create_schema_property(prop))
+                    else:
+                        schema_props.append(prop)
+
+            dataset_obj = CreateDatasetV2Request(name=name, description=description, schema=schema_props)
+        elif isinstance(dataset, dict):
+            # Create from dict
+            if "schema" in dataset and isinstance(dataset["schema"], list):
+                # Ensure all schema properties have IDs
+                for prop in dataset["schema"]:
+                    if isinstance(prop, dict) and "id" not in prop:
+                        prop["id"] = cuid_generator()
+
+            dataset_obj = CreateDatasetV2Request.model_validate(dataset)
+        else:
+            # Use the provided model directly
+            dataset_obj = dataset
+
         path = self._build_app_path("datasets")
-        response = self._make_request("POST", path, dataset)
+        response = self._make_request("POST", path, dataset_obj)
+        print(f"DEBUG - API Response for dataset creation: {response}")
         return deserialize_model(response, DatasetV2)
 
-    def destroy(self, external_id: str) -> SuccessResponse:
+    def destroy(self, dataset_id: Optional[str] = None, *, dataset_id_kwarg: Optional[str] = None) -> SuccessResponse:
         """
         Delete a dataset.
 
         Args:
-            external_id: Dataset external ID
+            dataset_id: Dataset external ID (positional argument for backward compatibility)
+            dataset_id_kwarg: Dataset external ID (keyword argument)
 
         Returns:
-            Operation result with success flag
+            Success response
         """
-        path = self._build_app_path("datasets", external_id)
-        result = self._make_request("DELETE", path)
-        if result is None or not isinstance(result, dict):
-            return SuccessResponse(success=True)  # Assume success if no error
-        return deserialize_model(result, SuccessResponse)
+        # Get the dataset ID from either positional or keyword argument
+        dataset_id_to_use = dataset_id_kwarg if dataset_id_kwarg is not None else dataset_id
+        if dataset_id_to_use is None:
+            raise ValueError("dataset_id is required")
 
-    def get_items(self, external_id: str) -> List[DatasetItemV2]:
+        path = self._build_app_path("datasets", dataset_id_to_use)
+        response = self._make_request("DELETE", path)
+        return deserialize_model(response, SuccessResponse)
+
+    def get_items(
+        self, dataset_id: Optional[str] = None, *, dataset_id_kwarg: Optional[str] = None
+    ) -> List[DatasetItemV2]:
         """
-        Get all items for a dataset.
+        Get all items in a dataset.
 
         Args:
-            external_id: Dataset external ID
+            dataset_id: Dataset external ID (positional argument for backward compatibility)
+            dataset_id_kwarg: Dataset external ID (keyword argument)
 
         Returns:
             List of dataset items
         """
-        path = self._build_app_path("datasets", external_id, "items")
+        # Get the dataset ID from either positional or keyword argument
+        dataset_id_to_use = dataset_id_kwarg if dataset_id_kwarg is not None else dataset_id
+        if dataset_id_to_use is None:
+            raise ValueError("dataset_id is required")
+
+        path = self._build_app_path("datasets", dataset_id_to_use, "items")
         response = self._make_request("GET", path)
 
-        # Check if the response is in the DatasetItemsResponseV2 format
-        if response and isinstance(response, dict) and "items" in response:
-            dataset_response = deserialize_model(response, DatasetItemsResponseV2)
-            return dataset_response.items
+        # Handle both response formats:
+        # 1. A direct list of items
+        # 2. An object with an 'items' field
+        if isinstance(response, list):
+            return deserialize_model_list(response, DatasetItemV2)
+        elif isinstance(response, dict) and "items" in response:
+            items = response.get("items", [])
+            return deserialize_model_list(items, DatasetItemV2)
+        else:
+            # Return empty list if no items found
+            return []
 
-        # Otherwise, assume it's a direct list of items
-        return deserialize_model_list(response, DatasetItemV2)
-
-    @require_model(CreateDatasetItemsV2Request)
-    def create_items(self, external_id: str, request: CreateDatasetItemsV2Request) -> DatasetItemsSuccessResponse:
+    def create_items(
+        self,
+        items: Optional[Union[CreateDatasetItemsV2Request, Dict[str, Any], List[Dict[str, Any]]]] = None,
+        dataset_id: Optional[str] = None,
+        *,
+        items_kwarg: Optional[Union[CreateDatasetItemsV2Request, Dict[str, Any], List[Dict[str, Any]]]] = None,
+        dataset_id_kwarg: Optional[str] = None,
+        split_names: Optional[List[str]] = None,
+    ) -> DatasetItemsSuccessResponse:
         """
-        Add items to a dataset.
+        Create items in a dataset.
 
         Args:
-            external_id: Dataset external ID
-            request: Items creation request
+            items: Items creation request object, dictionary, or list of item dictionaries (positional)
+            dataset_id: Dataset external ID (positional for backward compatibility)
+            items_kwarg: Items creation request object, dictionary, or list of item dictionaries
+            dataset_id_kwarg: Dataset external ID
+            split_names: Optional list of split names
 
         Returns:
             Success response with count and revision ID
         """
-        path = self._build_app_path("datasets", external_id, "items")
-        result = self._make_request("POST", path, request)
-        if result is None or not isinstance(result, dict):
-            return DatasetItemsSuccessResponse(count=0, revisionId="")
-        return deserialize_model(result, DatasetItemsSuccessResponse)
+        # Get arguments from either positional or keyword params
+        items_to_use = items_kwarg if items_kwarg is not None else items
+        dataset_id_to_use = dataset_id_kwarg if dataset_id_kwarg is not None else dataset_id
 
-    def get_schema_by_version(self, external_id: str, schema_version: int) -> DatasetSchemaV2:
+        if items_to_use is None:
+            raise ValueError("items is required")
+        if dataset_id_to_use is None:
+            raise ValueError("dataset_id is required")
+
+        if isinstance(items_to_use, list):
+            # It's a list of items directly
+            items_obj = CreateDatasetItemsV2Request(items=items_to_use, splitNames=split_names)
+        elif isinstance(items_to_use, dict):
+            # It's a dict with items field
+            if "items" not in items_to_use and not isinstance(items_to_use.get("items"), list):
+                # If it's not a proper items request format, treat it as a single item
+                items_obj = CreateDatasetItemsV2Request(items=[items_to_use], splitNames=split_names)
+            else:
+                # It's already in the correct format
+                items_dict = items_to_use.copy()
+                if split_names is not None and "splitNames" not in items_dict:
+                    items_dict["splitNames"] = split_names
+                items_obj = CreateDatasetItemsV2Request.model_validate(items_dict)
+        else:
+            # It's already a request object
+            items_obj = items_to_use
+
+        path = self._build_app_path("datasets", dataset_id_to_use, "items")
+        response = self._make_request("POST", path, items_obj)
+        return deserialize_model(response, DatasetItemsSuccessResponse)
+
+    def get_schema_by_version(self, *, dataset_id: str, schema_version: int) -> DatasetSchemaV2:
         """
-        Get schema for a specific version.
+        Get dataset schema by version.
 
         Args:
-            external_id: Dataset external ID
+            dataset_id: Dataset external ID
             schema_version: Schema version
 
         Returns:
             Dataset schema
         """
-        path = self._build_app_path("datasets", external_id, "schema-versions", str(schema_version))
+        path = self._build_app_path("datasets", dataset_id, "schema", str(schema_version))
         response = self._make_request("GET", path)
         return deserialize_model(response, DatasetSchemaV2)
 
     def get_items_by_revision(
-        self, external_id: str, revision_id: str, splits: Optional[List[str]] = None
+        self, *, dataset_id: str, revision_id: str, splits: Optional[List[str]] = None
     ) -> List[DatasetItemV2]:
         """
-        Get items by revision ID.
+        Get dataset items by revision ID.
 
         Args:
-            external_id: Dataset external ID
+            dataset_id: Dataset external ID
             revision_id: Revision ID
             splits: Optional list of split names to filter by
 
         Returns:
             List of dataset items
         """
-        query_params = {"splits": splits} if splits else None
-        path = self._build_app_path("datasets", external_id, "revisions", revision_id, query_params=query_params)
+        params = {}
+        if splits:
+            params["splits"] = ",".join(splits)
+
+        path = self._build_app_path("datasets", dataset_id, "revisions", revision_id, "items", query_params=params)
         response = self._make_request("GET", path)
 
-        # Check if the response is in the DatasetItemsResponseV2 format
-        if response and isinstance(response, dict) and "items" in response:
-            dataset_response = deserialize_model(response, DatasetItemsResponseV2)
-            return dataset_response.items
-
-        # Otherwise, assume it's a direct list of items
-        return deserialize_model_list(response, DatasetItemV2)
+        # Handle both response formats
+        if isinstance(response, list):
+            return deserialize_model_list(response, DatasetItemV2)
+        elif isinstance(response, dict) and "items" in response:
+            items = response.get("items", [])
+            return deserialize_model_list(items, DatasetItemV2)
+        else:
+            # Return empty list if no items found
+            return []
 
     def get_items_by_schema_version(
-        self, external_id: str, schema_version: int, splits: Optional[List[str]] = None
+        self, *, dataset_id: str, schema_version: int, splits: Optional[List[str]] = None
     ) -> List[DatasetItemV2]:
         """
-        Get items by schema version.
+        Get dataset items by schema version.
 
         Args:
-            external_id: Dataset external ID
+            dataset_id: Dataset external ID
             schema_version: Schema version
             splits: Optional list of split names to filter by
 
         Returns:
             List of dataset items
         """
-        query_params = {"splits": splits} if splits else None
-        path = self._build_app_path(
-            "datasets", external_id, "schema-versions", str(schema_version), "items", query_params=query_params
-        )
+        params = {}
+        if splits:
+            params["splits"] = ",".join(splits)
+
+        path = self._build_app_path("datasets", dataset_id, "schema", str(schema_version), "items", query_params=params)
         response = self._make_request("GET", path)
 
-        # Check if the response is in the DatasetItemsResponseV2 format
-        if response and isinstance(response, dict) and "items" in response:
-            dataset_response = deserialize_model(response, DatasetItemsResponseV2)
-            return dataset_response.items
+        # Handle both response formats
+        if isinstance(response, list):
+            return deserialize_model_list(response, DatasetItemV2)
+        elif isinstance(response, dict) and "items" in response:
+            items = response.get("items", [])
+            return deserialize_model_list(items, DatasetItemV2)
+        else:
+            # Return empty list if no items found
+            return []
 
-        # Otherwise, assume it's a direct list of items
-        return deserialize_model_list(response, DatasetItemV2)
-
-    @require_model(UpdateItemV2Request)
-    def update_item(self, external_id: str, item_id: str, request: UpdateItemV2Request) -> SuccessResponse:
+    def update_item(
+        self,
+        dataset_id: Optional[str] = None,
+        item_id: Optional[str] = None,
+        data: Optional[Union[UpdateItemV2Request, Dict[str, Any]]] = None,
+        *,
+        dataset_id_kwarg: Optional[str] = None,
+        item_id_kwarg: Optional[str] = None,
+        data_kwarg: Optional[Union[UpdateItemV2Request, Dict[str, Any]]] = None,
+        split_names: Optional[List[str]] = None,
+    ) -> SuccessResponse:
         """
         Update a dataset item.
 
         Args:
-            external_id: Dataset external ID
-            item_id: Item ID
-            request: Update request
+            dataset_id: Dataset external ID (positional for backward compatibility)
+            item_id: Item ID (positional for backward compatibility)
+            data: Update request object or dictionary with item data (positional)
+            dataset_id_kwarg: Dataset external ID
+            item_id_kwarg: Item ID
+            data_kwarg: Update request object or dictionary with item data
+            split_names: Optional list of split names
 
         Returns:
-            Success response with success flag
+            Success response
         """
-        path = self._build_app_path("datasets", external_id, "items", item_id)
-        result = self._make_request("PUT", path, request)
-        if result is None or not isinstance(result, dict):
-            return SuccessResponse(success=True)  # Assume success if no error
-        return deserialize_model(result, SuccessResponse)
+        # Get arguments from either positional or keyword params
+        dataset_id_to_use = dataset_id_kwarg if dataset_id_kwarg is not None else dataset_id
+        item_id_to_use = item_id_kwarg if item_id_kwarg is not None else item_id
+        data_to_use = data_kwarg if data_kwarg is not None else data
 
-    def delete_item(self, external_id: str, item_id: str) -> SuccessResponse:
+        if dataset_id_to_use is None:
+            raise ValueError("dataset_id is required")
+        if item_id_to_use is None:
+            raise ValueError("item_id is required")
+        if data_to_use is None:
+            raise ValueError("data is required")
+
+        if isinstance(data_to_use, dict):
+            # If it's just data without split_names
+            if all(key != "splitNames" for key in data_to_use.keys()):
+                update_req = UpdateItemV2Request(data=data_to_use, splitNames=split_names)
+            else:
+                # It already has the correct structure
+                update_dict = data_to_use.copy()
+                if split_names is not None and "splitNames" not in update_dict:
+                    update_dict["splitNames"] = split_names
+                update_req = UpdateItemV2Request.model_validate(update_dict)
+        else:
+            update_req = data_to_use
+
+        path = self._build_app_path("datasets", dataset_id_to_use, "items", item_id_to_use)
+        response = self._make_request("PUT", path, update_req)
+        return deserialize_model(response, SuccessResponse)
+
+    def delete_item(
+        self,
+        dataset_id: Optional[str] = None,
+        item_id: Optional[str] = None,
+        *,
+        dataset_id_kwarg: Optional[str] = None,
+        item_id_kwarg: Optional[str] = None,
+    ) -> SuccessResponse:
         """
         Delete a dataset item.
 
         Args:
-            external_id: Dataset external ID
-            item_id: Item ID
+            dataset_id: Dataset external ID (positional for backward compatibility)
+            item_id: Item ID (positional for backward compatibility)
+            dataset_id_kwarg: Dataset external ID
+            item_id_kwarg: Item ID
 
         Returns:
-            Success response with success flag
+            Success response
         """
-        path = self._build_app_path("datasets", external_id, "items", item_id)
-        result = self._make_request("DELETE", path)
-        if result is None or not isinstance(result, dict):
-            return SuccessResponse(success=True)  # Assume success if no error
-        return deserialize_model(result, SuccessResponse)
+        # Get arguments from either positional or keyword params
+        dataset_id_to_use = dataset_id_kwarg if dataset_id_kwarg is not None else dataset_id
+        item_id_to_use = item_id_kwarg if item_id_kwarg is not None else item_id
+
+        if dataset_id_to_use is None:
+            raise ValueError("dataset_id is required")
+        if item_id_to_use is None:
+            raise ValueError("item_id is required")
+
+        path = self._build_app_path("datasets", dataset_id_to_use, "items", item_id_to_use)
+        response = self._make_request("DELETE", path)
+        return deserialize_model(response, SuccessResponse)
 
     def batch_create_items(
         self,
-        external_id: str,
+        *,
+        dataset_id: str,
         items: List[Dict[str, Any]],
         split_names: Optional[List[str]] = None,
         batch_size: int = 100,
     ) -> List[DatasetItemsSuccessResponse]:
         """
-        Create items in batches to avoid large payloads.
+        Create items in batches to avoid request size limits.
 
         Args:
-            external_id: Dataset external ID
-            items: List of items to create
+            dataset_id: Dataset external ID
+            items: List of item dictionaries
             split_names: Optional list of split names
-            batch_size: Size of each batch
+            batch_size: Batch size (default: 100)
 
         Returns:
-            List of operation results containing count and revision IDs
+            List of success responses for each batch
         """
-        results = []
-        batched_items = batch(items, batch_size)
+        if not items:
+            return []
 
-        for item_batch in batched_items:
-            request = CreateDatasetItemsV2Request(items=item_batch, splitNames=split_names)
-            result = self.create_items(external_id, request)
+        results = []
+        for items_batch in batch(items, batch_size):
+            request = CreateDatasetItemsV2Request(items=items_batch, splitNames=split_names)
+            result = self.create_items(request, dataset_id_kwarg=dataset_id)
             results.append(result)
 
         return results
@@ -428,15 +630,19 @@ class DatasetsV2Client:
 
 def create_datasets_v2_client(api_key: str, app_slug: str, timeout_ms: int = 60000) -> DatasetsV2Client:
     """
-    Create a new datasets v2 client
+    Create a Datasets V2 API client.
 
     Args:
         api_key: Autoblocks API key
         app_slug: Application slug
-        timeout_ms: Optional timeout in milliseconds (default: 60000)
+        timeout_ms: Request timeout in milliseconds (default: 60000)
 
     Returns:
-        A DatasetsV2Client instance
+        Datasets V2 API client
     """
-    config = {"api_key": api_key, "app_slug": app_slug, "timeout_ms": timeout_ms}
+    config = {
+        "api_key": api_key,
+        "app_slug": app_slug,
+        "timeout_ms": timeout_ms,
+    }
     return DatasetsV2Client(config)

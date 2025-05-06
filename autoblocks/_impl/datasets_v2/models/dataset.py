@@ -7,6 +7,7 @@ from typing import Optional
 from typing import Union
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 
@@ -43,14 +44,17 @@ class DatasetV2(BaseModel):
 
     id: str
     external_id: str = Field(alias="externalId")
-    name: str
+    name: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
-    created_at: str = Field(alias="createdAt")
+    created_at: Optional[str] = Field(alias="createdAt", default=None)
+    latest_revision_id: Optional[str] = Field(None, alias="latestRevisionId")
+    data_schema: Optional[List[Dict[str, Any]]] = Field(default=None, alias="schema")
+    schema_version: Optional[int] = Field(None, alias="schemaVersion")
 
-    model_config = {
-        "populate_by_name": True,
-        "extra": "forbid",
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="ignore",  # Allow extra fields from the API
+    )
 
 
 class DatasetListItemV2(BaseModel):
@@ -58,14 +62,16 @@ class DatasetListItemV2(BaseModel):
 
     id: str
     external_id: str = Field(alias="externalId")
-    name: str
+    name: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
     latest_revision_id: Optional[str] = Field(None, alias="latestRevisionId")
+    data_schema: Optional[List[Dict[str, Any]]] = Field(default=None, alias="schema")
+    schema_version: Optional[int] = Field(None, alias="schemaVersion")
 
-    model_config = {
-        "populate_by_name": True,
-        "extra": "forbid",
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="ignore",  # Allow extra fields from the API
+    )
 
 
 class DatasetSchemaV2(BaseModel):
@@ -75,22 +81,22 @@ class DatasetSchemaV2(BaseModel):
     external_id: str = Field(alias="externalId")
     description: Optional[str] = Field(default=None)
     schema_version: int = Field(alias="schemaVersion")
-    _schema_props: Optional[List[SchemaPropertyUnion]] = Field(default=None, exclude=True, alias="schema")
+    schema_field: Optional[List[SchemaPropertyUnion]] = Field(default=None, exclude=True, alias="schema")
 
-    model_config = {
-        "populate_by_name": True,
-        "extra": "forbid",
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )
 
     @property
     def schema_props(self) -> Optional[List[SchemaPropertyUnion]]:
         """Get schema properties"""
-        return self._schema_props
+        return self.schema_field
 
     @schema_props.setter
     def schema_props(self, value: Optional[List[SchemaPropertyUnion]]) -> None:
         """Set schema properties"""
-        self._schema_props = value
+        self.schema_field = value
 
     def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
         """Custom dump method to include schema field"""
@@ -107,10 +113,10 @@ class DatasetItemV2(BaseModel):
     splits: List[str]
     data: Dict[str, Any]
 
-    model_config = {
-        "populate_by_name": True,
-        "extra": "forbid",
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )
 
 
 class DatasetItemsResponseV2(BaseModel):
@@ -122,10 +128,10 @@ class DatasetItemsResponseV2(BaseModel):
     schema_version: int
     items: List[DatasetItemV2]
 
-    model_config = {
-        "populate_by_name": True,
-        "extra": "forbid",
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )
 
 
 class DatasetItemsSuccessResponse(BaseModel):
@@ -134,10 +140,10 @@ class DatasetItemsSuccessResponse(BaseModel):
     count: int
     revision_id: str = Field(alias="revisionId")
 
-    model_config = {
-        "populate_by_name": True,
-        "extra": "forbid",
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )
 
 
 class SuccessResponse(BaseModel):
@@ -145,10 +151,10 @@ class SuccessResponse(BaseModel):
 
     success: bool
 
-    model_config = {
-        "populate_by_name": True,
-        "extra": "forbid",
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )
 
 
 class CreateDatasetV2Request(BaseModel):
@@ -156,29 +162,37 @@ class CreateDatasetV2Request(BaseModel):
 
     name: str
     description: Optional[str] = Field(default=None)
-    _schema_props: List[SchemaPropertyUnion] = Field(default_factory=empty_list_factory, exclude=True, alias="schema")
+    schema_field: List[SchemaPropertyUnion] = Field(default_factory=empty_list_factory, exclude=True, alias="schema")
 
-    model_config = {
-        "populate_by_name": True,
-        "extra": "forbid",
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )
 
     @property
     def schema_props(self) -> List[SchemaPropertyUnion]:
         """Get schema properties"""
-        return self._schema_props
+        return self.schema_field
 
     @schema_props.setter
     def schema_props(self, value: List[SchemaPropertyUnion]) -> None:
         """Set schema properties"""
         if not value:
             raise ValueError("Schema cannot be empty")
-        self._schema_props = value
+        self.schema_field = value
 
     def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
         """Custom dump method to ensure schema properties are included properly"""
-        result = super().model_dump(**kwargs)
-        # The alias in the Field will handle the serialization to 'schema'
+        # Get the default result but without exclusions for schema_field
+        include_excludes = kwargs.pop("exclude", {})
+        if "schema_field" in include_excludes:
+            include_excludes.pop("schema_field")
+
+        result = super().model_dump(exclude=include_excludes, **kwargs)
+
+        # Explicitly add the schema field with the correct alias
+        result["schema"] = [prop.model_dump(by_alias=True, exclude_none=True) for prop in self.schema_field]
+
         return result
 
     @field_validator("name")
@@ -196,10 +210,10 @@ class CreateDatasetItemsV2Request(BaseModel):
     items: List[Dict[str, Any]]
     split_names: Optional[List[str]] = Field(None, alias="splitNames")
 
-    model_config = {
-        "populate_by_name": True,
-        "extra": "forbid",
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )
 
     @field_validator("items")
     @classmethod
@@ -216,7 +230,7 @@ class UpdateItemV2Request(BaseModel):
     data: Dict[str, Any]
     split_names: Optional[List[str]] = Field(None, alias="splitNames")
 
-    model_config = {
-        "populate_by_name": True,
-        "extra": "forbid",
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )

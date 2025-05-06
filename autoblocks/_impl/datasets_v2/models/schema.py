@@ -10,6 +10,7 @@ from typing import Type
 from typing import Union
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import field_validator
 
 
@@ -33,10 +34,10 @@ class BaseSchemaProperty(BaseModel):
     name: str
     required: bool
 
-    model_config = {
-        "populate_by_name": True,
-        "extra": "forbid",
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="forbid",
+    )
 
     @field_validator("id")
     @classmethod
