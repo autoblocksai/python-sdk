@@ -143,16 +143,7 @@ SchemaProperty = Union[
 # Type mapping for factory function
 PROPERTY_TYPE_MAP: Dict[
     SchemaPropertyType,
-    Type[
-        StringProperty
-        | NumberProperty
-        | BooleanProperty
-        | ListOfStringsProperty
-        | SelectProperty
-        | MultiSelectProperty
-        | ValidJSONProperty
-        | ConversationProperty
-    ],
+    Type[SchemaProperty],
 ] = {
     SchemaPropertyType.STRING: StringProperty,
     SchemaPropertyType.NUMBER: NumberProperty,
