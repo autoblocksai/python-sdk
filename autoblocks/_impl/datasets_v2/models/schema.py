@@ -1,11 +1,21 @@
 """Schema models for Datasets V2 API."""
+
 from enum import Enum
-from typing import Dict, List, Optional, Union, Any, Literal, Type
-from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Literal
+from typing import Optional
+from typing import Type
+from typing import Union
+
+from pydantic import BaseModel
+from pydantic import field_validator
 
 
 class SchemaPropertyType(str, Enum):
     """Schema property types enum"""
+
     STRING = "String"
     NUMBER = "Number"
     BOOLEAN = "Boolean"
@@ -18,16 +28,17 @@ class SchemaPropertyType(str, Enum):
 
 class BaseSchemaProperty(BaseModel):
     """Base property interface"""
+
     id: str
     name: str
     required: bool
-    
+
     model_config = {
         "populate_by_name": True,
         "extra": "forbid",
     }
-    
-    @field_validator('id')
+
+    @field_validator("id")
     @classmethod
     def validate_id(cls, v: str) -> str:
         """Validate id is non-empty"""
@@ -35,7 +46,7 @@ class BaseSchemaProperty(BaseModel):
             raise ValueError("ID cannot be empty")
         return v
 
-    @field_validator('name')
+    @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
         """Validate name is non-empty"""
@@ -46,30 +57,35 @@ class BaseSchemaProperty(BaseModel):
 
 class StringProperty(BaseSchemaProperty):
     """String property"""
+
     type: Literal[SchemaPropertyType.STRING]
 
 
 class NumberProperty(BaseSchemaProperty):
     """Number property"""
+
     type: Literal[SchemaPropertyType.NUMBER]
 
 
 class BooleanProperty(BaseSchemaProperty):
     """Boolean property"""
+
     type: Literal[SchemaPropertyType.BOOLEAN]
 
 
 class ListOfStringsProperty(BaseSchemaProperty):
     """List of strings property"""
+
     type: Literal[SchemaPropertyType.LIST_OF_STRINGS]
 
 
 class SelectProperty(BaseSchemaProperty):
     """Select property"""
+
     type: Literal[SchemaPropertyType.SELECT]
     options: List[str]
 
-    @field_validator('options')
+    @field_validator("options")
     @classmethod
     def validate_options(cls, v: List[str]) -> List[str]:
         """Validate that options is not empty"""
@@ -80,10 +96,11 @@ class SelectProperty(BaseSchemaProperty):
 
 class MultiSelectProperty(BaseSchemaProperty):
     """Multi-select property"""
+
     type: Literal[SchemaPropertyType.MULTI_SELECT]
     options: List[str]
 
-    @field_validator('options')
+    @field_validator("options")
     @classmethod
     def validate_options(cls, v: List[str]) -> List[str]:
         """Validate that options is not empty"""
@@ -94,11 +111,13 @@ class MultiSelectProperty(BaseSchemaProperty):
 
 class ValidJSONProperty(BaseSchemaProperty):
     """Valid JSON property"""
+
     type: Literal[SchemaPropertyType.VALID_JSON]
 
 
 class ConversationProperty(BaseSchemaProperty):
     """Conversation property"""
+
     type: Literal[SchemaPropertyType.CONVERSATION]
     roles: Optional[List[str]] = None
 
@@ -112,7 +131,7 @@ SchemaProperty = Union[
     SelectProperty,
     MultiSelectProperty,
     ValidJSONProperty,
-    ConversationProperty
+    ConversationProperty,
 ]
 
 
@@ -132,35 +151,56 @@ PROPERTY_TYPE_MAP: Dict[SchemaPropertyType, Type[BaseSchemaProperty]] = {
 def create_schema_property(data: Dict[str, Any]) -> SchemaProperty:
     """
     Factory function to create the right type of schema property based on the type field.
-    
+
     Args:
         data: Dictionary with the property data
-        
+
     Returns:
         The appropriate SchemaProperty subclass instance
-        
+
     Raises:
         ValueError: If the type is unknown or the property is invalid
     """
     if not isinstance(data, dict):
         raise TypeError(f"Expected dict, got {type(data).__name__}")
-    
+
     if "type" not in data:
         raise ValueError("Schema property must have a 'type' field")
-    
+
     prop_type = data["type"]
-    
+
     # Try to get the property type as an enum
     try:
         if isinstance(prop_type, str):
             prop_type = SchemaPropertyType(prop_type)
     except ValueError:
         raise ValueError(f"Unknown schema property type: {prop_type}")
-    
+
     # Get the model class based on the type
     model_class = PROPERTY_TYPE_MAP.get(prop_type)
     if not model_class:
         raise ValueError(f"Unknown schema property type: {prop_type}")
-    
+
     # Validate and create the model
-    return model_class.model_validate(data) 
+    property_instance = model_class.model_validate(data)
+
+    # Type check and return
+    if prop_type == SchemaPropertyType.STRING:
+        return property_instance  # type: ignore
+    elif prop_type == SchemaPropertyType.NUMBER:
+        return property_instance  # type: ignore
+    elif prop_type == SchemaPropertyType.BOOLEAN:
+        return property_instance  # type: ignore
+    elif prop_type == SchemaPropertyType.LIST_OF_STRINGS:
+        return property_instance  # type: ignore
+    elif prop_type == SchemaPropertyType.SELECT:
+        return property_instance  # type: ignore
+    elif prop_type == SchemaPropertyType.MULTI_SELECT:
+        return property_instance  # type: ignore
+    elif prop_type == SchemaPropertyType.VALID_JSON:
+        return property_instance  # type: ignore
+    elif prop_type == SchemaPropertyType.CONVERSATION:
+        return property_instance  # type: ignore
+    else:
+        # This should never happen due to the earlier check
+        raise ValueError(f"Unhandled schema property type: {prop_type}")
