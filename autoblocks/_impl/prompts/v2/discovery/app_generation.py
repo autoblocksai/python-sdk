@@ -29,6 +29,7 @@ class AppGenerator:
             "# Auto-generated prompt module for app: " + app_name,
             "from typing import Any",
             "from typing import Optional",
+            "from typing import Union",
             "",
             "from . import prompts",
             "",
@@ -40,6 +41,19 @@ class AppGenerator:
             title_case_id = to_title_case(prompt_id)
             snake_case = to_snake_case(prompt_id)
             function_name = f"{snake_case}_prompt_manager"
+
+            # Determine the return type based on versions
+            if prompt.is_undeployed:
+                return_type = f"prompts._{title_case_id}UndeployedPromptManager"
+            else:
+                major_version_strings = [mv.major_version for mv in prompt.major_versions]
+                if len(major_version_strings) == 1:
+                    return_type = f"prompts._{title_case_id}V{major_version_strings[0]}PromptManager"
+                else:
+                    version_managers = [
+                        f"prompts._{title_case_id}V{v}PromptManager" for v in sorted(major_version_strings)
+                    ]
+                    return_type = f"Union[{', '.join(version_managers)}]"
 
             # Function parameters with defaults
             init_code.extend(
@@ -53,7 +67,7 @@ class AppGenerator:
                     "    init_timeout: Optional[float] = None,",
                     "    refresh_timeout: Optional[float] = None,",
                     "    refresh_interval: Optional[float] = None,",
-                    ") -> Any:",
+                    f") -> {return_type}:",
                     f"    return prompts.{title_case_id}Factory.create(",
                     "        major_version=major_version,",
                     "        minor_version=minor_version,",
