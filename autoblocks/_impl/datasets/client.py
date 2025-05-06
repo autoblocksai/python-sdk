@@ -2,6 +2,7 @@
 
 import json
 import logging
+from datetime import timedelta
 from typing import Any
 from typing import Dict
 from typing import List
@@ -32,25 +33,24 @@ log = logging.getLogger(__name__)
 class DatasetsClient:
     """Datasets API Client"""
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, api_key: str, app_slug: str, timeout: timedelta = timedelta(seconds=60)) -> None:
         """
         Initialize the client with configuration
 
         Args:
-            config: Dict with:
-                - api_key: Autoblocks API key
-                - app_slug: Application slug
-                - timeout_ms: Optional timeout in milliseconds (default: 60000)
+            api_key: Autoblocks API key
+            app_slug: Application slug
+            timeout: Optional timeout as timedelta (default: 60 seconds)
         """
-        if not config.get("api_key"):
+        if not api_key:
             raise ValidationError("API key is required")
 
-        if not config.get("app_slug"):
+        if not app_slug:
             raise ValidationError("App slug is required")
 
-        self.api_key = config["api_key"]
-        self.app_slug = config["app_slug"]
-        self.timeout_sec = config.get("timeout_ms", 60000) / 1000  # Convert to seconds
+        self.api_key = api_key
+        self.app_slug = app_slug
+        self.timeout = timeout
         self.base_url = API_ENDPOINT_V2
 
         self._headers = {
@@ -59,7 +59,7 @@ class DatasetsClient:
         }
 
         # Create a shared client for connection pooling
-        self._client = httpx.Client(headers=self._headers, timeout=self.timeout_sec)
+        self._client = httpx.Client(headers=self._headers, timeout=self.timeout.total_seconds())
 
     def _build_app_path(self, *segments: str, **query_params: Any) -> str:
         """
@@ -440,21 +440,16 @@ class DatasetsClient:
         return deserialize_model(SuccessResponse, response)
 
 
-def create_datasets_client(api_key: str, app_slug: str, timeout_ms: int = 60000) -> DatasetsClient:
+def create_datasets_client(api_key: str, app_slug: str, timeout: timedelta = timedelta(seconds=60)) -> DatasetsClient:
     """
     Create a DatasetsClient instance.
 
     Args:
         api_key: Autoblocks API key
         app_slug: Application slug
-        timeout_ms: Request timeout in milliseconds (default: 60000)
+        timeout: Request timeout as timedelta (default: 60 seconds)
 
     Returns:
         DatasetsClient instance
     """
-    config = {
-        "api_key": api_key,
-        "app_slug": app_slug,
-        "timeout_ms": timeout_ms,
-    }
-    return DatasetsClient(config)
+    return DatasetsClient(api_key=api_key, app_slug=app_slug, timeout=timeout)
