@@ -6,11 +6,6 @@ from typing import List
 from typing import Optional
 from typing import Union
 
-try:
-    from typing import TypeAlias  # Python 3.10+
-except ImportError:
-    from typing_extensions import TypeAlias  # Python 3.9 and below
-
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
@@ -21,7 +16,7 @@ from autoblocks._impl.datasets.models.schema import SchemaProperty
 from autoblocks._impl.util import cuid_generator
 
 # Type alias for schema property lists
-SchemaPropertyList: TypeAlias = List[Union[SchemaProperty, Dict[str, Any]]]
+SchemaPropertyList = List[Union[SchemaProperty, Dict[str, Any]]]
 
 
 class Dataset(BaseModel):
