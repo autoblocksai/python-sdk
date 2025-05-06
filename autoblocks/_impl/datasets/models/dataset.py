@@ -4,8 +4,12 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import TypeAlias
 from typing import Union
+
+try:
+    from typing import TypeAlias  # Python 3.10+
+except ImportError:
+    from typing_extensions import TypeAlias  # Python 3.9 and below
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
