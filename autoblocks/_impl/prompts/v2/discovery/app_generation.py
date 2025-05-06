@@ -27,7 +27,6 @@ class AppGenerator:
 
         init_code = [
             "# Auto-generated prompt module for app: " + app_name,
-            "from typing import Any",
             "from typing import Optional",
             "from typing import Union",
             "",
