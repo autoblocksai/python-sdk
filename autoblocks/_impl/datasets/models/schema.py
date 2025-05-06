@@ -1,4 +1,4 @@
-"""Schema models for Datasets V2 API."""
+"""Schema models for Datasets API."""
 
 from enum import Enum
 from typing import Any
@@ -179,29 +179,10 @@ def create_schema_property(data: Dict[str, Any]) -> SchemaProperty:
 
     # Get the model class based on the type
     model_class = PROPERTY_TYPE_MAP.get(prop_type)
+
     if not model_class:
         raise ValueError(f"Unknown schema property type: {prop_type}")
 
     # Validate and create the model
     property_instance = model_class.model_validate(data)
-
-    # Type check and return
-    if prop_type == SchemaPropertyType.STRING:
-        return property_instance  # type: ignore
-    elif prop_type == SchemaPropertyType.NUMBER:
-        return property_instance  # type: ignore
-    elif prop_type == SchemaPropertyType.BOOLEAN:
-        return property_instance  # type: ignore
-    elif prop_type == SchemaPropertyType.LIST_OF_STRINGS:
-        return property_instance  # type: ignore
-    elif prop_type == SchemaPropertyType.SELECT:
-        return property_instance  # type: ignore
-    elif prop_type == SchemaPropertyType.MULTI_SELECT:
-        return property_instance  # type: ignore
-    elif prop_type == SchemaPropertyType.VALID_JSON:
-        return property_instance  # type: ignore
-    elif prop_type == SchemaPropertyType.CONVERSATION:
-        return property_instance  # type: ignore
-    else:
-        # This should never happen due to the earlier check
-        raise ValueError(f"Unhandled schema property type: {prop_type}")
+    return property_instance  # type: ignore

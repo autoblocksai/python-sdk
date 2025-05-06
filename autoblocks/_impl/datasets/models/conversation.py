@@ -1,4 +1,4 @@
-"""Conversation models for Datasets V2 API."""
+"""Conversation models for Datasets API."""
 
 from typing import List
 

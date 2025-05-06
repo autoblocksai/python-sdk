@@ -1,14 +1,12 @@
 import os
 import uuid
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 
-from autoblocks._impl.util import cuid_generator
 from autoblocks.api.app_client import AutoblocksAppClient
-from autoblocks.datasets_v2.models import NumberProperty
-from autoblocks.datasets_v2.models import SchemaProperty
-from autoblocks.datasets_v2.models import SchemaPropertyType
-from autoblocks.datasets_v2.models import StringProperty
+from autoblocks.datasets.models import SchemaPropertyType
 
 # Constants for testing
 APP_SLUG = "ci-app"
@@ -32,25 +30,23 @@ def create_unique_name(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:8]}"
 
 
-def get_basic_schema() -> List[SchemaProperty]:
+def get_basic_schema() -> List[Dict[str, Any]]:
     """Get a basic schema for testing."""
     return [
-        StringProperty(
-            id=cuid_generator(),
-            name="Text Field",
-            type=SchemaPropertyType.STRING,
-            required=True,
-        ),
-        NumberProperty(
-            id=cuid_generator(),
-            name="Number Field",
-            type=SchemaPropertyType.NUMBER,
-            required=False,
-        ),
+        {
+            "name": "Text Field",
+            "type": SchemaPropertyType.STRING.value,
+            "required": True,
+        },
+        {
+            "name": "Number Field",
+            "type": SchemaPropertyType.NUMBER.value,
+            "required": False,
+        },
     ]
 
 
 def cleanup_dataset(client: AutoblocksAppClient, dataset_id: Optional[str]) -> None:
     """Clean up a dataset after testing."""
     if dataset_id:
-        client.datasets.destroy(dataset_id_kwarg=dataset_id)
+        client.datasets.destroy(external_id=dataset_id)

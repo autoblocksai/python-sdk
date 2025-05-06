@@ -3,7 +3,7 @@
 from typing import Optional
 from typing import TypeVar
 
-from autoblocks._impl.datasets_v2.client import DatasetsV2Client
+from autoblocks._impl.datasets.client import DatasetsClient
 from autoblocks._impl.util import AutoblocksEnvVar
 
 T = TypeVar("T")
@@ -41,24 +41,20 @@ class AutoblocksAppClient:
         self.timeout_ms = timeout_ms
 
         # Initialize datasets client lazily
-        self._datasets: Optional[DatasetsV2Client] = None
+        self._datasets = DatasetsClient(
+            {
+                "api_key": self.api_key,
+                "app_slug": self.app_slug,
+                "timeout_ms": self.timeout_ms,
+            }
+        )
 
     @property
-    def datasets(self) -> DatasetsV2Client:
+    def datasets(self) -> DatasetsClient:
         """
         Access to the datasets client.
 
         Returns:
             The datasets client with the app_slug configured
         """
-        if self._datasets is None:
-            # Initialize the datasets client lazily
-            self._datasets = DatasetsV2Client(
-                {
-                    "api_key": self.api_key,
-                    "app_slug": self.app_slug,
-                    "timeout_ms": self.timeout_ms,
-                }
-            )
-        assert self._datasets is not None
         return self._datasets

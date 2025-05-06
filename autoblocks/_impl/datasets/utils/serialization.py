@@ -1,4 +1,4 @@
-"""Serialization utilities for Datasets V2 API."""
+"""Serialization utilities for Datasets API."""
 
 from typing import Any
 from typing import Dict
@@ -60,13 +60,13 @@ def _process_enum_values(data: Any) -> Any:
         return data
 
 
-def deserialize_model(data: JsonDict, model_class: Type[T]) -> T:
+def deserialize_model(model_class: Type[T], data: JsonDict) -> T:
     """
     Deserialize a dictionary into a Pydantic model.
 
     Args:
-        data: The dictionary data to deserialize
         model_class: The Pydantic model class to create
+        data: The dictionary data to deserialize
 
     Returns:
         An instance of the specified model class
@@ -84,13 +84,13 @@ def deserialize_model(data: JsonDict, model_class: Type[T]) -> T:
         raise ValueError(f"Failed to deserialize {model_class.__name__}: {str(e)}")
 
 
-def deserialize_model_list(data: List[JsonDict], model_class: Type[T]) -> List[T]:
+def deserialize_model_list(model_class: Type[T], data: List[JsonDict]) -> List[T]:
     """
     Deserialize a list of dictionaries into a list of Pydantic models.
 
     Args:
-        data: The list of dictionaries to deserialize
         model_class: The Pydantic model class to create
+        data: The list of dictionaries to deserialize
 
     Returns:
         A list of instances of the specified model class
@@ -98,4 +98,4 @@ def deserialize_model_list(data: List[JsonDict], model_class: Type[T]) -> List[T
     if not data:
         return []
 
-    return [deserialize_model(item, model_class) for item in data]
+    return [deserialize_model(model_class, item) for item in data]

@@ -1,4 +1,4 @@
-"""Custom exceptions for Datasets V2 API."""
+"""Custom exceptions for Datasets API."""
 
 import json
 from typing import Any
