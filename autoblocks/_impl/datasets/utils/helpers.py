@@ -5,13 +5,8 @@ from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Optional
-from typing import ParamSpec
-from typing import TypeVar
 
 from autoblocks._impl.datasets.exceptions import ValidationError
-
-P = ParamSpec("P")
-T = TypeVar("T")
 
 
 def build_path(*parts: str, query_params: Optional[Dict[str, Any]] = None) -> str:
