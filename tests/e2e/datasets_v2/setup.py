@@ -4,8 +4,7 @@ from typing import List
 from typing import Optional
 
 from autoblocks._impl.util import cuid_generator
-from autoblocks.datasets_v2.client import DatasetsV2Client
-from autoblocks.datasets_v2.client import create_datasets_v2_client
+from autoblocks.api.app_client import AutoblocksAppClient
 from autoblocks.datasets_v2.models import NumberProperty
 from autoblocks.datasets_v2.models import SchemaProperty
 from autoblocks.datasets_v2.models import SchemaPropertyType
@@ -16,16 +15,15 @@ APP_SLUG = "ci-app"
 TEST_TIMEOUT = 60000  # 60 seconds
 
 
-def create_test_client() -> DatasetsV2Client:
-    """Create a client for testing with real API calls."""
+def create_app_client() -> AutoblocksAppClient:
+    """Create an app client for testing with real API calls."""
     api_key = os.environ.get("AUTOBLOCKS_V2_API_KEY")
     if not api_key:
         raise ValueError("AUTOBLOCKS_V2_API_KEY environment variable is required for tests")
 
-    return create_datasets_v2_client(
+    return AutoblocksAppClient(
         api_key=api_key,
         app_slug=APP_SLUG,
-        timeout_ms=TEST_TIMEOUT,
     )
 
 
@@ -52,7 +50,7 @@ def get_basic_schema() -> List[SchemaProperty]:
     ]
 
 
-def cleanup_dataset(client: DatasetsV2Client, dataset_id: Optional[str]) -> None:
+def cleanup_dataset(client: AutoblocksAppClient, dataset_id: Optional[str]) -> None:
     """Clean up a dataset after testing."""
     if dataset_id:
-        client.destroy(dataset_id)
+        client.datasets.destroy(dataset_id_kwarg=dataset_id)
