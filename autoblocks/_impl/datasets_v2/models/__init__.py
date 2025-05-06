@@ -1,8 +1,13 @@
-"""Datasets V2 API Package."""
+"""Data models for Datasets V2 API."""
 
-from .client import DatasetsV2Client, create_datasets_v2_client
-from .models import (
-    # Dataset models
+# Re-export all the models for easy access
+from .conversation import (
+    Conversation,
+    ConversationMessage,
+    ConversationTurn
+)
+
+from .dataset import (
     DatasetV2,
     DatasetListItemV2,
     DatasetSchemaV2,
@@ -10,9 +15,10 @@ from .models import (
     DatasetItemsResponseV2,
     CreateDatasetV2Request,
     CreateDatasetItemsV2Request,
-    UpdateItemV2Request,
-    
-    # Schema models
+    UpdateItemV2Request
+)
+
+from .schema import (
     SchemaPropertyType,
     SchemaProperty,
     StringProperty,
@@ -23,26 +29,14 @@ from .models import (
     MultiSelectProperty,
     ValidJSONProperty,
     ConversationProperty,
-    create_schema_property,
-    
-    # Conversation models
-    Conversation,
-    ConversationMessage,
-    ConversationTurn
-)
-from .exceptions import (
-    AutoblocksError,
-    ValidationError,
-    APIError,
-    ResourceNotFoundError,
-    AuthenticationError,
-    RateLimitError
+    create_schema_property
 )
 
 __all__ = [
-    # Client
-    'DatasetsV2Client',
-    'create_datasets_v2_client',
+    # Conversation models
+    'Conversation',
+    'ConversationMessage',
+    'ConversationTurn',
     
     # Dataset models
     'DatasetV2',
@@ -66,17 +60,4 @@ __all__ = [
     'ValidJSONProperty',
     'ConversationProperty',
     'create_schema_property',
-    
-    # Conversation models
-    'Conversation',
-    'ConversationMessage',
-    'ConversationTurn',
-    
-    # Exceptions
-    'AutoblocksError',
-    'ValidationError',
-    'APIError',
-    'ResourceNotFoundError',
-    'AuthenticationError',
-    'RateLimitError'
-]
+] 
