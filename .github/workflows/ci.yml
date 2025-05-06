@@ -102,6 +102,11 @@ jobs:
         env:
           AUTOBLOCKS_V2_API_KEY: ${{ secrets.CI_AUTOBLOCKS_V2_API_KEY }}
 
+      - name: Run e2e datasets v2 tests
+        run: poetry run pytest tests/e2e/test_datasets_v2.py
+        env:
+          AUTOBLOCKS_V2_API_KEY: ${{ secrets.CI_AUTOBLOCKS_V2_API_KEY }}
+
   notify:
     needs:
       - tests
