@@ -14,6 +14,7 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 
 from autoblocks._impl.config.constants import API_ENDPOINT_V2
 from autoblocks._impl.global_state import init_auto_tracer as init_auto_tracer_global_state
+from autoblocks._impl.global_state import is_auto_tracer_initialized
 from autoblocks._impl.tracer.span_processor import ExecutionIdSpanProcessor
 from autoblocks._impl.util import AutoblocksEnvVar
 
@@ -29,6 +30,9 @@ def init_auto_tracer(
     """
     Initialize the OpenTelemetry auto tracer.
     """
+    if is_auto_tracer_initialized():
+        log.debug("Skipping auto tracer initialization because it is already initialized")
+        return
     log.debug(f"Initializing Autoblocks auto tracer with api_endpoint={api_endpoint}")
     set_global_textmap(
         CompositePropagator(
