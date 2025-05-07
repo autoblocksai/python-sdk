@@ -179,7 +179,6 @@ class DatasetsClient:
         self,
         *,
         name: str,
-        description: Optional[str] = None,
         schema: List[Dict[str, Any]],
     ) -> Dataset:
         """
@@ -187,7 +186,6 @@ class DatasetsClient:
 
         Args:
             name: Dataset name (required)
-            description: Dataset description (optional)
             schema: Dataset schema as a list of property dictionaries (required)
 
         Returns:
@@ -198,9 +196,6 @@ class DatasetsClient:
         """
         # Construct the basic dataset data
         data: Dict[str, Any] = {"name": name}
-
-        if description:
-            data["description"] = description
 
         # Process schema items
         processed_schema = []

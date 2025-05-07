@@ -47,7 +47,6 @@ class TestDatasetBasicCRUDOperations:
         # Create a dataset using the new keyword-only parameters
         temp_dataset = client.datasets.create(
             name=create_unique_name("Temp Dataset"),
-            description="Temporary dataset for deletion test",
             schema=get_basic_schema(),
         )
 
@@ -87,7 +86,6 @@ class TestConversationSchemaType:
 
         dataset = client.datasets.create(
             name=create_unique_name("Conversation Dataset"),
-            description="Dataset with conversation type for testing",
             schema=conversation_schema,
         )
         dataset_id = dataset.external_id
