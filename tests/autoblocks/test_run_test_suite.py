@@ -2238,7 +2238,7 @@ def test_alignment_mode_without_test_case_hash(httpx_mock):
         )
 
     requests = [dict(path=req.url.path, body=decode_request_body(req)) for req in httpx_mock.get_requests()]
-    print(requests)
+
     assert requests == [
         dict(
             path="/info",

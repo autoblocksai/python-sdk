@@ -1,3 +1,5 @@
+"""Autoblocks API Client."""
+
 import logging
 from dataclasses import asdict
 from datetime import timedelta

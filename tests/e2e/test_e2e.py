@@ -86,7 +86,7 @@ def test_get_test_cases():
 def test_send_and_retrieve_event():
     # Send test event
     test_trace_id = str(uuid.uuid4())
-    print(f"{test_trace_id=}")
+
     tracer.send_event(E2E_TESTS_EXPECTED_MESSAGE, trace_id=test_trace_id)
 
     retries = 10
