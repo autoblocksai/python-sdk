@@ -25,7 +25,6 @@ class Dataset(BaseModel):
     id: str
     external_id: str = Field(alias="externalId")
     name: Optional[str] = None
-    description: Optional[str] = None
     created_at: Optional[str] = Field(default=None, alias="createdAt")
     latest_revision_id: Optional[str] = Field(default=None, alias="latestRevisionId")
     schema_version: Optional[int] = Field(default=None, alias="schemaVersion")
@@ -43,7 +42,6 @@ class DatasetListItem(BaseModel):
     id: str
     external_id: str = Field(alias="externalId")
     name: Optional[str] = None
-    description: Optional[str] = None
     latest_revision_id: Optional[str] = Field(default=None, alias="latestRevisionId")
     schema_version: Optional[int] = Field(default=None, alias="schemaVersion")
     schema_properties: Optional[List[SchemaProperty]] = Field(default=None, alias="schema")
@@ -59,7 +57,6 @@ class DatasetSchema(BaseModel):
 
     id: str
     external_id: str = Field(alias="externalId")
-    description: Optional[str] = None
     schema_properties: Optional[List[SchemaProperty]] = Field(default=None, alias="schema")
     schema_version: int = Field(alias="schemaVersion")
 
@@ -87,7 +84,6 @@ class CreateDatasetRequest(BaseModel):
     """Request to create a dataset V2"""
 
     name: str
-    description: Optional[str] = None
     schema_properties: SchemaPropertyList = Field(alias="schema")
 
     model_config = ConfigDict(
