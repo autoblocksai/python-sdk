@@ -53,9 +53,7 @@ jobs:
         run: npx --package renovate renovate-config-validator --strict
 
   tests:
-    runs-on:
-      - codebuild-autoblocksai-${{ github.run_id }}-${{ github.run_attempt }}
-      - instance-size:small
+    runs-on: ubuntu-latest
     timeout-minutes: 5
 
     strategy:
