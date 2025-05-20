@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import Optional
 
 from autoblocks._impl.datasets.client import DatasetsClient
+from autoblocks._impl.human_review.client import HumanReviewClient
 from autoblocks._impl.util import AutoblocksEnvVar
 
 
@@ -42,6 +43,7 @@ class AutoblocksAppClient:
 
         # Initialize datasets client lazily
         self._datasets = DatasetsClient(api_key=self.api_key, app_slug=self.app_slug, timeout=timeout)
+        self._human_review = HumanReviewClient(api_key=self.api_key, app_slug=self.app_slug, timeout=timeout)
 
     @property
     def datasets(self) -> DatasetsClient:
@@ -52,3 +54,10 @@ class AutoblocksAppClient:
             The datasets client with the app_slug configured
         """
         return self._datasets
+
+    @property
+    def human_review(self) -> HumanReviewClient:
+        """
+        Access to the human review client.
+        """
+        return self._human_review
