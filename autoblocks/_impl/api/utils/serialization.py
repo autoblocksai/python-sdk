@@ -1,4 +1,4 @@
-"""Serialization utilities for Datasets API."""
+"""Serialization utilities for Autoblocks API."""
 
 from typing import Any
 from typing import Dict
