@@ -1,4 +1,4 @@
-"""Helper functions for dataset operations."""
+"""Helper functions for API operations."""
 
 import urllib.parse
 from typing import Any
@@ -7,7 +7,7 @@ from typing import Generator
 from typing import List
 from typing import Optional
 
-from autoblocks._impl.datasets.exceptions import ValidationError
+from autoblocks._impl.api.exceptions import ValidationError
 
 
 def build_path(*parts: str, query_params: Optional[Dict[str, Any]] = None) -> str:
@@ -35,24 +35,6 @@ def build_path(*parts: str, query_params: Optional[Dict[str, Any]] = None) -> st
             path = f"{path}?{query_string}"
 
     return path
-
-
-def validate_required(obj: Dict[str, Any], required_fields: List[str]) -> None:
-    """
-    Validate that required fields exist in an object.
-
-    Args:
-        obj: Dictionary to validate
-        required_fields: List of required field names
-
-    Raises:
-        ValidationError: If a required field is missing
-    """
-    missing_fields = [field for field in required_fields if field not in obj]
-
-    if missing_fields:
-        missing_str = ", ".join(missing_fields)
-        raise ValidationError(f"Missing required fields: {missing_str}")
 
 
 def batch(items: List[Any], batch_size: int) -> Generator[List[Any], None, None]:

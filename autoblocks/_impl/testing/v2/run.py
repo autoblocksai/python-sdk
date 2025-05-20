@@ -28,7 +28,6 @@ from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.context_vars import test_run_context_var
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import BaseTestEvaluator
-from autoblocks._impl.testing.models import CreateHumanReviewJob
 from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import EvaluationWithId
 from autoblocks._impl.testing.models import TestCaseContext
@@ -346,7 +345,6 @@ async def run_test_suite_for_grid_combo(
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
     grid_search_params_combo: Optional[GridSearchParamsCombo],
-    human_review_job: Optional[CreateHumanReviewJob],
 ) -> None:
     run_id = cuid_generator()
     test_run_reset_token = test_run_context_var.set(
@@ -379,29 +377,6 @@ async def run_test_suite_for_grid_combo(
         if test_run_reset_token:
             test_run_context_var.reset(test_run_reset_token)
 
-    # if human_review_job is not None:
-    #     try:
-    #         assignee_email_addresses = human_review_job.get_assignee_email_addresses()
-    #         await all_settled(
-    #             [
-    #                 send_create_human_review_job(
-    #                     run_id=run_id,
-    #                     assignee_email_address=assignee_email_address,
-    #                     name=human_review_job.name,
-    #                 )
-    #                 for assignee_email_address in assignee_email_addresses
-    #             ]
-    #         )
-    #     except Exception as err:
-    #         log.warn(f"Failed to create human review job for test run '{run_id}'", exc_info=err)
-
-    # await all_settled(
-    #     [
-    #         send_slack_notification(run_id=run_id),
-    #         send_github_comment(),
-    #     ]
-    # )
-
 
 async def async_run_test_suite(
     test_id: str,
@@ -412,7 +387,6 @@ async def async_run_test_suite(
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
     max_test_case_concurrency: int,
     grid_search_params: Optional[GridSearchParams],
-    human_review_job: Optional[CreateHumanReviewJob],
 ) -> None:
 
     # This will be set if the user passed filters to the CLI
@@ -465,7 +439,6 @@ async def async_run_test_suite(
                 fn=fn,
                 before_evaluators_hook=before_evaluators_hook,
                 grid_search_params_combo=None,
-                human_review_job=human_review_job,
             )
         except Exception as err:
             log.error(f"Error running test suite '{test_id}'", exc_info=err)
@@ -482,7 +455,6 @@ async def async_run_test_suite(
                     fn=fn,
                     before_evaluators_hook=before_evaluators_hook,
                     grid_search_params_combo=grid_params_combo,
-                    human_review_job=human_review_job,
                 )
                 for grid_params_combo in yield_grid_search_param_combos(grid_search_params)
             ],
@@ -502,7 +474,6 @@ def run_test_suite(
     max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
     grid_search_params: Optional[GridSearchParams] = None,
-    human_review_job: Optional[CreateHumanReviewJob] = None,
 ) -> None: ...
 
 
@@ -517,7 +488,6 @@ def run_test_suite(
     max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
     grid_search_params: Optional[GridSearchParams] = None,
-    human_review_job: Optional[CreateHumanReviewJob] = None,
 ) -> None: ...
 
 
@@ -531,7 +501,6 @@ def run_test_suite(
     max_test_case_concurrency: int = DEFAULT_MAX_TEST_CASE_CONCURRENCY,
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
     grid_search_params: Optional[GridSearchParams] = None,
-    human_review_job: Optional[CreateHumanReviewJob] = None,
 ) -> None:
     if not global_state.is_auto_tracer_initialized():
         log.error(
@@ -552,7 +521,6 @@ def run_test_suite(
             before_evaluators_hook=before_evaluators_hook,
             max_test_case_concurrency=max_test_case_concurrency,
             grid_search_params=grid_search_params,
-            human_review_job=human_review_job,
         ),
         global_state.event_loop(),
     ).result()

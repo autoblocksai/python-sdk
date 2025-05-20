@@ -1,4 +1,4 @@
-"""Custom exceptions for Datasets API."""
+"""Custom exceptions for Autoblocks API."""
 
 import json
 from typing import Any
@@ -21,65 +21,6 @@ class ValidationError(AutoblocksError):
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
         self.details = details or {}
         super().__init__(message)
-
-
-class ValidationIssue:
-    """Structure representing a validation issue."""
-
-    def __init__(
-        self,
-        code: str,
-        message: str,
-        path: Optional[List[str]] = None,
-        expected: Optional[str] = None,
-        received: Optional[str] = None,
-        options: Optional[List[str]] = None,
-    ):
-        self.code = code
-        self.message = message
-        self.path = path or []
-        self.expected = expected
-        self.received = received
-        self.options = options
-
-    @property
-    def path_str(self) -> str:
-        """Get the path as a dot-joined string."""
-        return ".".join(self.path) if self.path else "(root)"
-
-
-class ApiErrorResponse:
-    """Structure representing API error response."""
-
-    def __init__(self, success: bool = False, error: Optional[Dict[str, Any]] = None):
-        self.success = success
-        self.error = error or {}
-
-    @property
-    def error_message(self) -> Optional[str]:
-        """Get the error message."""
-        return self.error.get("message")
-
-    @property
-    def error_name(self) -> Optional[str]:
-        """Get the error name."""
-        return self.error.get("name")
-
-    @property
-    def issues(self) -> List[ValidationIssue]:
-        """Get validation issues."""
-        issues_data = self.error.get("issues", [])
-        return [
-            ValidationIssue(
-                code=issue.get("code", ""),
-                message=issue.get("message", ""),
-                path=issue.get("path"),
-                expected=issue.get("expected"),
-                received=issue.get("received"),
-                options=issue.get("options"),
-            )
-            for issue in issues_data
-        ]
 
 
 class APIError(AutoblocksError):
@@ -208,12 +149,6 @@ class APIError(AutoblocksError):
                 message += f"\n\nResponse: {content[:500]}... (truncated)"
 
         return message
-
-
-class ConfigurationError(AutoblocksError):
-    """Raised when there is a configuration error."""
-
-    pass
 
 
 class ResourceNotFoundError(APIError):
