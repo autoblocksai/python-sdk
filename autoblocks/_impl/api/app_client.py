@@ -42,8 +42,8 @@ class AutoblocksAppClient:
         self.timeout = timeout
 
         # Initialize datasets client lazily
-        self._datasets = DatasetsClient(api_key=self.api_key, app_slug=self.app_slug, timeout=timeout)
-        self._human_review = HumanReviewClient(api_key=self.api_key, app_slug=self.app_slug, timeout=timeout)
+        self._datasets = DatasetsClient(app_slug=self.app_slug, api_key=self.api_key, timeout=timeout)
+        self._human_review = HumanReviewClient(app_slug=self.app_slug, api_key=self.api_key, timeout=timeout)
 
     @property
     def datasets(self) -> DatasetsClient:

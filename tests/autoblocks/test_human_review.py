@@ -2,11 +2,11 @@ from datetime import timedelta
 
 import pytest
 
-from autoblocks._impl.human_review.client import HumanReviewClient
-from autoblocks._impl.human_review.models import ContentType
-from autoblocks._impl.human_review.models import Job
-from autoblocks._impl.human_review.models import JobItemDetail
-from autoblocks._impl.human_review.models import JobListItem
+from autoblocks.api.app_client import AutoblocksAppClient
+from autoblocks.human_review.models import ContentType
+from autoblocks.human_review.models import Job
+from autoblocks.human_review.models import JobItemDetail
+from autoblocks.human_review.models import JobListItem
 
 API_KEY = "test-api-key"
 APP_SLUG = "test-app"
@@ -14,7 +14,7 @@ APP_SLUG = "test-app"
 
 @pytest.fixture
 def client():
-    return HumanReviewClient(API_KEY, APP_SLUG, timeout=timedelta(seconds=5))
+    return AutoblocksAppClient(APP_SLUG, API_KEY, timeout=timedelta(seconds=5))
 
 
 def test_list_jobs(httpx_mock, client):
@@ -32,7 +32,7 @@ def test_list_jobs(httpx_mock, client):
             ]
         },
     )
-    jobs = client.list_jobs()
+    jobs = client.human_review.list_jobs()
     assert len(jobs) == 1
     assert isinstance(jobs[0], JobListItem)
     assert jobs[0].id == "job-1"
@@ -59,7 +59,7 @@ def test_get_job(httpx_mock, client):
             "items": [{"id": "item-1"}],
         },
     )
-    job = client.get_job(job_id="job-1")
+    job = client.human_review.get_job(job_id="job-1")
     assert isinstance(job, Job)
     assert job.id == "job-1"
     assert job.scores[0].options.type == "binary"
@@ -122,7 +122,7 @@ def test_get_job_item(httpx_mock, client):
             ],
         },
     )
-    item = client.get_job_item(job_id="job-1", item_id="item-1")
+    item = client.human_review.get_job_item(job_id="job-1", item_id="item-1")
     assert isinstance(item, JobItemDetail)
     assert item.id == "item-1"
     assert item.grades[0].score_id == "score-1"

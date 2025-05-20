@@ -27,8 +27,8 @@ log = logging.getLogger(__name__)
 class DatasetsClient(BaseAppResourceClient):
     """Datasets API Client"""
 
-    def __init__(self, api_key: str, app_slug: str, timeout: timedelta = timedelta(seconds=60)) -> None:
-        super().__init__(api_key, app_slug, timeout)
+    def __init__(self, app_slug: str, api_key: str, timeout: timedelta = timedelta(seconds=60)) -> None:
+        super().__init__(app_slug=app_slug, api_key=api_key, timeout=timeout)
 
     def list(self) -> List[DatasetListItem]:
         """
