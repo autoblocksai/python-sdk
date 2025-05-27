@@ -42,6 +42,7 @@ from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cas
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import is_cli_running
+from autoblocks._impl.util import parse_autoblocks_overrides
 
 log = logging.getLogger(__name__)
 
@@ -364,9 +365,13 @@ async def run_test_suite_for_grid_combo(
     human_review_job: Optional[CreateHumanReviewJob],
 ) -> None:
     try:
+        # Determine message with priority: unified overrides > legacy env var
+        overrides = parse_autoblocks_overrides()
+        message = overrides.test_run_message or AutoblocksEnvVar.TEST_RUN_MESSAGE.get()
+
         run_id = await send_start_test_run(
             test_external_id=test_id,
-            message=AutoblocksEnvVar.TEST_RUN_MESSAGE.get(),
+            message=message,
             grid_search_run_group_id=grid_search_run_group_id,
             grid_search_params_combo=grid_search_params_combo,
         )

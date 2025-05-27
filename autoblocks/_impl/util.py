@@ -9,6 +9,8 @@ from datetime import timezone
 from enum import Enum
 from typing import Any
 from typing import Coroutine
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -17,6 +19,42 @@ import orjson
 from cuid2 import cuid_wrapper
 
 log = logging.getLogger(__name__)
+
+
+class AutoblocksOverrides:
+    """Schema for the unified AUTOBLOCKS_OVERRIDES environment variable."""
+
+    def __init__(
+        self,
+        prompt_revisions: Optional[Dict[str, str]] = None,
+        test_run_message: Optional[str] = None,
+        test_selected_datasets: Optional[List[str]] = None,
+    ):
+        self.prompt_revisions = prompt_revisions or {}
+        self.test_run_message = test_run_message
+        self.test_selected_datasets = test_selected_datasets or []
+
+
+def parse_autoblocks_overrides() -> AutoblocksOverrides:
+    """
+    Parses the AUTOBLOCKS_OVERRIDES environment variable.
+    Returns an empty AutoblocksOverrides object if the variable is not set or invalid.
+    """
+    overrides_raw = AutoblocksEnvVar.OVERRIDES.get()
+
+    if not overrides_raw:
+        return AutoblocksOverrides()
+
+    try:
+        data = orjson.loads(overrides_raw)
+        return AutoblocksOverrides(
+            prompt_revisions=data.get("promptRevisions"),
+            test_run_message=data.get("testRunMessage"),
+            test_selected_datasets=data.get("testSelectedDatasets"),
+        )
+    except Exception as err:
+        log.warning(f"Failed to parse AUTOBLOCKS_OVERRIDES: {err}")
+        return AutoblocksOverrides()
 
 
 AnyTask = Union[asyncio.Task[Any], Future[Any]]
@@ -38,6 +76,7 @@ class AutoblocksEnvVar(StrEnum):
     CLI_SERVER_ADDRESS = "AUTOBLOCKS_CLI_SERVER_ADDRESS"
     INGESTION_KEY = "AUTOBLOCKS_INGESTION_KEY"
     FILTERS_TEST_SUITES = "AUTOBLOCKS_FILTERS_TEST_SUITES"
+    OVERRIDES = "AUTOBLOCKS_OVERRIDES"
     OVERRIDES_PROMPT_REVISIONS = "AUTOBLOCKS_OVERRIDES_PROMPT_REVISIONS"
     OVERRIDES_CONFIG_REVISIONS = "AUTOBLOCKS_OVERRIDES_CONFIG_REVISIONS"
     OVERRIDES_TESTS_AND_HASHES = "AUTOBLOCKS_OVERRIDES_TESTS_AND_HASHES"
