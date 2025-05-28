@@ -40,6 +40,7 @@ from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import cuid_generator
+from autoblocks._impl.util import parse_autoblocks_overrides
 from autoblocks._impl.util import serialize
 
 log = logging.getLogger(__name__)
@@ -347,8 +348,13 @@ async def run_test_suite_for_grid_combo(
     grid_search_params_combo: Optional[GridSearchParamsCombo],
 ) -> None:
     run_id = cuid_generator()
+
+    # Determine message with priority: unified overrides > legacy env var
+    overrides = parse_autoblocks_overrides()
+    run_message = overrides.test_run_message or AutoblocksEnvVar.TEST_RUN_MESSAGE.get()
+
     test_run_reset_token = test_run_context_var.set(
-        TestRunContext(run_id=run_id, run_message=AutoblocksEnvVar.TEST_RUN_MESSAGE.get(), test_id=test_id)
+        TestRunContext(run_id=run_id, run_message=run_message, test_id=test_id)
     )
     grid_search_reset_token = (
         grid_search_context_var.set(grid_search_params_combo) if grid_search_params_combo else None

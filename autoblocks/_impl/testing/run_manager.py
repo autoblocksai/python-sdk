@@ -17,6 +17,7 @@ from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
+from autoblocks._impl.util import parse_autoblocks_overrides
 
 log = logging.getLogger(__name__)
 
@@ -46,9 +47,15 @@ class RunManager(Generic[TestCaseType, OutputType]):
         # This can be called twice, so we put it in both the sync and async start methods to ensure it gets called
         global_state.init()
 
+        # Determine message with priority: explicit > unified overrides > legacy env var
+        message = self.message
+        if not message:
+            overrides = parse_autoblocks_overrides()
+            message = overrides.test_run_message or AutoblocksEnvVar.TEST_RUN_MESSAGE.get()
+
         self.run_id = await send_start_test_run(
             test_external_id=self.test_external_id,
-            message=self.message or AutoblocksEnvVar.TEST_RUN_MESSAGE.get(),
+            message=message,
             grid_search_run_group_id=None,
             grid_search_params_combo=None,
         )

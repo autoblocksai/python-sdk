@@ -29,6 +29,7 @@ from autoblocks._impl.util import AnyTask
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import encode_uri_component
 from autoblocks._impl.util import get_running_loop
+from autoblocks._impl.util import parse_autoblocks_overrides
 
 log = logging.getLogger(__name__)
 
@@ -48,13 +49,19 @@ def is_testing_context() -> bool:
 
 def prompt_revisions_map() -> dict[str, str]:
     """
-    The AUTOBLOCKS_OVERRIDES_PROMPT_REVISIONS environment variable is a JSON-stringified
-    map of prompt IDs to revision IDs. This is set in CI test runs triggered
-    from the UI.
+    The AUTOBLOCKS_OVERRIDES environment variable is a JSON-stringified
+    object that can contain promptRevisions. This is set in CI test runs triggered
+    from the UI. Falls back to legacy AUTOBLOCKS_OVERRIDES_PROMPT_REVISIONS.
     """
     if not is_testing_context():
         return {}
 
+    # Try new unified format first
+    overrides = parse_autoblocks_overrides()
+    if overrides.prompt_revisions:
+        return overrides.prompt_revisions
+
+    # Fallback to legacy format
     prompt_revisions_raw = AutoblocksEnvVar.OVERRIDES_PROMPT_REVISIONS.get()
     if not prompt_revisions_raw:
         return {}
