@@ -78,6 +78,11 @@ class TestAutoblocksAppClient:
         assert len(retrieved_items) == 1
         assert retrieved_items[0].data["Text Field"] == "Sample text"
 
+        # Test splits filtering
+        train_items = client.datasets.get_items(external_id=dataset.external_id, splits=["train"])
+        assert len(train_items) == 1
+        assert "train" in train_items[0].splits
+
         # Update item
         update_data = {
             "Text Field": "Updated text",

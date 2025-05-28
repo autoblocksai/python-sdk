@@ -151,6 +151,23 @@ class TestConversationSchemaType:
         assert len(retrieved_items) == 1
         assert retrieved_items[0].data["title"] == "Sample conversation"
 
+        # Test splits filtering
+        train_items: List[DatasetItem] = client.datasets.get_items(
+            external_id=conversation_dataset_id, splits=["train"]
+        )
+        assert len(train_items) == 1
+        assert "train" in train_items[0].splits
+
+        test_items: List[DatasetItem] = client.datasets.get_items(external_id=conversation_dataset_id, splits=["test"])
+        assert len(test_items) == 1
+        assert "test" in test_items[0].splits
+
+        # Test filtering by multiple splits
+        train_test_items: List[DatasetItem] = client.datasets.get_items(
+            external_id=conversation_dataset_id, splits=["train", "test"]
+        )
+        assert len(train_test_items) == 1
+
         # Since conversation is stored as JSON, compare the structure
         assert "conversation" in retrieved_items[0].data
 
@@ -232,11 +249,60 @@ class TestDatasetItemsOperations:
         assert create_items_result.count == 2
         assert create_items_result.revision_id is not None
 
+        # Add additional items with different splits for testing splits filtering
+        additional_items = [
+            {
+                "Text Field": "Validation text 1",
+                "Number Field": 100,
+            },
+            {
+                "Text Field": "Validation text 2",
+                "Number Field": 101,
+            },
+        ]
+
+        validation_result = client.datasets.create_items(
+            external_id=test_dataset_id, items=additional_items, split_names=["validation"]
+        )
+
+        assert validation_result.count == 2
+
     def test_retrieve_items_from_dataset(self, client: AutoblocksAppClient, test_dataset_id: str) -> None:
         """Test retrieving items from the dataset."""
         retrieved_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id)
 
-        assert len(retrieved_items) == 2
+        assert len(retrieved_items) == 4  # 2 train/test items + 2 validation items
+
+        # Test splits filtering
+        train_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id, splits=["train"])
+
+        assert len(train_items) == 2
+
+        for item in train_items:
+            assert "train" in item.splits
+
+        test_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id, splits=["test"])
+
+        assert len(test_items) == 2
+        for item in test_items:
+            assert "test" in item.splits
+
+        validation_items: List[DatasetItem] = client.datasets.get_items(
+            external_id=test_dataset_id, splits=["validation"]
+        )
+        assert len(validation_items) == 2
+        for item in validation_items:
+            assert "validation" in item.splits
+
+        # Test filtering by multiple splits
+        train_test_items: List[DatasetItem] = client.datasets.get_items(
+            external_id=test_dataset_id, splits=["train", "test"]
+        )
+        assert len(train_test_items) == 2  # Items that have both train AND test splits
+
+        # Test filtering with non-existent split
+        empty_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id, splits=["nonexistent"])
+        assert len(empty_items) == 0
 
         # Store an item ID for update/delete tests in the class variable
         TestDatasetItemsOperations.test_item_id = retrieved_items[0].id

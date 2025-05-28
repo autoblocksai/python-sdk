@@ -115,12 +115,14 @@ class DatasetsClient(BaseAppResourceClient):
         self,
         *,
         external_id: str,
+        splits: Optional[List[str]] = None,
     ) -> List[DatasetItem]:
         """
         Get all items in a dataset.
 
         Args:
             external_id: Dataset ID (required)
+            splits: Optional list of splits to filter by
 
         Returns:
             List of dataset items
@@ -131,7 +133,11 @@ class DatasetsClient(BaseAppResourceClient):
         if not external_id:
             raise ValidationError("Dataset ID is required")
 
-        path = self._build_app_path("datasets", external_id, "items")
+        query_params: Dict[str, Any] = {}
+        if splits:
+            query_params["splits"] = ",".join(splits)
+
+        path = self._build_app_path("datasets", external_id, "items", **query_params)
         response = self._make_request("GET", path)
         return deserialize_model_list(DatasetItem, response)
 
@@ -203,9 +209,7 @@ class DatasetsClient(BaseAppResourceClient):
         if splits:
             query_params["splits"] = ",".join(splits)
 
-        path = self._build_app_path(
-            "datasets", dataset_id, "revisions", revision_id, "items", query_params=query_params
-        )
+        path = self._build_app_path("datasets", dataset_id, "revisions", revision_id, "items", **query_params)
         response = self._make_request("GET", path)
         return deserialize_model_list(DatasetItem, response)
 
@@ -227,9 +231,7 @@ class DatasetsClient(BaseAppResourceClient):
         if splits:
             query_params["splits"] = ",".join(splits)
 
-        path = self._build_app_path(
-            "datasets", dataset_id, "schema", str(schema_version), "items", query_params=query_params
-        )
+        path = self._build_app_path("datasets", dataset_id, "schema", str(schema_version), "items", **query_params)
         response = self._make_request("GET", path)
         return deserialize_model_list(DatasetItem, response)
 
