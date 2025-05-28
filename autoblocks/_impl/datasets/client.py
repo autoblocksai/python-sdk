@@ -137,7 +137,7 @@ class DatasetsClient(BaseAppResourceClient):
         if splits:
             query_params["splits"] = ",".join(splits)
 
-        path = self._build_app_path("datasets", external_id, "items", query_params=query_params)
+        path = self._build_app_path("datasets", external_id, "items", **query_params)
         response = self._make_request("GET", path)
         return deserialize_model_list(DatasetItem, response)
 
@@ -209,9 +209,7 @@ class DatasetsClient(BaseAppResourceClient):
         if splits:
             query_params["splits"] = ",".join(splits)
 
-        path = self._build_app_path(
-            "datasets", dataset_id, "revisions", revision_id, "items", query_params=query_params
-        )
+        path = self._build_app_path("datasets", dataset_id, "revisions", revision_id, "items", **query_params)
         response = self._make_request("GET", path)
         return deserialize_model_list(DatasetItem, response)
 
@@ -233,9 +231,7 @@ class DatasetsClient(BaseAppResourceClient):
         if splits:
             query_params["splits"] = ",".join(splits)
 
-        path = self._build_app_path(
-            "datasets", dataset_id, "schema", str(schema_version), "items", query_params=query_params
-        )
+        path = self._build_app_path("datasets", dataset_id, "schema", str(schema_version), "items", **query_params)
         response = self._make_request("GET", path)
         return deserialize_model_list(DatasetItem, response)
 

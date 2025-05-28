@@ -275,11 +275,14 @@ class TestDatasetItemsOperations:
 
         # Test splits filtering
         train_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id, splits=["train"])
+
         assert len(train_items) == 2
+
         for item in train_items:
             assert "train" in item.splits
 
         test_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id, splits=["test"])
+
         assert len(test_items) == 2
         for item in test_items:
             assert "test" in item.splits
