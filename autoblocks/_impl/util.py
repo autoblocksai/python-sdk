@@ -29,10 +29,12 @@ class AutoblocksOverrides:
         prompt_revisions: Optional[Dict[str, str]] = None,
         test_run_message: Optional[str] = None,
         test_selected_datasets: Optional[List[str]] = None,
+        test_selected_scenarios_ids: Optional[List[str]] = None,
     ):
         self.prompt_revisions = prompt_revisions or {}
         self.test_run_message = test_run_message
         self.test_selected_datasets = test_selected_datasets or []
+        self.test_selected_scenarios_ids = test_selected_scenarios_ids or []
 
 
 def parse_autoblocks_overrides() -> AutoblocksOverrides:
@@ -51,6 +53,7 @@ def parse_autoblocks_overrides() -> AutoblocksOverrides:
             prompt_revisions=data.get("promptRevisions"),
             test_run_message=data.get("testRunMessage"),
             test_selected_datasets=data.get("testSelectedDatasets"),
+            test_selected_scenarios_ids=data.get("testSelectedScenarioIds"),
         )
     except Exception as err:
         log.warning(f"Failed to parse AUTOBLOCKS_OVERRIDES: {err}")

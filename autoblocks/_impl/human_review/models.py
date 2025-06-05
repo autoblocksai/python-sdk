@@ -171,11 +171,3 @@ class JobItemDetail(BaseModel):
     output_comments: List[Comment] = Field(alias="outputComments")
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-class SuccessResponse(BaseModel):
-    """Generic success response."""
-
-    success: bool = True
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")

@@ -15,7 +15,6 @@ from autoblocks._impl.human_review.models import JobsResponse
 from autoblocks._impl.human_review.models import Reviewer
 from autoblocks._impl.human_review.models import Score
 from autoblocks._impl.human_review.models import ScoreOptions
-from autoblocks._impl.human_review.models import SuccessResponse
 from autoblocks._impl.human_review.models import TagScoreOptions
 from autoblocks._impl.human_review.models import User
 
@@ -35,7 +34,6 @@ __all__ = [
     "Reviewer",
     "Score",
     "ScoreOptions",
-    "SuccessResponse",
     "TagScoreOptions",
     "User",
 ]
