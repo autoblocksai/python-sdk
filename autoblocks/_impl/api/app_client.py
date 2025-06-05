@@ -63,3 +63,10 @@ class AutoblocksAppClient:
         Access to the human review client.
         """
         return self._human_review
+
+    @property
+    def scenarios(self) -> ScenariosClient:
+        """
+        Access to the scenarios client.
+        """
+        return self._scenarios
