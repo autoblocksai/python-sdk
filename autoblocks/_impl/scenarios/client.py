@@ -52,8 +52,6 @@ class ScenariosClient(BaseAppResourceClient):
         """
         if not scenario_id:
             raise ValidationError("Scenario ID is required")
-        if not messages:
-            raise ValidationError("Messages list cannot be empty")
 
         # Prepare data payload
         data: Dict[str, Any] = {"messages": [serialize_model(message) for message in messages]}
