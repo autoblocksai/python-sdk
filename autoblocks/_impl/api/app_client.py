@@ -5,6 +5,7 @@ from typing import Optional
 
 from autoblocks._impl.datasets.client import DatasetsClient
 from autoblocks._impl.human_review.client import HumanReviewClient
+from autoblocks._impl.scenarios.client import ScenariosClient
 from autoblocks._impl.util import AutoblocksEnvVar
 
 
@@ -44,6 +45,7 @@ class AutoblocksAppClient:
         # Initialize datasets client lazily
         self._datasets = DatasetsClient(app_slug=self.app_slug, api_key=self.api_key, timeout=timeout)
         self._human_review = HumanReviewClient(app_slug=self.app_slug, api_key=self.api_key, timeout=timeout)
+        self._scenarios = ScenariosClient(app_slug=self.app_slug, api_key=self.api_key, timeout=timeout)
 
     @property
     def datasets(self) -> DatasetsClient:
