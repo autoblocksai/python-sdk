@@ -255,7 +255,7 @@ class TestDatasetItemsOperations:
             external_id=test_dataset_id, items=items, split_names=["train", "test"]
         )
 
-        assert create_items_result.count == 2
+        assert create_items_result.count == 2  # Total items in dataset after first creation
         assert create_items_result.revision_id is not None
 
         # Verify that creating items created a new dataset revision
@@ -281,8 +281,9 @@ class TestDatasetItemsOperations:
             external_id=test_dataset_id, items=additional_items, split_names=["validation"]
         )
 
-        assert validation_result.count == 2
+        assert validation_result.count == 4  # Total items in dataset (2 + 2)
         assert validation_result.revision_id is not None
+        assert validation_result.revision_id != create_items_result.revision_id
 
         # Verify that adding more items created another new revision
         final_datasets = client.datasets.list()
