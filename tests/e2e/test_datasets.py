@@ -6,6 +6,7 @@ from typing import List
 import pytest
 
 from autoblocks.api.app_client import AutoblocksAppClient
+from autoblocks.datasets.models import Dataset
 from autoblocks.datasets.models import DatasetItem
 from autoblocks.datasets.models import SchemaPropertyType
 from tests.e2e.datasets.setup import create_app_client
@@ -39,6 +40,7 @@ class TestDatasetBasicCRUDOperations:
         datasets = client.datasets.list()
 
         assert len(datasets) > 0
+        assert all(isinstance(d, Dataset) for d in datasets)
         test_dataset = next((d for d in datasets if d.external_id == test_dataset_id), None)
         assert test_dataset is not None
 
@@ -56,6 +58,7 @@ class TestDatasetBasicCRUDOperations:
         assert delete_result.success is True
 
         datasets = client.datasets.list()
+        assert all(isinstance(d, Dataset) for d in datasets)
         deleted_dataset = next((d for d in datasets if d.external_id == temp_dataset.external_id), None)
         assert deleted_dataset is None
 
@@ -230,6 +233,12 @@ class TestDatasetItemsOperations:
 
     def test_add_items_to_dataset(self, client: AutoblocksAppClient, test_dataset_id: str) -> None:
         """Test adding items to the dataset."""
+        # Get initial dataset state
+        initial_datasets = client.datasets.list()
+        initial_dataset = next((d for d in initial_datasets if d.external_id == test_dataset_id), None)
+        assert initial_dataset is not None
+        initial_revision_id = initial_dataset.latest_revision_id
+
         items = [
             {
                 "Text Field": "Sample text 1",
@@ -249,6 +258,13 @@ class TestDatasetItemsOperations:
         assert create_items_result.count == 2
         assert create_items_result.revision_id is not None
 
+        # Verify that creating items created a new dataset revision
+        updated_datasets = client.datasets.list()
+        updated_dataset = next((d for d in updated_datasets if d.external_id == test_dataset_id), None)
+        assert updated_dataset is not None
+        assert updated_dataset.latest_revision_id != initial_revision_id
+        assert updated_dataset.latest_revision_id == create_items_result.revision_id
+
         # Add additional items with different splits for testing splits filtering
         additional_items = [
             {
@@ -266,6 +282,13 @@ class TestDatasetItemsOperations:
         )
 
         assert validation_result.count == 2
+        assert validation_result.revision_id is not None
+
+        # Verify that adding more items created another new revision
+        final_datasets = client.datasets.list()
+        final_dataset = next((d for d in final_datasets if d.external_id == test_dataset_id), None)
+        assert final_dataset is not None
+        assert final_dataset.latest_revision_id == validation_result.revision_id
 
     def test_retrieve_items_from_dataset(self, client: AutoblocksAppClient, test_dataset_id: str) -> None:
         """Test retrieving items from the dataset."""
@@ -343,6 +366,12 @@ class TestDatasetItemsOperations:
         # Make sure we have an item ID from the previous test
         assert TestDatasetItemsOperations.test_item_id is not None
 
+        # Get dataset state before deletion
+        pre_delete_datasets = client.datasets.list()
+        pre_delete_dataset = next((d for d in pre_delete_datasets if d.external_id == test_dataset_id), None)
+        assert pre_delete_dataset is not None
+        pre_delete_revision_id = pre_delete_dataset.latest_revision_id
+
         # Use the new keyword-only arguments
         delete_result = client.datasets.delete_item(
             external_id=test_dataset_id, item_id=TestDatasetItemsOperations.test_item_id
@@ -350,10 +379,62 @@ class TestDatasetItemsOperations:
 
         assert delete_result.success is True
 
+        # Verify that deleting an item created a new dataset revision
+        post_delete_datasets = client.datasets.list()
+        post_delete_dataset = next((d for d in post_delete_datasets if d.external_id == test_dataset_id), None)
+        assert post_delete_dataset is not None
+        assert post_delete_dataset.latest_revision_id != pre_delete_revision_id
+
         # Verify the item is deleted
         retrieved_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id)
+
         deleted_item = next(
             (item for item in retrieved_items if item.id == TestDatasetItemsOperations.test_item_id), None
         )
 
         assert deleted_item is None
+
+    def test_get_items_by_revision(self, client: AutoblocksAppClient, test_dataset_id: str) -> None:
+        """Test retrieving items by specific revision ID."""
+        # Create some items to get a revision ID
+        items = [
+            {
+                "Text Field": "Revision test text",
+                "Number Field": 999,
+            }
+        ]
+
+        create_result = client.datasets.create_items(external_id=test_dataset_id, items=items, split_names=["test"])
+
+        assert create_result.revision_id is not None
+
+        # Test get_items_by_revision with the returned revision ID
+        revision_items = client.datasets.get_items_by_revision(
+            dataset_id=test_dataset_id, revision_id=create_result.revision_id
+        )
+
+        assert len(revision_items) > 0
+        # Verify we can find our test item in the revision
+        test_item = next((item for item in revision_items if item.data.get("Text Field") == "Revision test text"), None)
+        assert test_item is not None
+        assert test_item.data["Number Field"] == 999
+
+    def test_get_schema_by_version(self, client: AutoblocksAppClient, test_dataset_id: str) -> None:
+        """Test retrieving dataset schema by version and verify name field is included."""
+        # Get the current dataset to find its schema version
+        datasets = client.datasets.list()
+        test_dataset = next((d for d in datasets if d.external_id == test_dataset_id), None)
+        assert test_dataset is not None
+        assert test_dataset.schema_version is not None
+
+        # Get schema by version
+        schema = client.datasets.get_schema_by_version(
+            dataset_id=test_dataset_id, schema_version=test_dataset.schema_version
+        )
+
+        assert schema.id is not None
+        assert schema.external_id == test_dataset_id
+        assert schema.schema_version == test_dataset.schema_version
+        assert schema.name is not None  # Verify the new name field is present
+        assert schema.schema_properties is not None
+        assert len(schema.schema_properties) > 0

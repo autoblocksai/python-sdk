@@ -15,7 +15,6 @@ from autoblocks._impl.api.utils.serialization import serialize_model
 from autoblocks._impl.datasets.models.dataset import Dataset
 from autoblocks._impl.datasets.models.dataset import DatasetItem
 from autoblocks._impl.datasets.models.dataset import DatasetItemsSuccessResponse
-from autoblocks._impl.datasets.models.dataset import DatasetListItem
 from autoblocks._impl.datasets.models.dataset import DatasetSchema
 from autoblocks._impl.datasets.models.dataset import SuccessResponse
 from autoblocks._impl.datasets.models.schema import create_schema_property
@@ -30,7 +29,7 @@ class DatasetsClient(BaseAppResourceClient):
     def __init__(self, app_slug: str, api_key: str, timeout: timedelta = timedelta(seconds=60)) -> None:
         super().__init__(app_slug=app_slug, api_key=api_key, timeout=timeout)
 
-    def list(self) -> List[DatasetListItem]:
+    def list(self) -> List[Dataset]:
         """
         List all datasets in the app.
 
@@ -39,7 +38,7 @@ class DatasetsClient(BaseAppResourceClient):
         """
         path = self._build_app_path("datasets")
         response = self._make_request("GET", path)
-        return deserialize_model_list(DatasetListItem, response)
+        return deserialize_model_list(Dataset, response)
 
     def create(
         self,
