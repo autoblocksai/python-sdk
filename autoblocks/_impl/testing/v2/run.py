@@ -522,7 +522,6 @@ def run_test_suite(
             "Please call init_auto_tracer() first."
         )
         return
-    log.info(f"Running test suite '{id}'")
     global_state.init()
 
     asyncio.run_coroutine_threadsafe(
@@ -538,8 +537,6 @@ def run_test_suite(
         ),
         global_state.event_loop(),
     ).result()
-
-    log.info(f"Finished running test suite '{id}'")
 
     # Force flush the tracer provider to send all results to Autoblocks
     provider = trace.get_tracer_provider()
