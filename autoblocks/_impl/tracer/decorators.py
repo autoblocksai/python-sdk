@@ -12,7 +12,7 @@ from opentelemetry.context import get_current
 from autoblocks._impl.context_vars import test_case_run_context_var
 from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import cuid_generator
-from autoblocks._impl.util import serialize
+from autoblocks._impl.util import serialize_to_string
 
 
 def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -47,12 +47,12 @@ def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]],
                         span.set_attribute(SpanAttribute.EXECUTION_ID, execution_id)
                         span.set_attribute(SpanAttribute.ENVIRONMENT, environment)
                         span.set_attribute(SpanAttribute.APP_SLUG, app_slug)
-                        span.set_attribute(SpanAttribute.INPUT, serialize({"args": args, "kwargs": kwargs}))
+                        span.set_attribute(SpanAttribute.INPUT, serialize_to_string({"args": args, "kwargs": kwargs}))
 
                         result = await fn(*args, **kwargs)
 
                         # Set span attributes after function execution
-                        span.set_attribute(SpanAttribute.OUTPUT, serialize(result))
+                        span.set_attribute(SpanAttribute.OUTPUT, serialize_to_string(result))
                         return result
                     finally:
                         detach(token)
@@ -81,11 +81,11 @@ def trace_app(app_slug: str, environment: str) -> Callable[[Callable[..., Any]],
                         span.set_attribute(SpanAttribute.EXECUTION_ID, execution_id)
                         span.set_attribute(SpanAttribute.ENVIRONMENT, environment)
                         span.set_attribute(SpanAttribute.APP_SLUG, app_slug)
-                        span.set_attribute(SpanAttribute.INPUT, serialize({"args": args, "kwargs": kwargs}))
+                        span.set_attribute(SpanAttribute.INPUT, serialize_to_string({"args": args, "kwargs": kwargs}))
 
                         result = fn(*args, **kwargs)
 
-                        span.set_attribute(SpanAttribute.OUTPUT, serialize(result))
+                        span.set_attribute(SpanAttribute.OUTPUT, serialize_to_string(result))
                         return result
                     finally:
                         detach(token)

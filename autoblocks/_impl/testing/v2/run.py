@@ -43,7 +43,7 @@ from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import cuid_generator
 from autoblocks._impl.util import parse_autoblocks_overrides
-from autoblocks._impl.util import serialize
+from autoblocks._impl.util import serialize_to_string
 
 log = logging.getLogger(__name__)
 
@@ -176,7 +176,7 @@ async def run_test_case_unsafe(
             span.set_attribute(SpanAttribute.EXECUTION_ID, execution_id)
             span.set_attribute(SpanAttribute.ENVIRONMENT, "test")
             span.set_attribute(SpanAttribute.APP_SLUG, app_slug)
-            span.set_attribute(SpanAttribute.INPUT, serialize_test_case(test_case_ctx.test_case))
+            span.set_attribute(SpanAttribute.INPUT, serialize_to_string(serialize_test_case(test_case_ctx.test_case)))
             if inspect.iscoroutinefunction(fn):
                 output = await fn(test_case_ctx.test_case)
             else:
@@ -187,7 +187,7 @@ async def run_test_case_unsafe(
                     fn,
                     test_case_ctx.test_case,
                 )
-            span.set_attribute(SpanAttribute.OUTPUT, serialize_output(output))
+            span.set_attribute(SpanAttribute.OUTPUT, serialize_to_string(serialize_output(output)))
 
             # Run the before-evaluators hook if provided.
             # Note we run this within the test case semaphore so that
@@ -227,7 +227,7 @@ async def run_test_case_unsafe(
                     log.error(f"Error running evaluator for test case '{test_case_ctx.hash()}'", exc_info=result)
                 elif isinstance(result, EvaluationWithId):
                     evaluator_results.append(result)
-            span.set_attribute(SpanAttribute.EVALUATORS, serialize(evaluator_results))
+            span.set_attribute(SpanAttribute.EVALUATORS, serialize_to_string(evaluator_results))
 
     detach(token)
 
