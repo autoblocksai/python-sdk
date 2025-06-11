@@ -240,6 +240,7 @@ async def run_test_case(
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
+    test_case_idx: int,
 ) -> None:
     reset_token = test_case_run_context_var.set(
         TestCaseRunContext(
@@ -249,6 +250,7 @@ async def run_test_case(
         ),
     )
     try:
+        log.info(f"Running test case {test_case_idx} for test suite {test_id}")
         await run_test_case_unsafe(
             test_id=test_id,
             app_slug=app_slug,
@@ -261,6 +263,7 @@ async def run_test_case(
         log.error(f"Error running test case '{test_case_ctx.hash()}'", exc_info=err)
         return
     finally:
+        log.info(f"Finished running test case {test_case_idx} for test suite {test_id}")
         test_case_run_context_var.reset(reset_token)
 
 
@@ -351,6 +354,7 @@ async def run_test_suite_for_grid_combo(
 ) -> None:
     run_id = cuid_generator()
 
+    log.info(f"Running test suite '{test_id}' with {len(test_cases)} test cases")
     # Determine message with priority: unified overrides > legacy env var
     overrides = parse_autoblocks_overrides()
     run_message = overrides.test_run_message or AutoblocksEnvVar.TEST_RUN_MESSAGE.get()
@@ -373,13 +377,15 @@ async def run_test_suite_for_grid_combo(
                     evaluators=evaluators,
                     fn=fn,
                     before_evaluators_hook=before_evaluators_hook,
+                    test_case_idx=test_case_idx,
                 )
-                for test_case_ctx in yield_test_case_contexts_from_test_cases(test_cases)
+                for test_case_idx, test_case_ctx in enumerate(yield_test_case_contexts_from_test_cases(test_cases))
             ],
         )
     except Exception as err:
         log.error(f"Error running test suite '{test_id}'", exc_info=err)
     finally:
+        log.info(f"Finished running test suite '{test_id}'")
         if grid_search_reset_token:
             grid_search_context_var.reset(grid_search_reset_token)
         if test_run_reset_token:
