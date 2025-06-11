@@ -1,19 +1,17 @@
 import dataclasses
 import hashlib
 import itertools
-import traceback
 from typing import Any
 from typing import Generator
 from typing import Optional
 from typing import Sequence
-
-import orjson
 
 from autoblocks._impl.testing.models import BaseTestCase
 from autoblocks._impl.testing.models import HumanReviewField
 from autoblocks._impl.testing.models import TestCaseConfig
 from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
+from autoblocks._impl.util import serialize
 
 # This attribute name might sound redundant, but it is named this
 # way (as opposed to just `config`) to decrease the likelihood
@@ -24,28 +22,6 @@ TEST_CASE_CONFIG_ATTR = "test_case_config"
 
 def md5(text: str) -> str:
     return hashlib.md5(text.encode()).hexdigest()
-
-
-def orjson_default(o: Any) -> Any:
-    if hasattr(o, "model_dump_json") and callable(o.model_dump_json):
-        # pydantic v2
-        return orjson.loads(o.model_dump_json())
-    elif hasattr(o, "json") and callable(o.json):
-        # pydantic v1
-        return orjson.loads(o.json())
-    elif isinstance(o, Exception):
-        return "".join(
-            traceback.format_exception(
-                type(o),
-                o,
-                o.__traceback__,
-            )
-        )
-    raise TypeError
-
-
-def serialize(x: Any) -> Any:
-    return orjson.loads(orjson.dumps(x, default=orjson_default))
 
 
 def serialize_test_case(test_case: BaseTestCase) -> Any:

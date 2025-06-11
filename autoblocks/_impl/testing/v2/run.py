@@ -34,6 +34,8 @@ from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.util import GridSearchParams
 from autoblocks._impl.testing.util import GridSearchParamsCombo
+from autoblocks._impl.testing.util import serialize_output
+from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.util import yield_grid_search_param_combos
 from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cases
 from autoblocks._impl.tracer.util import SpanAttribute
@@ -174,7 +176,7 @@ async def run_test_case_unsafe(
             span.set_attribute(SpanAttribute.EXECUTION_ID, execution_id)
             span.set_attribute(SpanAttribute.ENVIRONMENT, "test")
             span.set_attribute(SpanAttribute.APP_SLUG, app_slug)
-            span.set_attribute(SpanAttribute.INPUT, serialize(test_case_ctx.test_case))
+            span.set_attribute(SpanAttribute.INPUT, serialize_test_case(test_case_ctx.test_case))
             if inspect.iscoroutinefunction(fn):
                 output = await fn(test_case_ctx.test_case)
             else:
@@ -185,7 +187,7 @@ async def run_test_case_unsafe(
                     fn,
                     test_case_ctx.test_case,
                 )
-            span.set_attribute(SpanAttribute.OUTPUT, serialize(output))
+            span.set_attribute(SpanAttribute.OUTPUT, serialize_output(output))
 
             # Run the before-evaluators hook if provided.
             # Note we run this within the test case semaphore so that

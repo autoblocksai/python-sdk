@@ -166,12 +166,12 @@ def orjson_default(o: Any) -> Any:
     raise TypeError
 
 
-def serialize(value: Any) -> str:
+def serialize(value: Any) -> Any:
     """
     Serializes an unknown value to a string.
     """
     try:
-        return orjson.dumps(value, default=orjson_default).decode("utf-8")
+        return orjson.loads(orjson.dumps(value, default=orjson_default))
     except Exception as e:
         log.debug(f"Failed to serialize value: {value}", exc_info=e)
         return "\\{\\}"
