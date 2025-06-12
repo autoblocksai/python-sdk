@@ -34,6 +34,8 @@ from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.models import TestCaseType
 from autoblocks._impl.testing.util import GridSearchParams
 from autoblocks._impl.testing.util import GridSearchParamsCombo
+from autoblocks._impl.testing.util import serialize_output
+from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.util import yield_grid_search_param_combos
 from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cases
 from autoblocks._impl.tracer.util import SpanAttribute
@@ -41,7 +43,7 @@ from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import cuid_generator
 from autoblocks._impl.util import parse_autoblocks_overrides
-from autoblocks._impl.util import serialize
+from autoblocks._impl.util import serialize_to_string
 
 log = logging.getLogger(__name__)
 
@@ -174,7 +176,7 @@ async def run_test_case_unsafe(
             span.set_attribute(SpanAttribute.EXECUTION_ID, execution_id)
             span.set_attribute(SpanAttribute.ENVIRONMENT, "test")
             span.set_attribute(SpanAttribute.APP_SLUG, app_slug)
-            span.set_attribute(SpanAttribute.INPUT, serialize(test_case_ctx.test_case))
+            span.set_attribute(SpanAttribute.INPUT, serialize_to_string(serialize_test_case(test_case_ctx.test_case)))
             if inspect.iscoroutinefunction(fn):
                 output = await fn(test_case_ctx.test_case)
             else:
@@ -185,7 +187,7 @@ async def run_test_case_unsafe(
                     fn,
                     test_case_ctx.test_case,
                 )
-            span.set_attribute(SpanAttribute.OUTPUT, serialize(output))
+            span.set_attribute(SpanAttribute.OUTPUT, serialize_to_string(serialize_output(output)))
 
             # Run the before-evaluators hook if provided.
             # Note we run this within the test case semaphore so that
@@ -225,7 +227,7 @@ async def run_test_case_unsafe(
                     log.error(f"Error running evaluator for test case '{test_case_ctx.hash()}'", exc_info=result)
                 elif isinstance(result, EvaluationWithId):
                     evaluator_results.append(result)
-            span.set_attribute(SpanAttribute.EVALUATORS, serialize(evaluator_results))
+            span.set_attribute(SpanAttribute.EVALUATORS, serialize_to_string(evaluator_results))
 
     detach(token)
 
@@ -238,6 +240,7 @@ async def run_test_case(
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
+    test_case_idx: int,
 ) -> None:
     reset_token = test_case_run_context_var.set(
         TestCaseRunContext(
@@ -247,6 +250,7 @@ async def run_test_case(
         ),
     )
     try:
+        log.info(f"Running test case {test_case_idx} for test suite {test_id}")
         await run_test_case_unsafe(
             test_id=test_id,
             app_slug=app_slug,
@@ -259,6 +263,7 @@ async def run_test_case(
         log.error(f"Error running test case '{test_case_ctx.hash()}'", exc_info=err)
         return
     finally:
+        log.info(f"Finished running test case {test_case_idx} for test suite {test_id}")
         test_case_run_context_var.reset(reset_token)
 
 
@@ -349,6 +354,7 @@ async def run_test_suite_for_grid_combo(
 ) -> None:
     run_id = cuid_generator()
 
+    log.info(f"Running test suite '{test_id}' with {len(test_cases)} test cases")
     # Determine message with priority: unified overrides > legacy env var
     overrides = parse_autoblocks_overrides()
     run_message = overrides.test_run_message or AutoblocksEnvVar.TEST_RUN_MESSAGE.get()
@@ -371,13 +377,15 @@ async def run_test_suite_for_grid_combo(
                     evaluators=evaluators,
                     fn=fn,
                     before_evaluators_hook=before_evaluators_hook,
+                    test_case_idx=test_case_idx,
                 )
-                for test_case_ctx in yield_test_case_contexts_from_test_cases(test_cases)
+                for test_case_idx, test_case_ctx in enumerate(yield_test_case_contexts_from_test_cases(test_cases))
             ],
         )
     except Exception as err:
         log.error(f"Error running test suite '{test_id}'", exc_info=err)
     finally:
+        log.info(f"Finished running test suite '{test_id}'")
         if grid_search_reset_token:
             grid_search_context_var.reset(grid_search_reset_token)
         if test_run_reset_token:
@@ -514,7 +522,6 @@ def run_test_suite(
             "Please call init_auto_tracer() first."
         )
         return
-    log.info(f"Running test suite '{id}'")
     global_state.init()
 
     asyncio.run_coroutine_threadsafe(
@@ -530,8 +537,6 @@ def run_test_suite(
         ),
         global_state.event_loop(),
     ).result()
-
-    log.info(f"Finished running test suite '{id}'")
 
     # Force flush the tracer provider to send all results to Autoblocks
     provider = trace.get_tracer_provider()

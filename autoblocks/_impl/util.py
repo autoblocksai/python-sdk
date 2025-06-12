@@ -166,7 +166,7 @@ def orjson_default(o: Any) -> Any:
     raise TypeError
 
 
-def serialize(value: Any) -> str:
+def serialize_to_string(value: Any) -> str:
     """
     Serializes an unknown value to a string.
     """
