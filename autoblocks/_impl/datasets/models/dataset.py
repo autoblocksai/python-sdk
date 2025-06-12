@@ -36,26 +36,12 @@ class Dataset(BaseModel):
     )
 
 
-class DatasetListItem(BaseModel):
-    """Dataset list item V2"""
-
-    id: str
-    external_id: str = Field(alias="externalId")
-    name: Optional[str] = None
-    latest_revision_id: Optional[str] = Field(default=None, alias="latestRevisionId")
-    schema_version: Optional[int] = Field(default=None, alias="schemaVersion")
-    schema_properties: Optional[List[SchemaProperty]] = Field(default=None, alias="schema")
-
-    model_config = ConfigDict(
-        populate_by_name=True,
-        extra="allow",
-    )
-
-
 class DatasetSchema(BaseModel):
     """Dataset schema V2"""
 
     id: str
+    name: Optional[str] = None
+    latest_revision_id: Optional[str] = Field(default=None, alias="latestRevisionId")
     external_id: str = Field(alias="externalId")
     schema_properties: Optional[List[SchemaProperty]] = Field(default=None, alias="schema")
     schema_version: int = Field(alias="schemaVersion")

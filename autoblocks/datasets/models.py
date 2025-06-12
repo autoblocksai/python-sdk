@@ -8,7 +8,6 @@ from autoblocks._impl.datasets.models.dataset import CreateDatasetRequest
 from autoblocks._impl.datasets.models.dataset import Dataset
 from autoblocks._impl.datasets.models.dataset import DatasetItem
 from autoblocks._impl.datasets.models.dataset import DatasetItemsSuccessResponse
-from autoblocks._impl.datasets.models.dataset import DatasetListItem
 from autoblocks._impl.datasets.models.dataset import DatasetSchema
 from autoblocks._impl.datasets.models.dataset import SuccessResponse
 from autoblocks._impl.datasets.models.dataset import UpdateItemRequest
@@ -35,7 +34,6 @@ __all__ = [
     "Dataset",
     "DatasetItem",
     "DatasetItemsSuccessResponse",
-    "DatasetListItem",
     "DatasetSchema",
     "ListOfStringsProperty",
     "MultiSelectProperty",
