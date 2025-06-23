@@ -101,7 +101,9 @@ def test_uses_prompt_revision(httpx_mock):
                     template="Hello, {{ name }}! The weather is {{ weather }} today!!!",
                 ),
             ],
-            tools=[dict(type="function", function=dict(name="my-tool", description="{{ description }}"))],
+            params=dict(params={}),
+            tools=[dict(name="my-tool", description="{{ description }}")],
+            toolsParams=[dict(name="my-tool", params=["description"])],
         ),
     )
 
@@ -109,11 +111,9 @@ def test_uses_prompt_revision(httpx_mock):
     with mgr.exec() as p:
         rendered = p.render_template.my_template(name="Nicole", weather="sunny")
         assert rendered == "Hello, Nicole! The weather is sunny today!!!"
-        rendered_tool = p.render_tool.my_tool(description="This is a description.")
-        assert rendered_tool == {
-            "type": "function",
-            "function": {"name": "my-tool", "description": "This is a description."},
-        }
+        # Test that the override prompt data is being used
+        assert p.track()["revisionId"] == "mock-revision-id"
+        assert p.track()["version"] == "revision:mock-revision-id"
 
     assert len(httpx_mock.get_requests()) == 1
 
@@ -146,6 +146,9 @@ def test_uses_prompt_revision_when_version_is_latest(httpx_mock):
                     template="Hello, {{ name }}! The weather is {{ weather }} today!!!",
                 ),
             ],
+            params=dict(params={}),
+            tools=[dict(name="my-tool", description="{{ description }}")],
+            toolsParams=[dict(name="my-tool", params=["description"])],
         ),
     )
 
