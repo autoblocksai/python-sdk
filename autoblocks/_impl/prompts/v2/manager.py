@@ -39,13 +39,9 @@ ExecutionContextType = TypeVar("ExecutionContextType", bound=PromptExecutionCont
 
 def is_testing_context() -> bool:
     """
-    Note that we check for the presence of the CLI environment
-    variable and not the test case contextvars because the
-    contextvars aren't set until run_test_suite is called,
-    whereas a prompt manager might have already been imported
-    and initialized by the time run_test_suite is called.
+    Note that we check for the presence of V2_CI_TEST_RUN_BUILD_ID
     """
-    return bool(AutoblocksEnvVar.CLI_SERVER_ADDRESS.get())
+    return bool(AutoblocksEnvVar.V2_CI_TEST_RUN_BUILD_ID.get())
 
 
 def prompt_revisions_map() -> dict[str, str]:
