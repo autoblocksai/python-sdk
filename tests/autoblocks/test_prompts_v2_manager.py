@@ -13,7 +13,6 @@ from autoblocks.prompts.v2.manager import AutoblocksPromptManager
 from autoblocks.prompts.v2.models import FrozenModel
 from autoblocks.prompts.v2.renderer import TemplateRenderer
 from autoblocks.prompts.v2.renderer import ToolRenderer
-from tests.util import MOCK_CLI_SERVER_ADDRESS
 from tests.util import make_expected_body
 
 
@@ -77,7 +76,7 @@ class MyV2PromptManager(
     os.environ,
     {
         "AUTOBLOCKS_V2_API_KEY": "mock-api-key",
-        "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
+        "AUTOBLOCKS_CI_TEST_RUN_BUILD_ID": "mock-build-id",
         "AUTOBLOCKS_OVERRIDES": json.dumps({"promptRevisions": {MyV2PromptManager.__prompt_id__: "mock-revision-id"}}),
     },
 )
@@ -122,7 +121,7 @@ def test_uses_prompt_revision(httpx_mock):
     os.environ,
     {
         "AUTOBLOCKS_V2_API_KEY": "mock-api-key",
-        "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
+        "AUTOBLOCKS_CI_TEST_RUN_BUILD_ID": "mock-build-id",
         "AUTOBLOCKS_OVERRIDES": json.dumps({"promptRevisions": {MyV2PromptManager.__prompt_id__: "mock-revision-id"}}),
     },
 )
@@ -164,7 +163,7 @@ def test_uses_prompt_revision_when_version_is_latest(httpx_mock):
     os.environ,
     {
         "AUTOBLOCKS_V2_API_KEY": "mock-api-key",
-        "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
+        "AUTOBLOCKS_CI_TEST_RUN_BUILD_ID": "mock-build-id",
         "AUTOBLOCKS_OVERRIDES": json.dumps({"promptRevisions": {"some-other-prompt-id": "mock-revision-id"}}),
     },
 )
@@ -199,7 +198,7 @@ def test_uses_configured_version_if_revision_is_for_different_prompt(httpx_mock)
     os.environ,
     {
         "AUTOBLOCKS_V2_API_KEY": "mock-api-key",
-        "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
+        "AUTOBLOCKS_CI_TEST_RUN_BUILD_ID": "mock-build-id",
         "AUTOBLOCKS_OVERRIDES": json.dumps({"promptRevisions": {MyV2PromptManager.__prompt_id__: "mock-revision-id"}}),
     },
 )
@@ -268,7 +267,7 @@ def test_ignores_revision_id_if_not_in_test_run_context(httpx_mock):
     os.environ,
     {
         "AUTOBLOCKS_V2_API_KEY": "mock-api-key",
-        "AUTOBLOCKS_CLI_SERVER_ADDRESS": MOCK_CLI_SERVER_ADDRESS,
+        "AUTOBLOCKS_CI_TEST_RUN_BUILD_ID": "mock-build-id",
         "AUTOBLOCKS_OVERRIDES_PROMPT_REVISIONS": json.dumps({MyV2PromptManager.__prompt_id__: "legacy-revision-id"}),
     },
 )
