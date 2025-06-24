@@ -24,7 +24,6 @@ log = logging.getLogger(__name__)
 def init_auto_tracer(
     *,
     api_key: Optional[str] = None,
-    api_endpoint: Optional[str] = f"{API_ENDPOINT_V2}/otel/v1/traces",
     is_batch_disabled: Optional[bool] = False,
 ) -> None:
     """
@@ -33,6 +32,7 @@ def init_auto_tracer(
     if is_auto_tracer_initialized():
         log.debug("Skipping auto tracer initialization because it is already initialized")
         return
+    api_endpoint = f"{API_ENDPOINT_V2}/otel/v1/traces"
     log.debug(f"Initializing Autoblocks auto tracer with api_endpoint={api_endpoint}")
     set_global_textmap(
         CompositePropagator(
