@@ -399,24 +399,15 @@ async def run_test_suite_for_grid_combo(
     end_timestamp = now_rfc3339()
     if human_review_job is not None:
         try:
-            assignee_email_addresses = human_review_job.get_assignee_email_addresses()
-            results = await all_settled(
-                [
-                    send_create_human_review_job(
-                        run_id=run_id,
-                        app_slug=app_slug,
-                        start_timestamp=start_timestamp,
-                        end_timestamp=end_timestamp,
-                        assignee_email_address=assignee_email_address,
-                        name=human_review_job.name,
-                        rubric_id=human_review_job.rubric_id,
-                    )
-                    for assignee_email_address in assignee_email_addresses
-                ]
+            await send_create_human_review_job(
+                run_id=run_id,
+                app_slug=app_slug,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                assignee_email_addresses=human_review_job.get_assignee_email_addresses(),
+                name=human_review_job.name,
+                rubric_id=human_review_job.rubric_id,
             )
-            for result in results:
-                if isinstance(result, Exception):
-                    log.warn(f"Failed to create human review job for test run '{run_id}'", exc_info=result)
         except Exception as err:
             log.warn(f"Failed to create human review job for test run '{run_id}'", exc_info=err)
 

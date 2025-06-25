@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+from typing import List
 from typing import Optional
 
 from httpx import Response
@@ -60,7 +61,7 @@ async def send_create_human_review_job(
     run_id: str,
     start_timestamp: str,
     end_timestamp: str,
-    assignee_email_address: str,
+    assignee_email_addresses: List[str],
     name: str,
     app_slug: str,
     rubric_id: Optional[str] = None,
@@ -73,7 +74,7 @@ async def send_create_human_review_job(
             startTimestamp=start_timestamp,
             endTimestamp=end_timestamp,
             rubricId=rubric_id,
-            assigneeEmailAddress=assignee_email_address,
+            assigneeEmailAddresses=assignee_email_addresses,
             name=name,
         ),
     )
