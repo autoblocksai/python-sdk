@@ -1,6 +1,9 @@
 """Tests for AutoblocksAppClient dataset deserialization with defaultValue fields."""
 
 from autoblocks._impl.config.constants import API_ENDPOINT_V2
+from autoblocks._impl.datasets.models.schema import SchemaPropertyType
+from autoblocks._impl.datasets.models.schema import SelectProperty
+from autoblocks._impl.datasets.models.schema import create_schema_property
 from autoblocks.api.app_client import AutoblocksAppClient
 
 
@@ -86,8 +89,6 @@ def test_dataset_deserialization_with_default_value(httpx_mock):
     assert select_prop.type.value == "Select"
     assert select_prop.required is False
     assert select_prop.default_value == "option1"
-    # Type check to ensure we have a SelectProperty before accessing options
-    from autoblocks._impl.datasets.models.schema import SelectProperty
 
     assert isinstance(select_prop, SelectProperty)
     assert select_prop.options == ["option1", "option2"]
@@ -147,10 +148,6 @@ def test_dataset_deserialization_with_invalid_schema_property():
 
 def test_dataset_schema_property_factory_function():
     """Test the schema property factory function directly."""
-    from autoblocks._impl.datasets.models.schema import SchemaPropertyType
-    from autoblocks._impl.datasets.models.schema import SelectProperty
-    from autoblocks._impl.datasets.models.schema import create_schema_property
-
     # Test creating a number property with defaultValue
     number_prop_data = {
         "id": "test-number-prop",
