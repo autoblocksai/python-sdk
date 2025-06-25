@@ -13,10 +13,46 @@ from pydantic import field_validator
 from pydantic import model_validator
 
 from autoblocks._impl.datasets.models.schema import SchemaProperty
+from autoblocks._impl.datasets.models.schema import create_schema_property
 from autoblocks._impl.util import cuid_generator
 
 # Type alias for schema property lists
 SchemaPropertyList = List[Union[SchemaProperty, Dict[str, Any]]]
+
+
+def _validate_schema_properties(v: Optional[List[Dict[str, Any]]]) -> Optional[List[SchemaProperty]]:
+    """
+    Shared validator function for schema properties.
+
+    Validates and converts schema properties using factory function.
+    If a property can't be parsed, it's skipped rather than failing entirely
+    to provide better resilience against API changes.
+
+    Args:
+        v: Raw schema properties data from API
+
+    Returns:
+        List of validated SchemaProperty instances or None
+    """
+    if v is None:
+        return None
+
+    if not isinstance(v, list):
+        return v
+
+    result = []
+    for item in v:
+        if isinstance(item, dict):
+            try:
+                result.append(create_schema_property(item))
+            except (ValueError, TypeError):
+                # If we can't parse a specific property, skip it rather than failing entirely
+                # This provides better resilience against API changes
+                continue
+        else:
+            result.append(item)
+
+    return result
 
 
 class Dataset(BaseModel):
@@ -35,6 +71,12 @@ class Dataset(BaseModel):
         extra="allow",
     )
 
+    @field_validator("schema_properties", mode="before")
+    @classmethod
+    def validate_schema_properties(cls, v: Optional[List[Dict[str, Any]]]) -> Optional[List[SchemaProperty]]:
+        """Validate and convert schema properties using factory function"""
+        return _validate_schema_properties(v)
+
 
 class DatasetSchema(BaseModel):
     """Dataset schema V2"""
@@ -50,6 +92,12 @@ class DatasetSchema(BaseModel):
         populate_by_name=True,
         extra="allow",
     )
+
+    @field_validator("schema_properties", mode="before")
+    @classmethod
+    def validate_schema_properties(cls, v: Optional[List[Dict[str, Any]]]) -> Optional[List[SchemaProperty]]:
+        """Validate and convert schema properties using factory function"""
+        return _validate_schema_properties(v)
 
 
 class DatasetItem(BaseModel):
