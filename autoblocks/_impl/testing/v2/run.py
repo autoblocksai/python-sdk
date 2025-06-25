@@ -44,7 +44,7 @@ from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import cuid_generator
-from autoblocks._impl.util import now_iso_8601
+from autoblocks._impl.util import now_rfc3339
 from autoblocks._impl.util import parse_autoblocks_overrides
 from autoblocks._impl.util import serialize_to_string
 
@@ -357,7 +357,7 @@ async def run_test_suite_for_grid_combo(
     human_review_job: Optional[CreateHumanReviewJob],
 ) -> None:
     run_id = cuid_generator()
-    start_timestamp = now_iso_8601() + "Z"  # add Z to be compatible with the API
+    start_timestamp = now_rfc3339()
 
     log.info(f"Running test suite '{test_id}' with {len(test_cases)} test cases")
     # Determine message with priority: unified overrides > legacy env var
@@ -396,7 +396,7 @@ async def run_test_suite_for_grid_combo(
         if test_run_reset_token:
             test_run_context_var.reset(test_run_reset_token)
 
-    end_timestamp = now_iso_8601() + "Z"  # add Z to be compatible with the API
+    end_timestamp = now_rfc3339()
     if human_review_job is not None:
         try:
             assignee_email_addresses = human_review_job.get_assignee_email_addresses()

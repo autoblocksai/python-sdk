@@ -145,6 +145,15 @@ def now_iso_8601() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def now_rfc3339() -> str:
+    """
+    Returns the current UTC timestamp in format.
+    RFC 3339 is a profile of ISO 8601 commonly used in APIs.
+    Format: 2025-06-25T20:47:46.429Z
+    """
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
 def is_cli_running() -> bool:
     return AutoblocksEnvVar.CLI_SERVER_ADDRESS.get() is not None
 
