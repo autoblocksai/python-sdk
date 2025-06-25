@@ -28,12 +28,6 @@ async def post_to_api_with_retry(
         timeout=TIMEOUT_SECONDS,
         headers={"Authorization": f"Bearer {api_key}"},
     )
-    if not resp.is_success:
-        try:
-            error_body = resp.text
-            log.error(f"API request failed with status {resp.status_code} for {url}. Response body: {error_body}")
-        except Exception:
-            log.error(f"API request failed with status {resp.status_code} for {url}. Could not read response body.")
     resp.raise_for_status()
     return resp
 
@@ -46,9 +40,10 @@ async def post_to_api(
     if not api_key:
         raise ValueError(f"You must set the {AutoblocksEnvVar.V2_API_KEY} environment variable.")
 
+    url = f"{API_ENDPOINT_V2}{path}"
     async with global_state.test_run_api_semaphore():
         return await post_to_api_with_retry(
-            f"{API_ENDPOINT_V2}{path}",
+            url,
             api_key,
             json,
         )
