@@ -28,6 +28,13 @@ async def post_to_api_with_retry(
         timeout=TIMEOUT_SECONDS,
         headers={"Authorization": f"Bearer {api_key}"},
     )
+    if not resp.is_success:
+        try:
+            error_body = resp.text
+            log.error(f"API request failed with status {resp.status_code} for {url}. Response body: {error_body}")
+        except Exception:
+            log.error(f"API request failed with status {resp.status_code} for {url}. Could not read response body.")
+
     resp.raise_for_status()
     return resp
 
