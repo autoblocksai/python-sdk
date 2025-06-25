@@ -147,7 +147,7 @@ def now_iso_8601() -> str:
 
 def now_rfc3339() -> str:
     """
-    Returns the current UTC timestamp in format.
+    Returns the current UTC timestamp in RFC 3339 format.
     RFC 3339 is a profile of ISO 8601 commonly used in APIs.
     Format: 2025-06-25T20:47:46.429Z
     """
