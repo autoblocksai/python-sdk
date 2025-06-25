@@ -410,6 +410,7 @@ async def run_test_suite_for_grid_combo(
                         end_timestamp=end_timestamp,
                         assignee_email_address=assignee_email_address,
                         name=human_review_job.name,
+                        rubric_id=human_review_job.rubric_id,
                     )
                     for assignee_email_address in assignee_email_addresses
                 ]
