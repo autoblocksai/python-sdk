@@ -401,7 +401,7 @@ async def run_test_suite_for_grid_combo(
     if human_review_job is not None:
         try:
             assignee_email_addresses = human_review_job.get_assignee_email_addresses()
-            await all_settled(
+            results = await all_settled(
                 [
                     send_create_human_review_job(
                         run_id=run_id,
@@ -415,6 +415,9 @@ async def run_test_suite_for_grid_combo(
                     for assignee_email_address in assignee_email_addresses
                 ]
             )
+            for result in results:
+                if isinstance(result, Exception):
+                    log.warn(f"Failed to create human review job for test run '{run_id}'", exc_info=result)
         except Exception as err:
             log.warn(f"Failed to create human review job for test run '{run_id}'", exc_info=err)
 
