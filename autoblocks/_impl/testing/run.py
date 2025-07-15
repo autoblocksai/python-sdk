@@ -14,6 +14,12 @@ from typing import Tuple
 from typing import Union
 from typing import overload
 
+import httpx
+from tenacity import retry
+from tenacity import retry_if_exception_type
+from tenacity import stop_after_attempt
+from tenacity import wait_random_exponential
+
 from autoblocks._impl import global_state
 from autoblocks._impl.context_vars import EvaluatorRunContext
 from autoblocks._impl.context_vars import TestCaseRunContext
@@ -50,6 +56,32 @@ test_case_semaphore_registry: dict[str, asyncio.Semaphore] = {}  # test_id -> se
 evaluator_semaphore_registry: dict[str, dict[str, asyncio.Semaphore]] = {}  # test_id -> evaluator_id -> semaphore
 
 DEFAULT_MAX_TEST_CASE_CONCURRENCY = 10
+
+
+def create_retry_decorator(retry_count: int) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """Create retry decorator following existing tenacity pattern."""
+    if retry_count <= 0:
+        # No retry - return identity decorator
+        def no_retry_decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+            return func
+
+        return no_retry_decorator
+
+    # Use same pattern as existing code in api.py
+    return retry(
+        stop=stop_after_attempt(retry_count + 1),  # +1 because first attempt isn't a retry
+        wait=wait_random_exponential(multiplier=1, max=30),
+        retry=retry_if_exception_type(
+            (
+                httpx.TimeoutException,
+                httpx.ConnectError,
+                httpx.ReadTimeout,
+                httpx.WriteTimeout,
+                httpx.PoolTimeout,
+            )
+        ),
+        reraise=True,
+    )
 
 
 def tests_and_hashes_overrides_map() -> Optional[dict[str, list[str]]]:
@@ -225,6 +257,7 @@ async def run_test_case(
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]],
+    retry_count: int = 0,
 ) -> None:
     reset_token = test_case_run_context_var.set(
         TestCaseRunContext(
@@ -233,14 +266,23 @@ async def run_test_case(
             test_case_hash=test_case_ctx.hash(),
         ),
     )
-    try:
-        output, hook_results, test_case_result_id = await run_test_case_unsafe(
+
+    # Create retry decorator
+    retry_decorator = create_retry_decorator(retry_count)
+
+    # Wrap the unsafe function with retry logic
+    @retry_decorator
+    async def _retry_wrapper() -> Tuple[Any, Any, str]:
+        return await run_test_case_unsafe(
             test_id=test_id,
             run_id=run_id,
             test_case_ctx=test_case_ctx,
             fn=fn,
             before_evaluators_hook=before_evaluators_hook,
         )
+
+    try:
+        output, hook_results, test_case_result_id = await _retry_wrapper()
     except Exception as err:
         await send_error(
             test_id=test_id,
@@ -363,6 +405,7 @@ async def run_test_suite_for_grid_combo(
     grid_search_run_group_id: Optional[str],
     grid_search_params_combo: Optional[GridSearchParamsCombo],
     human_review_job: Optional[CreateHumanReviewJob],
+    retry_count: int = 0,
 ) -> None:
     try:
         # Determine message with priority: unified overrides > legacy env var
@@ -402,6 +445,7 @@ async def run_test_suite_for_grid_combo(
                     evaluators=evaluators,
                     fn=fn,
                     before_evaluators_hook=before_evaluators_hook,
+                    retry_count=retry_count,
                 )
                 for test_case_ctx in yield_test_case_contexts_from_test_cases(test_cases)
             ],
@@ -457,6 +501,7 @@ async def async_run_test_suite(
     caller_filepath: Optional[str],
     grid_search_params: Optional[GridSearchParams],
     human_review_job: Optional[CreateHumanReviewJob],
+    retry_count: int = 0,
 ) -> None:
     # Handle alignment mode
     align_test_id = AutoblocksEnvVar.ALIGN_TEST_EXTERNAL_ID.get()
@@ -532,6 +577,7 @@ async def async_run_test_suite(
                 grid_search_run_group_id=None,
                 grid_search_params_combo=None,
                 human_review_job=human_review_job,
+                retry_count=retry_count,
             )
         except Exception as err:
             await send_error(
@@ -575,6 +621,7 @@ async def async_run_test_suite(
                     grid_search_run_group_id=grid_search_run_group_id,
                     grid_search_params_combo=grid_params_combo,
                     human_review_job=human_review_job,
+                    retry_count=retry_count,
                 )
                 for grid_params_combo in yield_grid_search_param_combos(grid_search_params)
             ],
@@ -600,6 +647,7 @@ def run_test_suite(
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
     grid_search_params: Optional[GridSearchParams] = None,
     human_review_job: Optional[CreateHumanReviewJob] = None,
+    retry_count: int = 0,
 ) -> None: ...
 
 
@@ -614,6 +662,7 @@ def run_test_suite(
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
     grid_search_params: Optional[GridSearchParams] = None,
     human_review_job: Optional[CreateHumanReviewJob] = None,
+    retry_count: int = 0,
 ) -> None: ...
 
 
@@ -627,6 +676,7 @@ def run_test_suite(
     before_evaluators_hook: Optional[Callable[[TestCaseType, Any], Any]] = None,
     grid_search_params: Optional[GridSearchParams] = None,
     human_review_job: Optional[CreateHumanReviewJob] = None,
+    retry_count: int = 0,
 ) -> None:
     if not is_cli_running():
         log.info(f"Running test suite '{id}'")
@@ -649,6 +699,7 @@ def run_test_suite(
             caller_filepath=caller_filepath,
             grid_search_params=grid_search_params,
             human_review_job=human_review_job,
+            retry_count=retry_count,
         ),
         global_state.event_loop(),
     ).result()
