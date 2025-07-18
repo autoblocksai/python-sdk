@@ -43,7 +43,7 @@ def test_app_sdk_test_prompt_basic_v2():
     with mgr.exec() as ctx:
         # Assert parameters
         assert ctx.params.model == "gpt-4o"
-        assert ctx.params.max_tokens == 256  # type: ignore[union-attr]
+        assert ctx.params.max_completion_tokens == 256  # type: ignore[union-attr]
 
         # Test template rendering
         assert (

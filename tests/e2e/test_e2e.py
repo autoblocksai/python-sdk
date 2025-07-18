@@ -225,7 +225,7 @@ def test_prompt_manager():
     )
 
     with mgr.exec() as ctx:
-        assert ctx.params.max_tokens == 256
+        assert ctx.params.max_completion_tokens == 256
         assert ctx.params.model == "gpt-4"
         assert ctx.params.temperature == 0.3
         assert ctx.params.top_p == 1
@@ -257,7 +257,7 @@ def test_prompt_manager():
             "revisionId": "cm6gsq0t60003nbscwcqkdgat",
             "params": {
                 "params": {
-                    "maxTokens": 256,
+                    "maxCompletionTokens": 256,
                     "model": "gpt-4",
                     "stopSequences": [],
                     "temperature": 0.3,
@@ -292,7 +292,7 @@ def test_prompt_manager_latest():
     )
 
     with mgr.exec() as ctx:
-        assert ctx.params.max_tokens == 256
+        assert ctx.params.max_completion_tokens == 256
         assert ctx.params.model == "gpt-4"
         assert ctx.params.temperature == 0.3
         assert ctx.params.top_p == 1
@@ -324,7 +324,7 @@ def test_prompt_manager_latest():
             "revisionId": "cm6gswg4z000b11nw5dyqmvqw",
             "params": {
                 "params": {
-                    "maxTokens": 256,
+                    "maxCompletionTokens": 256,
                     "model": "gpt-4",
                     "stopSequences": [],
                     "temperature": 0.3,
