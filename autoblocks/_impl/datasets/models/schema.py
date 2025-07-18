@@ -11,6 +11,7 @@ from typing import Union
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
+from pydantic import Field
 from pydantic import field_validator
 
 
@@ -33,6 +34,7 @@ class BaseSchemaProperty(BaseModel):
     id: str
     name: str
     required: bool
+    default_value: Optional[Any] = Field(default=None, alias="defaultValue")
 
     model_config = ConfigDict(
         populate_by_name=True,

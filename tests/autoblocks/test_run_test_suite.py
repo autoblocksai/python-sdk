@@ -9,6 +9,7 @@ from typing import Optional
 from typing import Union
 from unittest import mock
 
+import httpx
 import pydantic
 import pytest
 
@@ -3828,3 +3829,278 @@ def test_exceptions_as_outputs(httpx_mock):
     output = results_req["body"]["testCaseOutput"]
     assert output.startswith("Traceback (most recent call last):")
     assert "ZeroDivisionError: division by zero" in output
+
+
+def test_retry_on_timeout_errors(httpx_mock):
+    """Test that retry_count parameter retries test cases on timeout/connection errors."""
+
+    mock_run_id = str(uuid.uuid4())
+
+    # Expect start request
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id=mock_run_id),
+    )
+
+    # Expect results request (after successful retry)
+    expect_cli_post_request(
+        httpx_mock,
+        path="/results",
+        body=dict(
+            testExternalId="my-test-id",
+            runId=mock_run_id,
+            testCaseHash="a",
+            testCaseBody=dict(input="a"),
+            testCaseOutput="a!",
+            testCaseDurationMs=ANY_NUMBER,
+            testCaseRevisionUsage=None,
+            testCaseHumanReviewInputFields=None,
+            testCaseHumanReviewOutputFields=None,
+            datasetItemId=None,
+        ),
+        json=dict(id="mock-result-id-1"),
+    )
+
+    # Expect end request
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+            runId=mock_run_id,
+        ),
+    )
+
+    # Mock the test function to fail twice then succeed
+    call_count = 0
+
+    def test_fn(test_case: MyTestCase) -> str:
+        nonlocal call_count
+        call_count += 1
+        if call_count <= 2:
+            # First two calls fail with timeout
+            raise httpx.TimeoutException("Request timed out")
+        return test_case.input + "!"
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+        retry_count=3,  # Allow up to 3 retries
+    )
+
+    # Should have been called 3 times (2 failures + 1 success)
+    assert call_count == 3
+
+    # Verify all expected requests were made
+    requests = httpx_mock.get_requests()
+    assert len(requests) == 3  # start, results, end
+
+
+def test_retry_exhausted_reports_error(httpx_mock):
+    """Test that when retries are exhausted, the error is properly reported."""
+
+    mock_run_id = str(uuid.uuid4())
+
+    # Expect start request
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id=mock_run_id),
+    )
+
+    # Expect error request (after retries exhausted)
+    expect_cli_post_request(
+        httpx_mock,
+        path="/errors",
+        body=None,  # Will verify content below
+    )
+
+    # Expect end request
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+            runId=mock_run_id,
+        ),
+    )
+
+    # Mock the test function to always fail with timeout
+    call_count = 0
+
+    def test_fn(test_case: MyTestCase) -> str:
+        nonlocal call_count
+        call_count += 1
+        raise httpx.TimeoutException("Request timed out")
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+        retry_count=2,  # Allow up to 2 retries
+    )
+
+    # Should have been called 3 times (2 retries + 1 original attempt)
+    assert call_count == 3
+
+    # Verify error was reported
+    requests = httpx_mock.get_requests()
+    error_req = [r for r in requests if r.url.path == "/errors"][0]
+    error_req_body = decode_request_body(error_req)
+
+    assert error_req_body["testExternalId"] == "my-test-id"
+    assert error_req_body["runId"] == mock_run_id
+    assert error_req_body["testCaseHash"] == "a"
+    assert error_req_body["evaluatorExternalId"] is None
+    assert error_req_body["error"]["name"] == "TimeoutException"
+    assert error_req_body["error"]["message"] == "Request timed out"
+
+
+def test_retry_only_on_specific_exceptions(httpx_mock):
+    """Test that retry only happens for specific httpx exceptions, not all exceptions."""
+
+    mock_run_id = str(uuid.uuid4())
+
+    # Expect start request
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id=mock_run_id),
+    )
+
+    # Expect error request (no retry for ValueError)
+    expect_cli_post_request(
+        httpx_mock,
+        path="/errors",
+        body=None,
+    )
+
+    # Expect end request
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+            runId=mock_run_id,
+        ),
+    )
+
+    # Mock the test function to fail with ValueError (should not retry)
+    call_count = 0
+
+    def test_fn(test_case: MyTestCase) -> str:
+        nonlocal call_count
+        call_count += 1
+        raise ValueError("Not a timeout error")
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+        retry_count=3,  # Allow up to 3 retries
+    )
+
+    # Should have been called only once (no retries for ValueError)
+    assert call_count == 1
+
+    # Verify error was reported
+    requests = httpx_mock.get_requests()
+    error_req = [r for r in requests if r.url.path == "/errors"][0]
+    error_req_body = decode_request_body(error_req)
+
+    assert error_req_body["error"]["name"] == "ValueError"
+    assert error_req_body["error"]["message"] == "Not a timeout error"
+
+
+def test_retry_count_zero_no_retry(httpx_mock):
+    """Test that retry_count=0 (default) doesn't retry on timeout errors."""
+
+    mock_run_id = str(uuid.uuid4())
+
+    # Expect start request
+    expect_cli_post_request(
+        httpx_mock,
+        path="/start",
+        body=dict(
+            testExternalId="my-test-id",
+            gridSearchRunGroupId=None,
+            gridSearchParamsCombo=None,
+        ),
+        json=dict(id=mock_run_id),
+    )
+
+    # Expect error request (no retry)
+    expect_cli_post_request(
+        httpx_mock,
+        path="/errors",
+        body=None,
+    )
+
+    # Expect end request
+    expect_cli_post_request(
+        httpx_mock,
+        path="/end",
+        body=dict(
+            testExternalId="my-test-id",
+            runId=mock_run_id,
+        ),
+    )
+
+    # Mock the test function to fail with timeout
+    call_count = 0
+
+    def test_fn(test_case: MyTestCase) -> str:
+        nonlocal call_count
+        call_count += 1
+        raise httpx.TimeoutException("Request timed out")
+
+    run_test_suite(
+        id="my-test-id",
+        test_cases=[
+            MyTestCase(input="a"),
+        ],
+        evaluators=[],
+        fn=test_fn,
+        max_test_case_concurrency=1,
+        retry_count=0,  # No retries
+    )
+
+    # Should have been called only once (no retries)
+    assert call_count == 1
+
+    # Verify error was reported
+    requests = httpx_mock.get_requests()
+    error_req = [r for r in requests if r.url.path == "/errors"][0]
+    error_req_body = decode_request_body(error_req)
+
+    assert error_req_body["error"]["name"] == "TimeoutException"
+    assert error_req_body["error"]["message"] == "Request timed out"

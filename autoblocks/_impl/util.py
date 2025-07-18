@@ -76,6 +76,7 @@ class AutoblocksEnvVar(StrEnum):
     ALIGN_TEST_EXTERNAL_ID = "AUTOBLOCKS_ALIGN_TEST_EXTERNAL_ID"
     API_KEY = "AUTOBLOCKS_API_KEY"
     V2_API_KEY = "AUTOBLOCKS_V2_API_KEY"
+    V2_API_ENDPOINT = "AUTOBLOCKS_V2_API_ENDPOINT"
     CLI_SERVER_ADDRESS = "AUTOBLOCKS_CLI_SERVER_ADDRESS"
     INGESTION_KEY = "AUTOBLOCKS_INGESTION_KEY"
     FILTERS_TEST_SUITES = "AUTOBLOCKS_FILTERS_TEST_SUITES"
@@ -142,6 +143,15 @@ def get_running_loop() -> Optional[asyncio.AbstractEventLoop]:
 
 def now_iso_8601() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def now_rfc3339() -> str:
+    """
+    Returns the current UTC timestamp in RFC 3339 format.
+    RFC 3339 is a profile of ISO 8601 commonly used in APIs.
+    Format: 2025-06-25T20:47:46.429Z
+    """
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def is_cli_running() -> bool:

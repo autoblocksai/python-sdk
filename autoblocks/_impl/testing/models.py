@@ -265,6 +265,7 @@ class CreateHumanReviewJob:
 
     assignee_email_address: Union[str, list[str]]
     name: str
+    rubric_id: Optional[str] = None
 
     def get_assignee_email_addresses(self) -> list[str]:
         if isinstance(self.assignee_email_address, str):
