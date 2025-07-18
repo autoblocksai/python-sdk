@@ -20,7 +20,9 @@ class QuestionAnswererParams(FrozenModel):
     top_p: Union[float, int] = pydantic.Field(..., alias="topP")
     frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
     presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
+    max_completion_tokens: Union[float, int] = pydantic.Field(
+        ..., alias="maxCompletionTokens"
+    )    
     model: str = pydantic.Field(..., alias="model")
 
 
@@ -93,7 +95,9 @@ class TextSummarizationParams(FrozenModel):
     top_p: Union[float, int] = pydantic.Field(..., alias="topP")
     frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
     presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
+    max_completion_tokens: Union[float, int] = pydantic.Field(
+        ..., alias="maxCompletionTokens"
+    )    
     model: str = pydantic.Field(..., alias="model")
 
 
@@ -178,7 +182,9 @@ class UsedByCiDontDeleteParams(FrozenModel):
     top_p: Union[float, int] = pydantic.Field(..., alias="topP")
     frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
     presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
+    max_completion_tokens: Union[float, int] = pydantic.Field(
+        ..., alias="maxCompletionTokens"
+    )    
     seed: Union[float, int] = pydantic.Field(..., alias="seed")
     model: str = pydantic.Field(..., alias="model")
     response_format: Dict[str, Any] = pydantic.Field(..., alias="responseFormat")
