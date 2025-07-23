@@ -51,7 +51,7 @@ def generate_params_class_code(title_case_id: str, version: str, params: Dict[st
             auto += (
                 f"{indent()}{snake_case_key}: {type_hint} = pydantic.Field(..., "
                 f'alias="{key}", validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") '
-                f'if "AliasChoices" in globals() else "maxCompletionTokens"))\n'
+                f'if AliasChoices else "maxCompletionTokens"))\n'
             )
         else:
             auto += f'{indent()}{snake_case_key}: {type_hint} = pydantic.Field(..., alias="{key}")\n'
