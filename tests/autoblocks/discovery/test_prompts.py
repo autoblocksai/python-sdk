@@ -67,7 +67,7 @@ class TestPrompts:
         assert 'temperature: Union[float, int] = pydantic.Field(..., alias="temperature")' in result
         assert (
             "max_completion_tokens: Union[float, int] = pydantic.Field(..., "
-            'alias="maxCompletionTokens",  validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if '
+            'alias="maxCompletionTokens", validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if '
             'AliasChoices else "maxCompletionTokens"))' in result
         )
 

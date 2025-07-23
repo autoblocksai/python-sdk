@@ -20,7 +20,7 @@
   
   class PromptAParams(FrozenModel):
       frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
-      max_completion_tokens: Union[float, int] = pydantic.Field(..., alias="maxCompletionTokens")
+      max_completion_tokens: Union[float, int] = pydantic.Field(..., alias="maxCompletionTokens", validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if AliasChoices else "maxCompletionTokens"))
       model: str = pydantic.Field(..., alias="model")
       presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
       temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
@@ -89,7 +89,7 @@
   
   class PromptBParams(FrozenModel):
       frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
-      max_completion_tokens: Union[float, int] = pydantic.Field(..., alias="maxCompletionTokens")
+      max_completion_tokens: Union[float, int] = pydantic.Field(..., alias="maxCompletionTokens", validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if AliasChoices else "maxCompletionTokens"))
       model: str = pydantic.Field(..., alias="model")
       presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
       temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
