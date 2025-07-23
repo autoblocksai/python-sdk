@@ -14,13 +14,22 @@ from autoblocks.prompts.models import FrozenModel
 from autoblocks.prompts.renderer import TemplateRenderer
 from autoblocks.prompts.renderer import ToolRenderer
 
+try:
+    from pydantic import AliasChoices
+except ImportError:
+    AliasChoices = None  # type: ignore
+
 
 class QuestionAnswererParams(FrozenModel):
     temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
     top_p: Union[float, int] = pydantic.Field(..., alias="topP")
     frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
     presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    max_completion_tokens: Union[float, int] = pydantic.Field(..., alias="maxCompletionTokens")
+    max_completion_tokens: Union[float, int] = pydantic.Field(
+        ...,
+        alias="maxCompletionTokens",
+        validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if AliasChoices else "maxCompletionTokens"),  # type: ignore
+    )
     model: str = pydantic.Field(..., alias="model")
 
 
@@ -93,7 +102,11 @@ class TextSummarizationParams(FrozenModel):
     top_p: Union[float, int] = pydantic.Field(..., alias="topP")
     frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
     presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    max_completion_tokens: Union[float, int] = pydantic.Field(..., alias="maxCompletionTokens")
+    max_completion_tokens: Union[float, int] = pydantic.Field(
+        ...,
+        alias="maxCompletionTokens",
+        validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if AliasChoices else "maxCompletionTokens"),  # type: ignore
+    )
     model: str = pydantic.Field(..., alias="model")
 
 
@@ -178,7 +191,12 @@ class UsedByCiDontDeleteParams(FrozenModel):
     top_p: Union[float, int] = pydantic.Field(..., alias="topP")
     frequency_penalty: Union[float, int] = pydantic.Field(..., alias="frequencyPenalty")
     presence_penalty: Union[float, int] = pydantic.Field(..., alias="presencePenalty")
-    max_completion_tokens: Union[float, int] = pydantic.Field(..., alias="maxCompletionTokens")
+    max_completion_tokens: Union[float, int] = pydantic.Field(
+        ...,
+        alias="maxCompletionTokens",
+        validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if AliasChoices else "maxCompletionTokens"),  # type: ignore
+    )
+
     seed: Union[float, int] = pydantic.Field(..., alias="seed")
     model: str = pydantic.Field(..., alias="model")
     response_format: Dict[str, Any] = pydantic.Field(..., alias="responseFormat")

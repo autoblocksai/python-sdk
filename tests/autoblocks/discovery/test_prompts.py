@@ -6,6 +6,11 @@ from autoblocks._impl.prompts.v2.discovery.prompts import generate_params_class_
 from autoblocks._impl.prompts.v2.discovery.prompts import generate_prompt_implementations
 from autoblocks._impl.prompts.v2.discovery.prompts import generate_version_implementations
 
+try:
+    from pydantic import AliasChoices
+except ImportError:
+    AliasChoices = None  # type: ignore
+
 
 class TestPrompts:
     def test_generate_params_class_code_empty(self):
@@ -36,7 +41,11 @@ class TestPrompts:
         # Check class definition and parameters
         assert "class _TestPromptV1Params(FrozenModel):" in result
         assert 'temperature: Union[float, int] = pydantic.Field(..., alias="temperature")' in result
-        assert 'max_completion_tokens: Union[float, int] = pydantic.Field(..., alias="maxCompletionTokens")' in result
+        assert (
+            "max_completion_tokens: Union[float, int] = pydantic.Field(..., "
+            'alias="maxCompletionTokens", validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if '
+            'AliasChoices else "maxCompletionTokens"))' in result
+        )
         assert '    model: str = pydantic.Field(..., alias="model")' in result
         assert '    is_enabled: bool = pydantic.Field(..., alias="isEnabled")' in result
 
@@ -56,7 +65,11 @@ class TestPrompts:
         # Check class definition and extracted parameters
         assert "class _TestPromptV1Params(FrozenModel):" in result
         assert 'temperature: Union[float, int] = pydantic.Field(..., alias="temperature")' in result
-        assert 'max_completion_tokens: Union[float, int] = pydantic.Field(..., alias="maxCompletionTokens")' in result
+        assert (
+            "max_completion_tokens: Union[float, int] = pydantic.Field(..., "
+            'alias="maxCompletionTokens",  validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if '
+            'AliasChoices else "maxCompletionTokens"))' in result
+        )
 
     @patch("autoblocks._impl.prompts.v2.discovery.prompts.generate_params_class_code")
     @patch("autoblocks._impl.prompts.v2.discovery.prompts.generate_template_renderer_class_code")

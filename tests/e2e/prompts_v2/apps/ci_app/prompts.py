@@ -11,9 +11,20 @@ from autoblocks.prompts.v2.models import FrozenModel
 from autoblocks.prompts.v2.renderer import TemplateRenderer
 from autoblocks.prompts.v2.renderer import ToolRenderer
 
+try:
+    from pydantic import AliasChoices
+except ImportError:
+    AliasChoices = None  # type: ignore
+
 
 class _PromptBasicV2Params(FrozenModel):
-    max_completion_tokens: Union[float, int] = pydantic.Field(..., alias="maxCompletionTokens")
+    max_completion_tokens: Union[float, int] = pydantic.Field(
+        ...,
+        alias="maxCompletionTokens",
+        validation_alias=(
+            AliasChoices("maxCompletionTokens", "maxTokens") if "AliasChoices" in globals() else "maxCompletionTokens"
+        ),
+    )
     model: str = pydantic.Field(..., alias="model")
 
 
