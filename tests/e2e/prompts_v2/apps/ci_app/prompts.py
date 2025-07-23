@@ -13,7 +13,7 @@ from autoblocks.prompts.v2.renderer import ToolRenderer
 
 try:
     from pydantic import AliasChoices
-except ImportError:
+except ImportError:  # pragma: no cover - older pydantic
     AliasChoices = None  # type: ignore
 
 

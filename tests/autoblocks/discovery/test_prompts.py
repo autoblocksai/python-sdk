@@ -8,7 +8,7 @@ from autoblocks._impl.prompts.v2.discovery.prompts import generate_version_imple
 
 try:
     from pydantic import AliasChoices
-except ImportError:
+except ImportError:  # pragma: no cover - older pydantic
     AliasChoices = None  # type: ignore
 
 
