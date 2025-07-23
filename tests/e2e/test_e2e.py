@@ -225,7 +225,7 @@ def test_prompt_manager():
     )
 
     with mgr.exec() as ctx:
-        assert ctx.params.max_tokens == 256
+        assert ctx.params.max_completion_tokens == 256
         assert ctx.params.model == "gpt-4"
         assert ctx.params.temperature == 0.3
         assert ctx.params.top_p == 1
@@ -292,7 +292,7 @@ def test_prompt_manager_latest():
     )
 
     with mgr.exec() as ctx:
-        assert ctx.params.max_tokens == 256
+        assert ctx.params.max_completion_tokens == 256
         assert ctx.params.model == "gpt-4"
         assert ctx.params.temperature == 0.3
         assert ctx.params.top_p == 1
@@ -561,7 +561,9 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
             return prompt.params.model
 
     class MyEvaluator(BaseTestEvaluator):
-        id = "my-evaluator"
+        @property
+        def id(self):
+            return "my-evaluator"
 
         mgr = UsedByCiDontDeleteNoParamsPromptManager(
             minor_version="0",
@@ -675,7 +677,9 @@ def test_many_test_cases(httpx_mock):
         return f"{test_case.x}"
 
     class MyEvaluator(BaseTestEvaluator):
-        id = "my-evaluator"
+        @property
+        def id(self):
+            return "my-evaluator"
 
         async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0.97)
