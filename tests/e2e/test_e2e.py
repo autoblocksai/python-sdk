@@ -257,7 +257,7 @@ def test_prompt_manager():
             "revisionId": "cm6gsq0t60003nbscwcqkdgat",
             "params": {
                 "params": {
-                    "maxCompletionTokens": 256,
+                    "maxTokens": 256,
                     "model": "gpt-4",
                     "stopSequences": [],
                     "temperature": 0.3,
@@ -324,7 +324,7 @@ def test_prompt_manager_latest():
             "revisionId": "cm6gswg4z000b11nw5dyqmvqw",
             "params": {
                 "params": {
-                    "maxCompletionTokens": 256,
+                    "maxTokens": 256,
                     "model": "gpt-4",
                     "stopSequences": [],
                     "temperature": 0.3,
