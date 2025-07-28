@@ -45,6 +45,8 @@ from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.util import yield_grid_search_param_combos
 from autoblocks._impl.testing.util import yield_test_case_contexts_from_test_cases
 from autoblocks._impl.testing.v2.api import send_create_human_review_job
+from autoblocks._impl.testing.v2.api import send_v2_github_comment
+from autoblocks._impl.testing.v2.api import send_v2_slack_notification
 from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
@@ -453,6 +455,28 @@ async def run_test_suite_for_grid_combo(
             )
         except Exception as err:
             log.warn(f"Failed to create human review job for test run '{run_id}'", exc_info=err)
+
+    # Send V2 notifications after test completion
+    # Use all_settled pattern to ensure notification failures don't affect test results
+    build_id = AutoblocksEnvVar.V2_CI_TEST_RUN_BUILD_ID.get()
+    log.debug(
+        f"Starting V2 notification dispatch for test run '{run_id}' with app_slug '{app_slug}', build_id '{build_id}'"
+    )
+
+    try:
+        notifications = [
+            send_v2_slack_notification(run_id=run_id, app_slug=app_slug),
+        ]
+        if build_id:
+            notifications.append(send_v2_github_comment(app_slug=app_slug, build_id=build_id))
+
+        await all_settled(notifications)
+        log.debug(f"V2 notification dispatch completed for test run '{run_id}' with app_slug '{app_slug}'")
+    except Exception as e:
+        log.debug(
+            f"V2 notification dispatch encountered error for test run '{run_id}' with app_slug '{app_slug}': {e}",
+            exc_info=e,
+        )
 
 
 async def async_run_test_suite(
