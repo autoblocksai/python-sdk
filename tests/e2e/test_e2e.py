@@ -320,11 +320,11 @@ def test_prompt_manager_latest():
 
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
-            "version": "6.1",
-            "revisionId": "cm6gswg4z000b11nw5dyqmvqw",
+            "version": "7.0",
+            "revisionId": "cmdn4jziw0003lb99ckzpddix",
             "params": {
                 "params": {
-                    "maxTokens": 256,
+                    "maxCompletionTokens": 256,
                     "model": "gpt-4",
                     "stopSequences": [],
                     "temperature": 0.3,
@@ -369,7 +369,7 @@ def test_prompt_manager_weighted():
 
     with mgr.exec() as ctx:
         assert ctx.params.model == "gpt-4"
-        assert ctx.track()["version"] in ("6.0", "6.1")
+        assert ctx.track()["version"] in ("7.0", "7.1")
 
 
 def test_prompt_manager_no_model_params():
@@ -505,7 +505,7 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
                 dict(
                     entityExternalId="used-by-ci-dont-delete",
                     entityType="prompt",
-                    revisionId="cm6gswg4z000b11nw5dyqmvqw",
+                    revisionId="cmdn4jziw0003lb99ckzpddix",
                     usedAt=mock.ANY,
                 ),
             ],
@@ -555,7 +555,7 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
 
     def test_fn(test_case: MyTestCase) -> str:
         mgr = UsedByCiDontDeletePromptManager(
-            minor_version="1",
+            minor_version="0",
         )
         with mgr.exec() as prompt:
             return prompt.params.model
