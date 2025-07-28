@@ -12,8 +12,88 @@ from autoblocks.prompts.v2.renderer import TemplateRenderer
 from autoblocks.prompts.v2.renderer import ToolRenderer
 
 
+class _PromptBasicV4Params(FrozenModel):
+    max_completion_tokens: Union[float, int] = pydantic.Field(
+        ...,
+        alias="maxCompletionTokens",
+    )
+    model: str = pydantic.Field(..., alias="model")
+
+
+class _PromptBasicV4TemplateRenderer(TemplateRenderer):
+    __name_mapper__ = {
+        "first_name": "first_name",
+    }
+
+    def template_c(
+        self,
+        *,
+        first_name: str,
+    ) -> str:
+        return self._render(
+            "template-c",
+            first_name=first_name,
+        )
+
+
+class _PromptBasicV4ToolRenderer(ToolRenderer):
+    __name_mapper__ = {}
+
+
+class _PromptBasicV4ExecutionContext(
+    PromptExecutionContext[_PromptBasicV4Params, _PromptBasicV4TemplateRenderer, _PromptBasicV4ToolRenderer]
+):
+    __params_class__ = _PromptBasicV4Params
+    __template_renderer_class__ = _PromptBasicV4TemplateRenderer
+    __tool_renderer_class__ = _PromptBasicV4ToolRenderer
+
+
+class _PromptBasicV4PromptManager(AutoblocksPromptManager[_PromptBasicV4ExecutionContext]):
+    __app_id__ = "b5sz3k5d61w9f8325fhxuxkr"
+    __prompt_id__ = "prompt-basic"
+    __prompt_major_version__ = "4"
+    __execution_context_class__ = _PromptBasicV4ExecutionContext
+
+
+class _PromptBasicV3Params(FrozenModel):
+    max_completion_tokens: Union[float, int] = pydantic.Field(
+        ...,
+        alias="maxCompletionTokens",
+    )
+    model: str = pydantic.Field(..., alias="model")
+
+
+class _PromptBasicV3TemplateRenderer(TemplateRenderer):
+    __name_mapper__ = {}
+
+    def template_c(
+        self,
+    ) -> str:
+        return self._render(
+            "template-c",
+        )
+
+
+class _PromptBasicV3ToolRenderer(ToolRenderer):
+    __name_mapper__ = {}
+
+
+class _PromptBasicV3ExecutionContext(
+    PromptExecutionContext[_PromptBasicV3Params, _PromptBasicV3TemplateRenderer, _PromptBasicV3ToolRenderer]
+):
+    __params_class__ = _PromptBasicV3Params
+    __template_renderer_class__ = _PromptBasicV3TemplateRenderer
+    __tool_renderer_class__ = _PromptBasicV3ToolRenderer
+
+
+class _PromptBasicV3PromptManager(AutoblocksPromptManager[_PromptBasicV3ExecutionContext]):
+    __app_id__ = "b5sz3k5d61w9f8325fhxuxkr"
+    __prompt_id__ = "prompt-basic"
+    __prompt_major_version__ = "3"
+    __execution_context_class__ = _PromptBasicV3ExecutionContext
+
+
 class _PromptBasicV2Params(FrozenModel):
-    max_tokens: Union[float, int] = pydantic.Field(..., alias="maxTokens")
     model: str = pydantic.Field(..., alias="model")
 
 
@@ -103,7 +183,12 @@ class PromptBasicFactory:
         init_timeout: Optional[float] = None,
         refresh_timeout: Optional[float] = None,
         refresh_interval: Optional[float] = None,
-    ) -> Union[_PromptBasicV1PromptManager, _PromptBasicV2PromptManager]:
+    ) -> Union[
+        _PromptBasicV1PromptManager,
+        _PromptBasicV2PromptManager,
+        _PromptBasicV3PromptManager,
+        _PromptBasicV4PromptManager,
+    ]:
         kwargs: Dict[str, Any] = {}
         if api_key is not None:
             kwargs["api_key"] = api_key
@@ -115,11 +200,15 @@ class PromptBasicFactory:
             kwargs["refresh_interval"] = refresh_interval
 
         if major_version is None:
-            major_version = "2"  # Latest version
+            major_version = "4"  # Latest version
 
         if major_version == "1":
             return _PromptBasicV1PromptManager(minor_version=minor_version, **kwargs)
         if major_version == "2":
             return _PromptBasicV2PromptManager(minor_version=minor_version, **kwargs)
+        if major_version == "3":
+            return _PromptBasicV3PromptManager(minor_version=minor_version, **kwargs)
+        if major_version == "4":
+            return _PromptBasicV4PromptManager(minor_version=minor_version, **kwargs)
 
-        raise ValueError("Unsupported major version. Available versions: 1, 2")
+        raise ValueError("Unsupported major version. Available versions: 1, 2, 3, 4")

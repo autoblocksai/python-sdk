@@ -18,6 +18,11 @@ from autoblocks._impl.prompts.utils import to_title_case
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import encode_uri_component
 
+try:
+    from pydantic import AliasChoices
+except ImportError:  # pragma: no cover - older pydantic
+    AliasChoices = None  # type: ignore
+
 
 class Template(FrozenModel):
     id: str
@@ -99,8 +104,8 @@ def generate_params_class_code(prompt: PromptCodegen) -> str:
         if type_hint is None:
             continue
         snake_case_key = to_snake_case(key)
-        auto += f'{indent()}{snake_case_key}: {type_hint} = pydantic.Field(..., alias="{key}")\n'
 
+        auto += f'{indent()}{snake_case_key}: {type_hint} = pydantic.Field(..., alias="{key}")\n'
     return auto
 
 

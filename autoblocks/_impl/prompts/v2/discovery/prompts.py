@@ -9,6 +9,12 @@ from autoblocks._impl.prompts.utils import indent
 from autoblocks._impl.prompts.utils import infer_type
 from autoblocks._impl.prompts.utils import to_snake_case
 from autoblocks._impl.prompts.utils import to_title_case
+
+try:
+    from pydantic import AliasChoices
+except ImportError:  # pragma: no cover - older pydantic
+    AliasChoices = None  # type: ignore
+
 from autoblocks._impl.prompts.v2.client import PromptsAPIClient
 from autoblocks._impl.prompts.v2.discovery.managers import generate_execution_context_class_code
 from autoblocks._impl.prompts.v2.discovery.managers import generate_factory_class_code
@@ -42,7 +48,6 @@ def generate_params_class_code(title_case_id: str, version: str, params: Dict[st
             continue
         snake_case_key = to_snake_case(key)
         auto += f'{indent()}{snake_case_key}: {type_hint} = pydantic.Field(..., alias="{key}")\n'
-
     return auto
 
 

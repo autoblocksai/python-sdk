@@ -12,7 +12,12 @@ def prompt_basic_prompt_manager(
     init_timeout: Optional[float] = None,
     refresh_timeout: Optional[float] = None,
     refresh_interval: Optional[float] = None,
-) -> Union[prompts._PromptBasicV1PromptManager, prompts._PromptBasicV2PromptManager]:
+) -> Union[
+    prompts._PromptBasicV1PromptManager,
+    prompts._PromptBasicV2PromptManager,
+    prompts._PromptBasicV3PromptManager,
+    prompts._PromptBasicV4PromptManager,
+]:
     return prompts.PromptBasicFactory.create(
         major_version=major_version,
         minor_version=minor_version,

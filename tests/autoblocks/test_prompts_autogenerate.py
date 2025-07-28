@@ -171,7 +171,7 @@ def test_write(httpx_mock, snapshot):
             "params": {
                 "params": {
                     "frequencyPenalty": 0,
-                    "maxTokens": 256,
+                    "maxCompletionTokens": 256,
                     "model": "gpt-4",
                     "presencePenalty": 0.3,
                     "stopSequences": [],
@@ -209,7 +209,7 @@ def test_write(httpx_mock, snapshot):
             "params": {
                 "params": {
                     "frequencyPenalty": 0,
-                    "maxTokens": 256,
+                    "maxCompletionTokens": 256,
                     "model": "gpt-4",
                     "presencePenalty": -0.3,
                     "stopSequences": [],
