@@ -28,7 +28,6 @@ class QuestionAnswererParams(FrozenModel):
     max_completion_tokens: Union[float, int] = pydantic.Field(
         ...,
         alias="maxCompletionTokens",
-        validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if AliasChoices else "maxCompletionTokens"),  # type: ignore
     )
     model: str = pydantic.Field(..., alias="model")
 
@@ -105,7 +104,6 @@ class TextSummarizationParams(FrozenModel):
     max_completion_tokens: Union[float, int] = pydantic.Field(
         ...,
         alias="maxCompletionTokens",
-        validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if AliasChoices else "maxCompletionTokens"),  # type: ignore
     )
     model: str = pydantic.Field(..., alias="model")
 
@@ -194,7 +192,6 @@ class UsedByCiDontDeleteParams(FrozenModel):
     max_completion_tokens: Union[float, int] = pydantic.Field(
         ...,
         alias="maxCompletionTokens",
-        validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") if AliasChoices else "maxCompletionTokens"),  # type: ignore
     )
 
     seed: Union[float, int] = pydantic.Field(..., alias="seed")

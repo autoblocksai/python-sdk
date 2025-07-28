@@ -47,7 +47,7 @@ def test_app_sdk_test_prompt_basic_v2():
 
         # Test template rendering
         assert (
-            ctx.render_template.template_c(  # type: ignore[union-attr]
+            ctx.render_template.template_c(  # type: ignore[union-attr,call-arg]
                 first_name="Alice",
             )
             == "Hello, Alice!"
@@ -56,7 +56,7 @@ def test_app_sdk_test_prompt_basic_v2():
         # Check tracking info
         track_info = ctx.track()
         assert track_info["id"] == "prompt-basic"
-        assert track_info["version"].startswith("2.")
+        assert track_info["version"].startswith("4.")
         assert track_info["appId"] == "b5sz3k5d61w9f8325fhxuxkr"
         assert "templates" in track_info
         assert len(track_info["templates"]) == 1

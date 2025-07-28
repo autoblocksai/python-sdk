@@ -104,14 +104,8 @@ def generate_params_class_code(prompt: PromptCodegen) -> str:
         if type_hint is None:
             continue
         snake_case_key = to_snake_case(key)
-        if key == "maxCompletionTokens":
-            auto += (
-                f"{indent()}{snake_case_key}: {type_hint} = pydantic.Field(..., "
-                f'alias="{key}", validation_alias=(AliasChoices("maxCompletionTokens", "maxTokens") '
-                f'if AliasChoices else "maxCompletionTokens"))\n'
-            )
-        else:
-            auto += f'{indent()}{snake_case_key}: {type_hint} = pydantic.Field(..., alias="{key}")\n'
+
+        auto += f'{indent()}{snake_case_key}: {type_hint} = pydantic.Field(..., alias="{key}")\n'
     return auto
 
 
