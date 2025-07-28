@@ -36,7 +36,7 @@ def test_app_sdk_test_prompt_basic_v1():
 def test_app_sdk_test_prompt_basic_v2():
     """Test the app_sdk_test.prompt_basic in major version 2."""
     mgr = ci_app.prompt_basic_prompt_manager(
-        major_version="2",
+        major_version="4",
         minor_version="0",
     )
 
@@ -68,7 +68,7 @@ def test_prompt_revision_override_structure():
     """Test that V2 prompts have the same structure as V1 for revision overrides."""
     # This test verifies that the manager has the necessary attributes for overrides
     mgr = ci_app.prompt_basic_prompt_manager(
-        major_version="2",
+        major_version="4",
         minor_version="0",
     )
 
