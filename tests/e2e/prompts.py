@@ -255,7 +255,7 @@ class UsedByCiDontDeletePromptManager(
     AutoblocksPromptManager[UsedByCiDontDeleteExecutionContext],
 ):
     __prompt_id__ = "used-by-ci-dont-delete"
-    __prompt_major_version__ = "6"
+    __prompt_major_version__ = "7"
     __execution_context_class__ = UsedByCiDontDeleteExecutionContext
 
 

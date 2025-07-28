@@ -246,18 +246,18 @@ def test_prompt_manager():
             ctx.render_template.template_b(
                 name="Alice",
             )
-            == "My name is Alice."
+            == "My name is Alice!"
         )
 
         assert ctx.render_template.template_c() == "I am template c and I have no params"
 
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
-            "version": "6.0",
-            "revisionId": "cm6gsq0t60003nbscwcqkdgat",
+            "version": "7.0",
+            "revisionId": "cmdn4jziw0003lb99ckzpddix",
             "params": {
                 "params": {
-                    "maxTokens": 256,
+                    "maxCompletionTokens": 256,
                     "model": "gpt-4",
                     "stopSequences": [],
                     "temperature": 0.3,
@@ -275,7 +275,7 @@ def test_prompt_manager():
                 },
                 {
                     "id": "template-b",
-                    "template": "My name is {{ name }}.",
+                    "template": "My name is {{ name }}!",
                 },
                 {
                     "id": "template-c",
