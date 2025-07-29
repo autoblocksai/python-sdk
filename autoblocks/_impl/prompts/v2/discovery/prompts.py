@@ -42,7 +42,6 @@ def generate_params_class_code(title_case_id: str, version: str, params: Dict[st
             continue
         snake_case_key = to_snake_case(key)
         auto += f'{indent()}{snake_case_key}: {type_hint} = pydantic.Field(..., alias="{key}")\n'
-
     return auto
 
 

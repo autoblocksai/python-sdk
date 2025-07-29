@@ -225,74 +225,7 @@ def test_prompt_manager():
     )
 
     with mgr.exec() as ctx:
-        assert ctx.params.max_tokens == 256
-        assert ctx.params.model == "gpt-4"
-        assert ctx.params.temperature == 0.3
-        assert ctx.params.top_p == 1
-        assert ctx.params.frequency_penalty == 0
-        assert ctx.params.presence_penalty == 0.6
-        assert ctx.params.seed == 4096
-        assert ctx.params.response_format == {"type": "json_object"}
-
-        assert (
-            ctx.render_template.template_a(
-                name="Alice",
-                weather="sunny",
-            )
-            == "Hello, Alice! The weather is sunny today!"
-        )
-
-        assert (
-            ctx.render_template.template_b(
-                name="Alice",
-            )
-            == "My name is Alice."
-        )
-
-        assert ctx.render_template.template_c() == "I am template c and I have no params"
-
-        assert ctx.track() == {
-            "id": "used-by-ci-dont-delete",
-            "version": "6.0",
-            "revisionId": "cm6gsq0t60003nbscwcqkdgat",
-            "params": {
-                "params": {
-                    "maxTokens": 256,
-                    "model": "gpt-4",
-                    "stopSequences": [],
-                    "temperature": 0.3,
-                    "topP": 1,
-                    "frequencyPenalty": 0,
-                    "presencePenalty": 0.6,
-                    "seed": 4096,
-                    "responseFormat": {"type": "json_object"},
-                },
-            },
-            "templates": [
-                {
-                    "id": "template-a",
-                    "template": "Hello, {{ name }}! The weather is {{ weather }} today!",
-                },
-                {
-                    "id": "template-b",
-                    "template": "My name is {{ name }}.",
-                },
-                {
-                    "id": "template-c",
-                    "template": "I am template c and I have no params",
-                },
-            ],
-            "tools": [],
-        }
-
-
-def test_prompt_manager_latest():
-    mgr = UsedByCiDontDeletePromptManager(
-        minor_version="latest",
-    )
-
-    with mgr.exec() as ctx:
-        assert ctx.params.max_tokens == 256
+        assert ctx.params.max_completion_tokens == 256
         assert ctx.params.model == "gpt-4"
         assert ctx.params.temperature == 0.3
         assert ctx.params.top_p == 1
@@ -320,11 +253,78 @@ def test_prompt_manager_latest():
 
         assert ctx.track() == {
             "id": "used-by-ci-dont-delete",
-            "version": "6.1",
-            "revisionId": "cm6gswg4z000b11nw5dyqmvqw",
+            "version": "7.0",
+            "revisionId": "cmdn4jziw0003lb99ckzpddix",
             "params": {
                 "params": {
-                    "maxTokens": 256,
+                    "maxCompletionTokens": 256,
+                    "model": "gpt-4",
+                    "stopSequences": [],
+                    "temperature": 0.3,
+                    "topP": 1,
+                    "frequencyPenalty": 0,
+                    "presencePenalty": 0.6,
+                    "seed": 4096,
+                    "responseFormat": {"type": "json_object"},
+                },
+            },
+            "templates": [
+                {
+                    "id": "template-a",
+                    "template": "Hello, {{ name }}! The weather is {{ weather }} today!",
+                },
+                {
+                    "id": "template-b",
+                    "template": "My name is {{ name }}!",
+                },
+                {
+                    "id": "template-c",
+                    "template": "I am template c and I have no params",
+                },
+            ],
+            "tools": [],
+        }
+
+
+def test_prompt_manager_latest():
+    mgr = UsedByCiDontDeletePromptManager(
+        minor_version="latest",
+    )
+
+    with mgr.exec() as ctx:
+        assert ctx.params.max_completion_tokens == 256
+        assert ctx.params.model == "gpt-4"
+        assert ctx.params.temperature == 0.3
+        assert ctx.params.top_p == 1
+        assert ctx.params.frequency_penalty == 0
+        assert ctx.params.presence_penalty == 0.6
+        assert ctx.params.seed == 4096
+        assert ctx.params.response_format == {"type": "json_object"}
+
+        assert (
+            ctx.render_template.template_a(
+                name="Alice",
+                weather="sunny",
+            )
+            == "Hello, Alice! The weather is sunny today!"
+        )
+
+        assert (
+            ctx.render_template.template_b(
+                name="Alice",
+            )
+            == "My name is Alice!"
+        )
+
+        assert ctx.render_template.template_c() == "I am template c and I have no params"
+
+        assert ctx.track() == {
+            "id": "used-by-ci-dont-delete",
+            "version": "7.0",
+            "revisionId": "cmdn4jziw0003lb99ckzpddix",
+            "params": {
+                "params": {
+                    "maxCompletionTokens": 256,
                     "model": "gpt-4",
                     "stopSequences": [],
                     "temperature": 0.3,
@@ -369,7 +369,7 @@ def test_prompt_manager_weighted():
 
     with mgr.exec() as ctx:
         assert ctx.params.model == "gpt-4"
-        assert ctx.track()["version"] in ("6.0", "6.1")
+        assert ctx.track()["version"] in ("7.0", "7.1")
 
 
 def test_prompt_manager_no_model_params():
@@ -505,7 +505,7 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
                 dict(
                     entityExternalId="used-by-ci-dont-delete",
                     entityType="prompt",
-                    revisionId="cm6gswg4z000b11nw5dyqmvqw",
+                    revisionId="cmdn4jziw0003lb99ckzpddix",
                     usedAt=mock.ANY,
                 ),
             ],
@@ -555,13 +555,15 @@ def test_init_prompt_manager_inside_test_suite(httpx_mock):
 
     def test_fn(test_case: MyTestCase) -> str:
         mgr = UsedByCiDontDeletePromptManager(
-            minor_version="1",
+            minor_version="0",
         )
         with mgr.exec() as prompt:
             return prompt.params.model
 
     class MyEvaluator(BaseTestEvaluator):
-        id = "my-evaluator"
+        @property
+        def id(self):
+            return "my-evaluator"
 
         mgr = UsedByCiDontDeleteNoParamsPromptManager(
             minor_version="0",
@@ -675,7 +677,9 @@ def test_many_test_cases(httpx_mock):
         return f"{test_case.x}"
 
     class MyEvaluator(BaseTestEvaluator):
-        id = "my-evaluator"
+        @property
+        def id(self):
+            return "my-evaluator"
 
         async def evaluate_test_case(self, test_case: MyTestCase, output: str) -> Evaluation:
             return Evaluation(score=0.97)

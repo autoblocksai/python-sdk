@@ -36,18 +36,18 @@ def test_app_sdk_test_prompt_basic_v1():
 def test_app_sdk_test_prompt_basic_v2():
     """Test the app_sdk_test.prompt_basic in major version 2."""
     mgr = ci_app.prompt_basic_prompt_manager(
-        major_version="2",
+        major_version="4",
         minor_version="0",
     )
 
     with mgr.exec() as ctx:
         # Assert parameters
         assert ctx.params.model == "gpt-4o"
-        assert ctx.params.max_tokens == 256  # type: ignore[union-attr]
+        assert ctx.params.max_completion_tokens == 256  # type: ignore[union-attr]
 
         # Test template rendering
         assert (
-            ctx.render_template.template_c(  # type: ignore[union-attr]
+            ctx.render_template.template_c(  # type: ignore[union-attr,call-arg]
                 first_name="Alice",
             )
             == "Hello, Alice!"
@@ -56,7 +56,7 @@ def test_app_sdk_test_prompt_basic_v2():
         # Check tracking info
         track_info = ctx.track()
         assert track_info["id"] == "prompt-basic"
-        assert track_info["version"].startswith("2.")
+        assert track_info["version"].startswith("4.")
         assert track_info["appId"] == "b5sz3k5d61w9f8325fhxuxkr"
         assert "templates" in track_info
         assert len(track_info["templates"]) == 1
@@ -68,7 +68,7 @@ def test_prompt_revision_override_structure():
     """Test that V2 prompts have the same structure as V1 for revision overrides."""
     # This test verifies that the manager has the necessary attributes for overrides
     mgr = ci_app.prompt_basic_prompt_manager(
-        major_version="2",
+        major_version="4",
         minor_version="0",
     )
 
