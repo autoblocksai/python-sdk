@@ -14,11 +14,6 @@ from autoblocks.prompts.models import FrozenModel
 from autoblocks.prompts.renderer import TemplateRenderer
 from autoblocks.prompts.renderer import ToolRenderer
 
-try:
-    from pydantic import AliasChoices
-except ImportError:  # pragma: no cover - older pydantic
-    AliasChoices = None  # type: ignore
-
 
 class QuestionAnswererParams(FrozenModel):
     temperature: Union[float, int] = pydantic.Field(..., alias="temperature")
