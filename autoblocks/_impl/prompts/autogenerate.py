@@ -18,11 +18,6 @@ from autoblocks._impl.prompts.utils import to_title_case
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import encode_uri_component
 
-try:
-    from pydantic import AliasChoices
-except ImportError:  # pragma: no cover - older pydantic
-    AliasChoices = None  # type: ignore
-
 
 class Template(FrozenModel):
     id: str

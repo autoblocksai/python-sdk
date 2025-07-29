@@ -13,10 +13,6 @@ from autoblocks.prompts.v2.renderer import ToolRenderer
 
 
 class _PromptBasicV4Params(FrozenModel):
-    max_tokens: Union[float, int] = pydantic.Field(
-        ...,
-        alias="maxTokens",
-    )
     max_completion_tokens: Union[float, int] = pydantic.Field(
         ...,
         alias="maxCompletionTokens",
@@ -60,10 +56,6 @@ class _PromptBasicV4PromptManager(AutoblocksPromptManager[_PromptBasicV4Executio
 
 
 class _PromptBasicV3Params(FrozenModel):
-    max_tokens: Union[float, int] = pydantic.Field(
-        ...,
-        alias="maxTokens",
-    )
     max_completion_tokens: Union[float, int] = pydantic.Field(
         ...,
         alias="maxCompletionTokens",

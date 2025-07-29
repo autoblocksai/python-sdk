@@ -6,11 +6,6 @@ from autoblocks._impl.prompts.v2.discovery.prompts import generate_params_class_
 from autoblocks._impl.prompts.v2.discovery.prompts import generate_prompt_implementations
 from autoblocks._impl.prompts.v2.discovery.prompts import generate_version_implementations
 
-try:
-    from pydantic import AliasChoices
-except ImportError:  # pragma: no cover - older pydantic
-    AliasChoices = None  # type: ignore
-
 
 class TestPrompts:
     def test_generate_params_class_code_empty(self):
