@@ -16,9 +16,3 @@ dist/
 .mypy_cache/
 
 examples/*
-
-# Curor
-.cursor
-
-# Taskmaster
-.taskmaster

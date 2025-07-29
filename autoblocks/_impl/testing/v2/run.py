@@ -454,7 +454,7 @@ async def run_test_suite_for_grid_combo(
                 rubric_id=human_review_job.rubric_id,
             )
         except Exception as err:
-            log.warn(f"Failed to create human review job for test run '{run_id}'", exc_info=err)
+            log.warning(f"Failed to create human review job for test run '{run_id}'", exc_info=err)
 
     # Send V2 notifications after test completion
     # Use all_settled pattern to ensure notification failures don't affect test results

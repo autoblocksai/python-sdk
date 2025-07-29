@@ -100,7 +100,7 @@ async def send_v2_slack_notification(run_id: str, app_slug: str) -> None:
             json=dict(slackWebhookUrl=slack_webhook_url),
         )
     except Exception as e:
-        log.warn(f"Failed to send slack notification for test run '{run_id}' in app '{app_slug}'", exc_info=e)
+        log.warning(f"Failed to send slack notification for test run '{run_id}' in app '{app_slug}'", exc_info=e)
 
 
 async def send_v2_github_comment(app_slug: str, build_id: str) -> None:
@@ -120,7 +120,7 @@ async def send_v2_github_comment(app_slug: str, build_id: str) -> None:
                 json=dict(githubToken=github_token),
             )
     except Exception as e:
-        log.warn(
+        log.warning(
             f"Could not create GitHub comment for build '{build_id}' in app '{app_slug}'. "
             "For more information on how to set up GitHub Actions permissions, see: "
             "https://docs.autoblocks.ai/testing/ci#git-hub-comments-github-actions-permissions",
