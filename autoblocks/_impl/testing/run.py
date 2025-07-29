@@ -481,7 +481,7 @@ async def run_test_suite_for_grid_combo(
                 ]
             )
         except Exception as err:
-            log.warn(f"Failed to create human review job for test run '{run_id}'", exc_info=err)
+            log.warning(f"Failed to create human review job for test run '{run_id}'", exc_info=err)
 
     await all_settled(
         [

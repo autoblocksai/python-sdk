@@ -211,7 +211,7 @@ async def send_test_events(
         # Remove the events from the test_events dict after they have been sent
         del test_events[(run_id, test_case_hash)]
     except Exception as e:
-        log.warn(f"Failed to send test events for run '{run_id}' and test case hash '{test_case_hash}'", exc_info=e)
+        log.warning(f"Failed to send test events for run '{run_id}' and test case hash '{test_case_hash}'", exc_info=e)
 
 
 async def send_test_case_result(
@@ -280,7 +280,7 @@ async def send_test_case_result(
         )
         for result in results:
             if isinstance(result, Exception):
-                log.warn(
+                log.warning(
                     "Failed to send part of the test case results to Autoblocks\n"
                     f"test case hash: {test_case_ctx.hash()}\n"
                     f"{result}",
@@ -296,7 +296,7 @@ async def send_test_case_result(
                 ),
             )
         except Exception as e:
-            log.warn(
+            log.warning(
                 "Failed to send human review fields to Autoblocks\n" f"test case hash: {test_case_ctx.hash()}\n",
                 exc_info=e,
             )
@@ -304,7 +304,7 @@ async def send_test_case_result(
         try:
             await post_to_api(f"/runs/{run_id}/results/{result_id}/ui-based-evaluations", json={})
         except Exception as e:
-            log.warn("Failed to run ui based evaluations\n" f"test case hash: {test_case_ctx.hash()}\n", exc_info=e)
+            log.warning("Failed to run ui based evaluations\n" f"test case hash: {test_case_ctx.hash()}\n", exc_info=e)
 
         return result_id
 
@@ -379,7 +379,7 @@ async def send_slack_notification(
             json=dict(slackWebhookUrl=slack_webhook_url),
         )
     except Exception as e:
-        log.warn(f"Failed to send slack notification for test run '{run_id}'", exc_info=e)
+        log.warning(f"Failed to send slack notification for test run '{run_id}'", exc_info=e)
 
 
 async def send_github_comment() -> None:
@@ -396,7 +396,7 @@ async def send_github_comment() -> None:
                 json=dict(githubToken=github_token),
             )
     except Exception as e:
-        log.warn(
+        log.warning(
             "Could not create GitHub comment for build '{build_id}'."
             "For more information on how to set up GitHub Actions permissions, see: "
             "https://docs.autoblocks.ai/testing/ci#git-hub-comments-github-actions-permissions",

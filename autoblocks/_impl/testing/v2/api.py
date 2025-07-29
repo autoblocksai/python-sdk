@@ -11,6 +11,10 @@ from tenacity import wait_random_exponential
 from autoblocks._impl import global_state
 from autoblocks._impl.config.constants import API_ENDPOINT_V2
 from autoblocks._impl.util import AutoblocksEnvVar
+from autoblocks._impl.util import ThirdPartyEnvVar
+from autoblocks._impl.util import is_ci
+from autoblocks._impl.util import is_cli_running
+from autoblocks._impl.util import is_github_comment_disabled
 
 log = logging.getLogger(__name__)
 
@@ -78,3 +82,47 @@ async def send_create_human_review_job(
             name=name,
         ),
     )
+
+
+async def send_v2_slack_notification(run_id: str, app_slug: str) -> None:
+    """
+    V2 Slack notification wrapper that delegates to V1 logic for maximum code reuse.
+    Uses V2 app-based endpoint: /apps/{app_slug}/runs/{run_id}/slack-notification
+    """
+    slack_webhook_url = AutoblocksEnvVar.SLACK_WEBHOOK_URL.get()
+    if is_cli_running() or not slack_webhook_url or not is_ci():
+        return
+
+    log.info(f"Sending slack notification for test run '{run_id}' in app '{app_slug}'.")
+    try:
+        await post_to_api(
+            f"/apps/{app_slug}/runs/{run_id}/slack-notification",
+            json=dict(slackWebhookUrl=slack_webhook_url),
+        )
+    except Exception as e:
+        log.warning(f"Failed to send slack notification for test run '{run_id}' in app '{app_slug}'", exc_info=e)
+
+
+async def send_v2_github_comment(app_slug: str, build_id: str) -> None:
+    """
+    V2 GitHub comment wrapper that delegates to V1 logic for maximum code reuse.
+    Uses V2 app-based endpoint: /apps/{app_slug}/builds/{build_id}/github-comment
+    """
+    github_token = ThirdPartyEnvVar.GITHUB_TOKEN.get()
+    if is_cli_running() or is_github_comment_disabled() or not github_token or not build_id or not is_ci():
+        return
+
+    log.info(f"Creating GitHub comment for build '{build_id}' in app '{app_slug}'.")
+    try:
+        async with global_state.github_comment_semaphore():
+            await post_to_api(
+                f"/apps/{app_slug}/builds/{build_id}/github-comment",
+                json=dict(githubToken=github_token),
+            )
+    except Exception as e:
+        log.warning(
+            f"Could not create GitHub comment for build '{build_id}' in app '{app_slug}'. "
+            "For more information on how to set up GitHub Actions permissions, see: "
+            "https://docs.autoblocks.ai/testing/ci#git-hub-comments-github-actions-permissions",
+            exc_info=e,
+        )
