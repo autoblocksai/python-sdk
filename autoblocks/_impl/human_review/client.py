@@ -10,7 +10,12 @@ from autoblocks._impl.api.utils.serialization import deserialize_model
 from autoblocks._impl.human_review.models import Job
 from autoblocks._impl.human_review.models import JobItemDetail
 from autoblocks._impl.human_review.models import JobListItem
+from autoblocks._impl.human_review.models import JobPair
+from autoblocks._impl.human_review.models import JobPairsResponse
 from autoblocks._impl.human_review.models import JobsResponse
+from autoblocks._impl.human_review.models import JobTestCase
+from autoblocks._impl.human_review.models import JobTestCaseResult
+from autoblocks._impl.human_review.models import JobTestCasesResponse
 
 log = logging.getLogger(__name__)
 
@@ -75,6 +80,59 @@ class HumanReviewClient(BaseAppResourceClient):
         path = self._build_app_path("human-review", "jobs", job_id, "items", item_id)
         response = self._make_request("GET", path)
         return deserialize_model(JobItemDetail, response)
+
+    def get_job_test_cases(self, *, job_id: str) -> List[JobTestCase]:
+        """List all test cases for a job."""
+
+        if not job_id:
+            raise ValidationError("Job ID is required")
+
+        path = self._build_app_path("human-review", "jobs", job_id, "test_cases")
+        response = self._make_request("GET", path)
+        test_cases_response = deserialize_model(JobTestCasesResponse, response)
+        return test_cases_response.test_cases
+
+    def get_job_test_case_result(self, *, job_id: str, test_case_id: str) -> JobTestCaseResult:
+        """Get result for a specific test case."""
+
+        if not job_id:
+            raise ValidationError("Job ID is required")
+        if not test_case_id:
+            raise ValidationError("Test case ID is required")
+
+        path = self._build_app_path(
+            "human-review",
+            "jobs",
+            job_id,
+            "test_cases",
+            test_case_id,
+            "result",
+        )
+        response = self._make_request("GET", path)
+        return deserialize_model(JobTestCaseResult, response)
+
+    def get_job_pairs(self, *, job_id: str) -> List[JobPair]:
+        """List all comparison pairs for a job."""
+
+        if not job_id:
+            raise ValidationError("Job ID is required")
+
+        path = self._build_app_path("human-review", "jobs", job_id, "pairs")
+        response = self._make_request("GET", path)
+        pairs_response = deserialize_model(JobPairsResponse, response)
+        return pairs_response.pairs
+
+    def get_job_pair(self, *, job_id: str, pair_id: str) -> JobPair:
+        """Get a specific comparison pair."""
+
+        if not job_id:
+            raise ValidationError("Job ID is required")
+        if not pair_id:
+            raise ValidationError("Pair ID is required")
+
+        path = self._build_app_path("human-review", "jobs", job_id, "pairs", pair_id)
+        response = self._make_request("GET", path)
+        return deserialize_model(JobPair, response)
 
 
 def create_human_review_client(

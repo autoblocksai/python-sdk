@@ -11,7 +11,12 @@ from autoblocks._impl.human_review.models import Job
 from autoblocks._impl.human_review.models import JobItem
 from autoblocks._impl.human_review.models import JobItemDetail
 from autoblocks._impl.human_review.models import JobListItem
+from autoblocks._impl.human_review.models import JobPair
+from autoblocks._impl.human_review.models import JobPairsResponse
 from autoblocks._impl.human_review.models import JobsResponse
+from autoblocks._impl.human_review.models import JobTestCase
+from autoblocks._impl.human_review.models import JobTestCaseResult
+from autoblocks._impl.human_review.models import JobTestCasesResponse
 from autoblocks._impl.human_review.models import Reviewer
 from autoblocks._impl.human_review.models import Score
 from autoblocks._impl.human_review.models import ScoreOptions
@@ -30,6 +35,11 @@ __all__ = [
     "JobItem",
     "JobItemDetail",
     "JobListItem",
+    "JobTestCase",
+    "JobTestCasesResponse",
+    "JobTestCaseResult",
+    "JobPair",
+    "JobPairsResponse",
     "JobsResponse",
     "Reviewer",
     "Score",
