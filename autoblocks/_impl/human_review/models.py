@@ -1,6 +1,7 @@
 """Human Review API models."""
 
 from enum import Enum
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -169,5 +170,51 @@ class JobItemDetail(BaseModel):
     field_comments: List[FieldComment] = Field(alias="fieldComments")
     input_comments: List[Comment] = Field(alias="inputComments")
     output_comments: List[Comment] = Field(alias="outputComments")
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+class JobTestCase(BaseModel):
+    """Test case for a human review job."""
+
+    id: str
+    input: Dict[str, str]
+    output: Dict[str, str]
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+class JobTestCasesResponse(BaseModel):
+    """Response for listing job test cases."""
+
+    test_cases: List[JobTestCase] = Field(alias="testCases")
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+class JobTestCaseResult(BaseModel):
+    """Result for a specific job test case."""
+
+    id: str
+    result: Dict[str, Any]
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+class JobPair(BaseModel):
+    """Comparison pair for a human review job."""
+
+    id: str
+    left_output: str = Field(alias="leftOutput")
+    right_output: str = Field(alias="rightOutput")
+    winner: Optional[str] = None
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+class JobPairsResponse(BaseModel):
+    """Response for listing job pairs."""
+
+    pairs: List[JobPair]
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
