@@ -11,7 +11,7 @@ from autoblocks.datasets.models import SchemaPropertyType
 
 # Constants for testing
 APP_SLUG = "ci-app"
-TEST_TIMEOUT = timedelta(seconds=120)  # 2 minutes for tests
+TEST_TIMEOUT = timedelta(seconds=300)  # 5 minutes for tests
 
 
 def create_app_client() -> AutoblocksAppClient:

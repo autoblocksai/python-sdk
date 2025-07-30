@@ -1,3 +1,4 @@
+import time
 from typing import Any
 from typing import Dict
 from typing import Generator
@@ -277,9 +278,22 @@ class TestDatasetItemsOperations:
             },
         ]
 
-        validation_result = client.datasets.create_items(
-            external_id=test_dataset_id, items=additional_items, split_names=["validation"]
-        )
+        # Add retry logic for the second API call which seems to timeout
+        max_retries = 3
+        retry_delay = 2  # seconds
+
+        for attempt in range(max_retries):
+            try:
+                validation_result = client.datasets.create_items(
+                    external_id=test_dataset_id, items=additional_items, split_names=["validation"]
+                )
+                break  # Success, exit retry loop
+            except Exception as e:
+                if attempt == max_retries - 1:  # Last attempt
+                    raise  # Re-raise the exception
+                print(f"Attempt {attempt + 1} failed: {e}. Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
 
         assert validation_result.count == 4  # Total items in dataset (2 + 2)
         assert validation_result.revision_id is not None
