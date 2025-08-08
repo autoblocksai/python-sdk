@@ -1,6 +1,7 @@
 """Human Review API Client."""
 
 import logging
+import warnings
 from datetime import timedelta
 from typing import List
 
@@ -10,12 +11,13 @@ from autoblocks._impl.api.utils.serialization import deserialize_model
 from autoblocks._impl.human_review.models import Job
 from autoblocks._impl.human_review.models import JobItemDetail
 from autoblocks._impl.human_review.models import JobListItem
-from autoblocks._impl.human_review.models import JobPair
-from autoblocks._impl.human_review.models import JobPairsResponse
 from autoblocks._impl.human_review.models import JobsResponse
 from autoblocks._impl.human_review.models import JobTestCase
-from autoblocks._impl.human_review.models import JobTestCaseResult
 from autoblocks._impl.human_review.models import JobTestCasesResponse
+from autoblocks._impl.human_review.models import Pair
+from autoblocks._impl.human_review.models import PairDetail
+from autoblocks._impl.human_review.models import PairsResponse
+from autoblocks._impl.human_review.models import TestCaseResult
 
 log = logging.getLogger(__name__)
 
@@ -92,7 +94,7 @@ class HumanReviewClient(BaseAppResourceClient):
         test_cases_response = deserialize_model(JobTestCasesResponse, response)
         return test_cases_response.test_cases
 
-    def get_job_test_case_result(self, *, job_id: str, test_case_id: str) -> JobTestCaseResult:
+    def get_test_case_result(self, *, job_id: str, test_case_id: str) -> TestCaseResult:
         """Get result for a specific test case."""
 
         if not job_id:
@@ -109,9 +111,17 @@ class HumanReviewClient(BaseAppResourceClient):
             "result",
         )
         response = self._make_request("GET", path)
-        return deserialize_model(JobTestCaseResult, response)
+        return deserialize_model(TestCaseResult, response)
 
-    def get_job_pairs(self, *, job_id: str) -> List[JobPair]:
+    def get_job_test_case_result(self, *, job_id: str, test_case_id: str) -> TestCaseResult:
+        warnings.warn(
+            "get_job_test_case_result is deprecated, use get_test_case_result",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.get_test_case_result(job_id=job_id, test_case_id=test_case_id)
+
+    def list_pairs(self, *, job_id: str) -> List[Pair]:
         """List all comparison pairs for a job."""
 
         if not job_id:
@@ -119,10 +129,10 @@ class HumanReviewClient(BaseAppResourceClient):
 
         path = self._build_app_path("human-review", "jobs", job_id, "pairs")
         response = self._make_request("GET", path)
-        pairs_response = deserialize_model(JobPairsResponse, response)
+        pairs_response = deserialize_model(PairsResponse, response)
         return pairs_response.pairs
 
-    def get_job_pair(self, *, job_id: str, pair_id: str) -> JobPair:
+    def get_pair(self, *, job_id: str, pair_id: str) -> PairDetail:
         """Get a specific comparison pair."""
 
         if not job_id:
@@ -132,7 +142,23 @@ class HumanReviewClient(BaseAppResourceClient):
 
         path = self._build_app_path("human-review", "jobs", job_id, "pairs", pair_id)
         response = self._make_request("GET", path)
-        return deserialize_model(JobPair, response)
+        return deserialize_model(PairDetail, response)
+
+    def get_job_pairs(self, *, job_id: str) -> List[Pair]:
+        warnings.warn(
+            "get_job_pairs is deprecated, use list_pairs",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.list_pairs(job_id=job_id)
+
+    def get_job_pair(self, *, job_id: str, pair_id: str) -> PairDetail:
+        warnings.warn(
+            "get_job_pair is deprecated, use get_pair",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.get_pair(job_id=job_id, pair_id=pair_id)
 
 
 def create_human_review_client(

@@ -7,9 +7,14 @@ from autoblocks.human_review.models import ContentType
 from autoblocks.human_review.models import Job
 from autoblocks.human_review.models import JobItemDetail
 from autoblocks.human_review.models import JobListItem
-from autoblocks.human_review.models import JobPair
 from autoblocks.human_review.models import JobTestCase
-from autoblocks.human_review.models import JobTestCaseResult
+from autoblocks.human_review.models import OutputField
+from autoblocks.human_review.models import Pair
+from autoblocks.human_review.models import PairDetail
+from autoblocks.human_review.models import PairItem
+from autoblocks.human_review.models import TestCaseResult
+from autoblocks.human_review.models import get_left_right_text
+from autoblocks.human_review.models import join_output_text
 
 API_KEY = "test-api-key"
 APP_SLUG = "test-app"
@@ -148,7 +153,7 @@ def test_get_job_test_cases(httpx_mock, client):
     assert test_cases[0].input["prompt"] == "hi"
 
 
-def test_get_job_test_case_result(httpx_mock, client):
+def test_get_test_case_result(httpx_mock, client):
     httpx_mock.add_response(
         url=f"https://api-v2.autoblocks.ai/apps/{APP_SLUG}/human-review/jobs/job-1/test_cases/tc-1/result",
         method="GET",
@@ -156,35 +161,76 @@ def test_get_job_test_case_result(httpx_mock, client):
         json={"id": "tc-1", "result": {"foo": "bar"}},
     )
 
-    result = client.human_review.get_job_test_case_result(job_id="job-1", test_case_id="tc-1")
-    assert isinstance(result, JobTestCaseResult)
+    result = client.human_review.get_test_case_result(job_id="job-1", test_case_id="tc-1")
+    assert isinstance(result, TestCaseResult)
     assert result.id == "tc-1"
     assert result.result["foo"] == "bar"
 
 
-def test_get_job_pairs(httpx_mock, client):
+def test_list_pairs(httpx_mock, client):
     httpx_mock.add_response(
         url=f"https://api-v2.autoblocks.ai/apps/{APP_SLUG}/human-review/jobs/job-1/pairs",
         method="GET",
         status_code=200,
-        json={"pairs": [{"id": "pair-1", "leftOutput": "a", "rightOutput": "b"}]},
+        json={
+            "pairs": [
+                {
+                    "id": "pair-1",
+                    "items": [
+                        {"itemId": "b", "outputFields": [{"name": "text", "value": "B"}]},
+                        {"itemId": "a", "outputFields": [{"name": "text", "value": "A"}]},
+                    ],
+                }
+            ]
+        },
     )
 
-    pairs = client.human_review.get_job_pairs(job_id="job-1")
+    pairs = client.human_review.list_pairs(job_id="job-1")
     assert len(pairs) == 1
-    assert isinstance(pairs[0], JobPair)
-    assert pairs[0].left_output == "a"
+    assert isinstance(pairs[0], Pair)
+    assert {item.item_id for item in pairs[0].items} == {"a", "b"}
 
 
-def test_get_job_pair(httpx_mock, client):
+def test_get_pair(httpx_mock, client):
     httpx_mock.add_response(
         url=f"https://api-v2.autoblocks.ai/apps/{APP_SLUG}/human-review/jobs/job-1/pairs/pair-1",
         method="GET",
         status_code=200,
-        json={"id": "pair-1", "leftOutput": "a", "rightOutput": "b", "winner": "a"},
+        json={
+            "id": "pair-1",
+            "chosenItemId": "item-b",
+            "items": [
+                {
+                    "itemId": "item-a",
+                    "outputFields": [
+                        {"name": "text", "value": "A1"},
+                        {"name": "text", "value": "A2"},
+                    ],
+                },
+                {
+                    "itemId": "item-b",
+                    "outputFields": [{"name": "text", "value": "B"}],
+                },
+            ],
+        },
     )
 
-    pair = client.human_review.get_job_pair(job_id="job-1", pair_id="pair-1")
-    assert isinstance(pair, JobPair)
+    pair = client.human_review.get_pair(job_id="job-1", pair_id="pair-1")
+    assert isinstance(pair, PairDetail)
     assert pair.id == "pair-1"
-    assert pair.winner == "a"
+    assert pair.chosen_item_id == "item-b"
+    texts = [join_output_text(item) for item in pair.items]
+    assert "A1\nA2" in texts
+
+
+def test_left_right_helper_sorts_by_item_id():
+    pair = Pair(
+        id="p1",
+        items=[
+            PairItem(item_id="b", output_fields=[OutputField(name="text", value="B")]),  # type: ignore[call-arg]
+            PairItem(item_id="a", output_fields=[OutputField(name="text", value="A")]),  # type: ignore[call-arg]
+        ],
+    )
+    left_text, right_text = get_left_right_text(pair)
+    assert left_text == "A"
+    assert right_text == "B"

@@ -250,22 +250,25 @@ class AutoblocksTestCaseResultWithEvaluations(AutoblocksTestCaseResult):
 
 
 @dataclass
-class AutoblocksTestCaseResultPairId:
-    id: str
+class HumanReviewOutputField:
+    name: str
+    value: str
+    idx: Optional[int] = None
+    content_type: Optional[str] = None
 
 
 @dataclass
-class AutoblocksTestCaseResultInPair:
-    id: str
-    input_fields: List[HumanReviewField]
-    output_fields: List[HumanReviewField]
-    field_comments: List[HumanReviewFieldComment]
-    input_comments: List[HumanReviewGeneralComment]
-    output_comments: List[HumanReviewGeneralComment]
+class HumanReviewPairItem:
+    item_id: str
+    output_fields: List[HumanReviewOutputField]
 
 
 @dataclass
-class AutoblocksTestCaseResultPair:
-    pair_id: str
-    chosen_id: Optional[str]
-    test_cases: List[AutoblocksTestCaseResultInPair]
+class HumanReviewPair:
+    id: str
+    items: List[HumanReviewPairItem]
+
+
+@dataclass
+class HumanReviewPairDetail(HumanReviewPair):
+    chosen_item_id: Optional[str]

@@ -6,9 +6,6 @@ from httpx import Timeout
 from autoblocks._impl.config.constants import API_ENDPOINT
 from autoblocks.api.client import AutoblocksAPIClient
 from autoblocks.api.models import AutoblocksTestCaseResultId
-from autoblocks.api.models import AutoblocksTestCaseResultInPair
-from autoblocks.api.models import AutoblocksTestCaseResultPair
-from autoblocks.api.models import AutoblocksTestCaseResultPairId
 from autoblocks.api.models import AutoblocksTestCaseResultWithEvaluations
 from autoblocks.api.models import AutoblocksTestRun
 from autoblocks.api.models import EvaluationAssertion
@@ -16,10 +13,8 @@ from autoblocks.api.models import EvaluationWithEvaluatorId
 from autoblocks.api.models import Event
 from autoblocks.api.models import EventFilter
 from autoblocks.api.models import EventFilterOperator
-from autoblocks.api.models import HumanReviewField
-from autoblocks.api.models import HumanReviewFieldComment
-from autoblocks.api.models import HumanReviewFieldContentType
-from autoblocks.api.models import HumanReviewGeneralComment
+from autoblocks.api.models import HumanReviewPair
+from autoblocks.api.models import HumanReviewPairDetail
 from autoblocks.api.models import RelativeTimeFilter
 from autoblocks.api.models import Trace
 from autoblocks.api.models import TraceFilter
@@ -530,8 +525,20 @@ def test_get_human_review_job_pairs(httpx_mock):
         status_code=200,
         json={
             "pairs": [
-                {"id": "pair-1"},
-                {"id": "pair-2"},
+                {
+                    "id": "pair-1",
+                    "items": [
+                        {"itemId": "b", "outputFields": [{"name": "text", "value": "B"}]},
+                        {"itemId": "a", "outputFields": [{"name": "text", "value": "A"}]},
+                    ],
+                },
+                {
+                    "id": "pair-2",
+                    "items": [
+                        {"itemId": "c", "outputFields": [{"name": "text", "value": "C"}]},
+                        {"itemId": "d", "outputFields": [{"name": "text", "value": "D"}]},
+                    ],
+                },
             ],
         },
         match_headers={"Authorization": "Bearer mock-api-key"},
@@ -541,8 +548,8 @@ def test_get_human_review_job_pairs(httpx_mock):
     pairs = client.get_human_review_job_pairs("job-123")
 
     assert len(pairs) == 2
-    assert all(isinstance(pair, AutoblocksTestCaseResultPairId) for pair in pairs)
-    assert [pair.id for pair in pairs] == ["pair-1", "pair-2"]
+    assert all(isinstance(pair, HumanReviewPair) for pair in pairs)
+    assert {item.item_id for item in pairs[0].items} == {"a", "b"}
 
 
 def test_get_human_review_job_pair(httpx_mock):
@@ -551,34 +558,18 @@ def test_get_human_review_job_pair(httpx_mock):
         method="GET",
         status_code=200,
         json={
-            "pair": {
-                "pairId": "pair-456",
-                "chosenId": "result-1",
-                "testCases": [
-                    {
-                        "id": "test-1",
-                        "inputFields": [
-                            {"id": "input-1", "name": "prompt", "value": "test input 1", "contentType": "text"}
-                        ],
-                        "outputFields": [
-                            {"id": "output-1", "name": "response", "value": "test output 1", "contentType": "text"}
-                        ],
-                        "fieldComments": [
-                            {
-                                "fieldId": "input-1",
-                                "startIdx": 0,
-                                "endIdx": 10,
-                                "value": "Comment on input",
-                                "inRelationToGradeName": "accuracy",
-                            }
-                        ],
-                        "inputComments": [{"value": "General input comment", "inRelationToGradeName": "accuracy"}],
-                        "outputComments": [
-                            {"value": "General output comment", "inRelationToAutomatedEvaluationId": "eval-1"}
-                        ],
-                    }
-                ],
-            }
+            "id": "pair-456",
+            "chosenItemId": "item-b",
+            "items": [
+                {
+                    "itemId": "item-a",
+                    "outputFields": [{"name": "text", "value": "A"}],
+                },
+                {
+                    "itemId": "item-b",
+                    "outputFields": [{"name": "text", "value": "B"}],
+                },
+            ],
         },
         match_headers={"Authorization": "Bearer mock-api-key"},
     )
@@ -586,53 +577,10 @@ def test_get_human_review_job_pair(httpx_mock):
     client = AutoblocksAPIClient("mock-api-key")
     pair = client.get_human_review_job_pair(job_id="job-123", pair_id="pair-456")
 
-    assert isinstance(pair, AutoblocksTestCaseResultPair)
-    assert pair == AutoblocksTestCaseResultPair(
-        pair_id="pair-456",
-        chosen_id="result-1",
-        test_cases=[
-            AutoblocksTestCaseResultInPair(
-                id="test-1",
-                input_fields=[
-                    HumanReviewField(
-                        id="input-1", name="prompt", value="test input 1", content_type=HumanReviewFieldContentType.TEXT
-                    )
-                ],
-                output_fields=[
-                    HumanReviewField(
-                        id="output-1",
-                        name="response",
-                        value="test output 1",
-                        content_type=HumanReviewFieldContentType.TEXT,
-                    )
-                ],
-                field_comments=[
-                    HumanReviewFieldComment(
-                        field_id="input-1",
-                        start_idx=0,
-                        end_idx=10,
-                        value="Comment on input",
-                        in_relation_to_grade_name="accuracy",
-                        in_relation_to_automated_evaluation_id=None,
-                    )
-                ],
-                input_comments=[
-                    HumanReviewGeneralComment(
-                        value="General input comment",
-                        in_relation_to_grade_name="accuracy",
-                        in_relation_to_automated_evaluation_id=None,
-                    )
-                ],
-                output_comments=[
-                    HumanReviewGeneralComment(
-                        value="General output comment",
-                        in_relation_to_grade_name=None,
-                        in_relation_to_automated_evaluation_id="eval-1",
-                    )
-                ],
-            )
-        ],
-    )
+    assert isinstance(pair, HumanReviewPairDetail)
+    assert pair.id == "pair-456"
+    assert pair.chosen_item_id == "item-b"
+    assert [f.value for f in pair.items[0].output_fields] == ["A"]
 
 
 def test_add_dataset_item(httpx_mock):

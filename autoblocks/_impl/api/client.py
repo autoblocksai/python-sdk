@@ -14,9 +14,6 @@ import httpx
 
 from autoblocks._impl.api.models import AbsoluteTimeFilter
 from autoblocks._impl.api.models import AutoblocksTestCaseResultId
-from autoblocks._impl.api.models import AutoblocksTestCaseResultInPair
-from autoblocks._impl.api.models import AutoblocksTestCaseResultPair
-from autoblocks._impl.api.models import AutoblocksTestCaseResultPairId
 from autoblocks._impl.api.models import AutoblocksTestCaseResultWithEvaluations
 from autoblocks._impl.api.models import AutoblocksTestRun
 from autoblocks._impl.api.models import Dataset
@@ -33,6 +30,10 @@ from autoblocks._impl.api.models import HumanReviewJob
 from autoblocks._impl.api.models import HumanReviewJobTestCase
 from autoblocks._impl.api.models import HumanReviewJobTestCaseResult
 from autoblocks._impl.api.models import HumanReviewJobWithTestCases
+from autoblocks._impl.api.models import HumanReviewOutputField
+from autoblocks._impl.api.models import HumanReviewPair
+from autoblocks._impl.api.models import HumanReviewPairDetail
+from autoblocks._impl.api.models import HumanReviewPairItem
 from autoblocks._impl.api.models import HumanReviewReviewer
 from autoblocks._impl.api.models import ManagedTestCase
 from autoblocks._impl.api.models import ManagedTestCaseResponse
@@ -370,63 +371,56 @@ class AutoblocksAPIClient:
             evaluations=evaluations,
         )
 
-    def get_human_review_job_pairs(self, job_id: str) -> List[AutoblocksTestCaseResultPairId]:
+    def get_human_review_job_pairs(self, job_id: str) -> List[HumanReviewPair]:
         req = self._client.get(f"/human-review/jobs/{encode_uri_component(job_id)}/pairs")
         req.raise_for_status()
         resp = req.json()
-        return [AutoblocksTestCaseResultPairId(id=pair["id"]) for pair in resp["pairs"]]
+        return [
+            HumanReviewPair(
+                id=pair["id"],
+                items=[
+                    HumanReviewPairItem(
+                        item_id=item["itemId"],
+                        output_fields=[
+                            HumanReviewOutputField(
+                                name=f["name"],
+                                value=f["value"],
+                                idx=f.get("idx"),
+                                content_type=f.get("contentType"),
+                            )
+                            for f in item.get("outputFields", [])
+                        ],
+                    )
+                    for item in pair.get("items", [])
+                ],
+            )
+            for pair in resp["pairs"]
+        ]
 
-    def get_human_review_job_pair(self, job_id: str, pair_id: str) -> AutoblocksTestCaseResultPair:
+    def get_human_review_job_pair(self, job_id: str, pair_id: str) -> HumanReviewPairDetail:
         req = self._client.get(
             f"/human-review/jobs/{encode_uri_component(job_id)}/pairs/{encode_uri_component(pair_id)}"
         )
         req.raise_for_status()
         resp = req.json()
-        pair = resp["pair"]
 
-        return AutoblocksTestCaseResultPair(
-            pair_id=pair["pairId"],
-            chosen_id=pair.get("chosenId"),
-            test_cases=[
-                AutoblocksTestCaseResultInPair(
-                    id=tc["id"],
-                    input_fields=[
-                        HumanReviewField(id=f["id"], name=f["name"], value=f["value"], content_type=f["contentType"])
-                        for f in tc["inputFields"]
-                    ],
+        return HumanReviewPairDetail(
+            id=resp["id"],
+            chosen_item_id=resp.get("chosenItemId"),
+            items=[
+                HumanReviewPairItem(
+                    item_id=item["itemId"],
                     output_fields=[
-                        HumanReviewField(id=f["id"], name=f["name"], value=f["value"], content_type=f["contentType"])
-                        for f in tc["outputFields"]
-                    ],
-                    field_comments=[
-                        HumanReviewFieldComment(
-                            field_id=c["fieldId"],
-                            start_idx=c.get("startIdx"),
-                            end_idx=c.get("endIdx"),
-                            value=c["value"],
-                            in_relation_to_grade_name=c.get("inRelationToGradeName"),
-                            in_relation_to_automated_evaluation_id=c.get("inRelationToAutomatedEvaluationId"),
+                        HumanReviewOutputField(
+                            name=f["name"],
+                            value=f["value"],
+                            idx=f.get("idx"),
+                            content_type=f.get("contentType"),
                         )
-                        for c in tc["fieldComments"]
-                    ],
-                    input_comments=[
-                        HumanReviewGeneralComment(
-                            value=c["value"],
-                            in_relation_to_grade_name=c.get("inRelationToGradeName"),
-                            in_relation_to_automated_evaluation_id=c.get("inRelationToAutomatedEvaluationId"),
-                        )
-                        for c in tc["inputComments"]
-                    ],
-                    output_comments=[
-                        HumanReviewGeneralComment(
-                            value=c["value"],
-                            in_relation_to_grade_name=c.get("inRelationToGradeName"),
-                            in_relation_to_automated_evaluation_id=c.get("inRelationToAutomatedEvaluationId"),
-                        )
-                        for c in tc["outputComments"]
+                        for f in item.get("outputFields", [])
                     ],
                 )
-                for tc in pair["testCases"]
+                for item in resp.get("items", [])
             ],
         )
 

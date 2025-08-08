@@ -1,9 +1,6 @@
 from autoblocks._impl.api.models import AbsoluteTimeFilter
 from autoblocks._impl.api.models import AutoblocksTestCaseResult
 from autoblocks._impl.api.models import AutoblocksTestCaseResultId
-from autoblocks._impl.api.models import AutoblocksTestCaseResultInPair
-from autoblocks._impl.api.models import AutoblocksTestCaseResultPair
-from autoblocks._impl.api.models import AutoblocksTestCaseResultPairId
 from autoblocks._impl.api.models import AutoblocksTestCaseResultWithEvaluations
 from autoblocks._impl.api.models import AutoblocksTestRun
 from autoblocks._impl.api.models import Dataset
@@ -24,6 +21,9 @@ from autoblocks._impl.api.models import HumanReviewJobTestCase
 from autoblocks._impl.api.models import HumanReviewJobTestCaseResult
 from autoblocks._impl.api.models import HumanReviewJobTestCaseStatus
 from autoblocks._impl.api.models import HumanReviewJobWithTestCases
+from autoblocks._impl.api.models import HumanReviewOutputField
+from autoblocks._impl.api.models import HumanReviewPair
+from autoblocks._impl.api.models import HumanReviewPairDetail
 from autoblocks._impl.api.models import HumanReviewReviewer
 from autoblocks._impl.api.models import RelativeTimeFilter
 from autoblocks._impl.api.models import SystemEventFilterKey
@@ -62,10 +62,10 @@ __all__ = [
     "AutoblocksTestRun",
     "AutoblocksTestCaseResultId",
     "AutoblocksTestCaseResult",
-    "AutoblocksTestCaseResultInPair",
-    "AutoblocksTestCaseResultPair",
     "EvaluationWithEvaluatorId",
     "EvaluationAssertion",
-    "AutoblocksTestCaseResultPairId",
     "AutoblocksTestCaseResultWithEvaluations",
+    "HumanReviewOutputField",
+    "HumanReviewPair",
+    "HumanReviewPairDetail",
 ]
