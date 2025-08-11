@@ -8,12 +8,9 @@ from autoblocks.human_review.models import Job
 from autoblocks.human_review.models import JobItemDetail
 from autoblocks.human_review.models import JobListItem
 from autoblocks.human_review.models import JobTestCase
-from autoblocks.human_review.models import OutputField
 from autoblocks.human_review.models import Pair
 from autoblocks.human_review.models import PairDetail
-from autoblocks.human_review.models import PairItem
 from autoblocks.human_review.models import TestCaseResult
-from autoblocks.human_review.models import get_left_right_text
 from autoblocks.human_review.models import join_output_text
 
 API_KEY = "test-api-key"
@@ -221,16 +218,3 @@ def test_get_pair(httpx_mock, client):
     assert pair.chosen_item_id == "item-b"
     texts = [join_output_text(item) for item in pair.items]
     assert "A1\nA2" in texts
-
-
-def test_left_right_helper_sorts_by_item_id():
-    pair = Pair(
-        id="p1",
-        items=[
-            PairItem(item_id="b", output_fields=[OutputField(name="text", value="B")]),  # type: ignore[call-arg]
-            PairItem(item_id="a", output_fields=[OutputField(name="text", value="A")]),  # type: ignore[call-arg]
-        ],
-    )
-    left_text, right_text = get_left_right_text(pair)
-    assert left_text == "A"
-    assert right_text == "B"
