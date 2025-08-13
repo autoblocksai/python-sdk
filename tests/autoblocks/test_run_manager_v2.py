@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass
 from typing import Any
 from typing import List
+from typing import Optional
 from unittest import mock
 
 import pytest
@@ -55,7 +56,7 @@ class MyEvaluator(BaseTestEvaluator):
     def id(self) -> str:
         return "evaluator-external-id"
 
-    def evaluate_test_case(self, *args: Any, **kwargs: Any) -> Evaluation | None:
+    def evaluate_test_case(self, *args: Any, **kwargs: Any) -> Optional[Evaluation]:
         return Evaluation(score=1, threshold=Threshold(gte=0.5), metadata={"reason": "ok"})
 
 
