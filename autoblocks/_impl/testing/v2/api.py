@@ -13,7 +13,6 @@ from autoblocks._impl.config.constants import API_ENDPOINT_V2
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import ThirdPartyEnvVar
 from autoblocks._impl.util import is_ci
-from autoblocks._impl.util import is_cli_running
 from autoblocks._impl.util import is_github_comment_disabled
 
 log = logging.getLogger(__name__)
@@ -84,40 +83,54 @@ async def send_create_human_review_job(
     )
 
 
-async def send_v2_slack_notification(run_id: str, app_slug: str) -> None:
+async def send_v2_slack_notification(
+    run_id: str,
+    app_slug: str,
+    build_id: str,
+    use_simple_format: bool = False,
+) -> None:
     """
-    V2 Slack notification wrapper that delegates to V1 logic for maximum code reuse.
-    Uses V2 app-based endpoint: /apps/{app_slug}/runs/{run_id}/slack-notification
+    Send Slack notification via V2 testing route:
+      POST /testing/runs/{run_id}/slack-notification?buildId=...&useSimpleFormat=true|false
+      Body: { webhookUrl, appSlug }
     """
     slack_webhook_url = AutoblocksEnvVar.SLACK_WEBHOOK_URL.get()
-    if is_cli_running() or not slack_webhook_url or not is_ci():
+    if not slack_webhook_url or not is_ci():
         return
 
     log.info(f"Sending slack notification for test run '{run_id}' in app '{app_slug}'.")
     try:
+        query = f"buildId={build_id}"
+        if use_simple_format:
+            query = f"{query}&useSimpleFormat=true"
+
         await post_to_api(
-            f"/apps/{app_slug}/runs/{run_id}/slack-notification",
-            json=dict(slackWebhookUrl=slack_webhook_url),
+            f"/testing/runs/{run_id}/slack-notification?{query}",
+            json=dict(webhookUrl=slack_webhook_url, appSlug=app_slug),
         )
     except Exception as e:
-        log.warning(f"Failed to send slack notification for test run '{run_id}' in app '{app_slug}'", exc_info=e)
+        log.warning(
+            f"Failed to send slack notification for test run '{run_id}' in app '{app_slug}'",
+            exc_info=e,
+        )
 
 
-async def send_v2_github_comment(app_slug: str, build_id: str) -> None:
+async def send_v2_github_comment(run_id: str, app_slug: str, build_id: str) -> None:
     """
-    V2 GitHub comment wrapper that delegates to V1 logic for maximum code reuse.
-    Uses V2 app-based endpoint: /apps/{app_slug}/builds/{build_id}/github-comment
+    Send GitHub PR comment via V2 testing route:
+      POST /testing/runs/{run_id}/github-comment?buildId=...
+      Body: { githubToken, appSlug }
     """
     github_token = ThirdPartyEnvVar.GITHUB_TOKEN.get()
-    if is_cli_running() or is_github_comment_disabled() or not github_token or not build_id or not is_ci():
+    if is_github_comment_disabled() or not github_token or not build_id or not is_ci():
         return
 
     log.info(f"Creating GitHub comment for build '{build_id}' in app '{app_slug}'.")
     try:
         async with global_state.github_comment_semaphore():
             await post_to_api(
-                f"/apps/{app_slug}/builds/{build_id}/github-comment",
-                json=dict(githubToken=github_token),
+                f"/testing/runs/{run_id}/github-comment?buildId={build_id}",
+                json=dict(githubToken=github_token, appSlug=app_slug),
             )
     except Exception as e:
         log.warning(
@@ -126,3 +139,41 @@ async def send_v2_github_comment(app_slug: str, build_id: str) -> None:
             "https://docs.autoblocks.ai/testing/ci#git-hub-comments-github-actions-permissions",
             exc_info=e,
         )
+
+
+async def send_create_result(
+    *,
+    app_slug: str,
+    run_id: str,
+    environment: str,
+    started_at: str,
+    duration_ms: float,
+    status: str,
+    input_raw: str,
+    output_raw: str,
+    input_map: dict[str, str],
+    output_map: dict[str, str],
+    evaluator_id_to_result: dict[str, bool],
+    evaluator_id_to_reason: dict[str, str],
+    evaluator_id_to_score: dict[str, float],
+    run_message: Optional[str] = None,
+) -> Response:
+    return await post_to_api(
+        "/testing/results",
+        json=dict(
+            appSlug=app_slug,
+            runId=run_id,
+            environment=environment,
+            runMessage=run_message,
+            startedAt=started_at,
+            durationMS=int(round(duration_ms)),
+            status=status,
+            inputRaw=input_raw,
+            outputRaw=output_raw,
+            input=input_map,
+            output=output_map,
+            evaluatorIdToResult=evaluator_id_to_result,
+            evaluatorIdToReason=evaluator_id_to_reason,
+            evaluatorIdToScore=evaluator_id_to_score,
+        ),
+    )

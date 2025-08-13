@@ -464,11 +464,11 @@ async def run_test_suite_for_grid_combo(
     )
 
     try:
-        notifications = [
-            send_v2_slack_notification(run_id=run_id, app_slug=app_slug),
-        ]
+        notifications = []
+
         if build_id:
-            notifications.append(send_v2_github_comment(app_slug=app_slug, build_id=build_id))
+            notifications.append(send_v2_slack_notification(run_id=run_id, app_slug=app_slug, build_id=build_id))
+            notifications.append(send_v2_github_comment(run_id=run_id, app_slug=app_slug, build_id=build_id))
 
         await all_settled(notifications)
         log.debug(f"V2 notification dispatch completed for test run '{run_id}' with app_slug '{app_slug}'")
