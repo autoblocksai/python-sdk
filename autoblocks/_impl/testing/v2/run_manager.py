@@ -16,11 +16,11 @@ from autoblocks._impl.testing.util import serialize_output
 from autoblocks._impl.testing.util import serialize_test_case
 from autoblocks._impl.testing.v2.api import send_create_human_review_job
 from autoblocks._impl.testing.v2.api import send_create_result
+from autoblocks._impl.testing.v2.run import evaluator_semaphore_registry
 from autoblocks._impl.testing.v2.run import run_evaluator
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import cuid_generator
 from autoblocks._impl.util import now_rfc3339
-from autoblocks._impl.util import serialize_to_string
 
 log = logging.getLogger(__name__)
 
@@ -59,10 +59,22 @@ class RunManager:
         *,
         test_case_ctx: TestCaseContext[BaseTestCase],
         output: Any,
-        evaluators: Sequence[BaseTestEvaluator] | None,
+        evaluators: Optional[Sequence[BaseTestEvaluator]],
     ) -> List[EvaluationWithId]:
         if not evaluators:
             return []
+
+        # Ensure evaluator semaphore registry is initialized for manual V2 runs
+        # using app_slug as the test suite identifier.
+        reg = evaluator_semaphore_registry.get(self.app_slug)
+        if reg is None:
+            evaluator_semaphore_registry[self.app_slug] = {
+                evaluator.id: asyncio.Semaphore(evaluator.max_concurrency) for evaluator in evaluators
+            }
+        else:
+            for evaluator in evaluators:
+                if evaluator.id not in reg:
+                    reg[evaluator.id] = asyncio.Semaphore(evaluator.max_concurrency)
         results = await all_settled(
             [
                 run_evaluator(
@@ -152,9 +164,9 @@ class RunManager:
         )
         eval_result_map, eval_reason_map, eval_score_map = self._evaluations_to_maps(evals)
 
-        # Serialize input/output
-        input_raw = serialize_to_string(serialize_test_case(test_case))
-        output_raw = serialize_to_string(serialize_output(output))
+        # Serialize input/output with standard json to match expected formatting in tests
+        input_raw = json.dumps(serialize_test_case(test_case))
+        output_raw = json.dumps(serialize_output(output))
 
         # Per-execution start time defaults to now if not provided
         exec_started_at = started_at or now_rfc3339()

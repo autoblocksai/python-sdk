@@ -123,7 +123,7 @@ async def run_evaluator_unsafe(
     This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
     """
-    evaluation: Optional[Evaluation] | Awaitable[Optional[Evaluation]] = None
+    evaluation: Union[Optional[Evaluation], Awaitable[Optional[Evaluation]]] = None
     async with evaluator_semaphore_registry[test_id][evaluator.id]:
         if hook_results is not None:
             kwargs = dict(hook_results=hook_results)
@@ -159,7 +159,7 @@ async def run_evaluator(
     reset_token = evaluator_run_context_var.set(
         EvaluatorRunContext(),
     )
-    evaluation: Evaluation | None = None
+    evaluation: Optional[Evaluation] = None
     try:
         evaluation = await run_evaluator_unsafe(
             test_id=test_id,
