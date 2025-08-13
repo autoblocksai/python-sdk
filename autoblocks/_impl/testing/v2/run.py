@@ -123,7 +123,7 @@ async def run_evaluator_unsafe(
     This is suffixed with _unsafe because it doesn't handle exceptions.
     Its caller will catch and handle all exceptions.
     """
-    evaluation: Optional[Evaluation] | Awaitable[Optional[Evaluation]] = None
+    evaluation: Union[Optional[Evaluation], Awaitable[Optional[Evaluation]]] = None
     async with evaluator_semaphore_registry[test_id][evaluator.id]:
         if hook_results is not None:
             kwargs = dict(hook_results=hook_results)
@@ -159,7 +159,7 @@ async def run_evaluator(
     reset_token = evaluator_run_context_var.set(
         EvaluatorRunContext(),
     )
-    evaluation: Evaluation | None = None
+    evaluation: Optional[Evaluation] = None
     try:
         evaluation = await run_evaluator_unsafe(
             test_id=test_id,
@@ -464,11 +464,11 @@ async def run_test_suite_for_grid_combo(
     )
 
     try:
-        notifications = [
-            send_v2_slack_notification(run_id=run_id, app_slug=app_slug),
-        ]
+        notifications = []
+
         if build_id:
-            notifications.append(send_v2_github_comment(app_slug=app_slug, build_id=build_id))
+            notifications.append(send_v2_slack_notification(run_id=run_id, app_slug=app_slug, build_id=build_id))
+            notifications.append(send_v2_github_comment(run_id=run_id, app_slug=app_slug, build_id=build_id))
 
         await all_settled(notifications)
         log.debug(f"V2 notification dispatch completed for test run '{run_id}' with app_slug '{app_slug}'")
