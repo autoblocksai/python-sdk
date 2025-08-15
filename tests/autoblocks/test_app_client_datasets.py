@@ -1,5 +1,8 @@
 """Tests for AutoblocksAppClient dataset deserialization with defaultValue fields."""
 
+import pytest
+
+from autoblocks._impl.api.exceptions import ValidationError
 from autoblocks._impl.config.constants import API_ENDPOINT_V2
 from autoblocks._impl.datasets.models.schema import SchemaPropertyType
 from autoblocks._impl.datasets.models.schema import SelectProperty
@@ -198,3 +201,49 @@ def test_dataset_schema_property_factory_function():
     assert string_prop.type == SchemaPropertyType.STRING
     assert string_prop.required is True
     assert string_prop.default_value is None
+
+
+def test_update_dataset_duplicate_property_names(httpx_mock):
+    """Test that updating dataset with duplicate property names raises ValidationError."""
+    client = AutoblocksAppClient(app_slug="test-app", api_key="mock-api-key")
+
+    schema = [
+        {"id": "prop-1", "name": "duplicate", "type": "String", "required": False},
+        {"id": "prop-2", "name": "duplicate", "type": "Number", "required": False},
+    ]
+
+    with pytest.raises(ValidationError, match="Schema property names must be unique"):
+        client.datasets.update_dataset(external_id="test-dataset", schema=schema)
+
+
+def test_update_dataset_success(httpx_mock):
+    """Test successful dataset update."""
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT_V2}/apps/test-app/datasets/test-dataset",
+        method="PUT",
+        status_code=200,
+        json={
+            "id": "test-dataset",
+            "externalId": "test-dataset",
+            "name": "Updated Dataset",
+            "createdAt": "2023-01-01T00:00:00Z",
+            "latestRevisionId": "rev-2",
+            "schemaVersion": 2,
+            "schema": [{"id": "prop-1", "name": "new_property", "type": "String", "required": False}],
+        },
+        match_headers={"Authorization": "Bearer mock-api-key"},
+    )
+
+    client = AutoblocksAppClient(app_slug="test-app", api_key="mock-api-key")
+
+    schema = [{"id": "prop-1", "name": "new_property", "type": "String", "required": False}]
+
+    result = client.datasets.update_dataset(external_id="test-dataset", name="Updated Dataset", schema=schema)
+
+    assert result.id == "test-dataset"
+    assert result.external_id == "test-dataset"
+    assert result.name == "Updated Dataset"
+    assert result.schema_version == 2
+    assert result.schema_properties is not None
+    assert len(result.schema_properties) == 1
+    assert result.schema_properties[0].name == "new_property"

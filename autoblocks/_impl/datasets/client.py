@@ -18,6 +18,7 @@ from autoblocks._impl.datasets.models.dataset import DatasetItemsSuccessResponse
 from autoblocks._impl.datasets.models.dataset import DatasetSchema
 from autoblocks._impl.datasets.models.dataset import SuccessResponse
 from autoblocks._impl.datasets.models.schema import create_schema_property
+from autoblocks._impl.datasets.util import validate_unique_property_names
 from autoblocks._impl.util import cuid_generator
 
 log = logging.getLogger(__name__)
@@ -59,6 +60,9 @@ class DatasetsClient(BaseAppResourceClient):
         Raises:
             ValidationError: If required parameters are missing or invalid
         """
+        # Validate unique property names
+        validate_unique_property_names(schema)
+
         # Construct the basic dataset data
         data: Dict[str, Any] = {"name": name}
 
@@ -233,6 +237,58 @@ class DatasetsClient(BaseAppResourceClient):
         path = self._build_app_path("datasets", dataset_id, "schema", str(schema_version), "items", **query_params)
         response = self._make_request("GET", path)
         return deserialize_model_list(DatasetItem, response)
+
+    def update_dataset(
+        self,
+        *,
+        external_id: str,
+        name: Optional[str] = None,
+        schema: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dataset:
+        """
+        Update a dataset.
+
+        Args:
+            external_id: Dataset ID (required)
+            name: New dataset name (optional)
+            schema: New schema as list of property dictionaries (optional)
+
+        Returns:
+            Updated dataset
+
+        Raises:
+            ValidationError: If dataset ID is not provided or schema has duplicate property names
+        """
+        if not external_id:
+            raise ValidationError("External ID is required")
+
+        data: Dict[str, Any] = {}
+
+        if name is not None:
+            data["name"] = name
+
+        if schema is not None:
+            # Validate unique property names
+            validate_unique_property_names(schema)
+
+            # Process schema items
+            processed_schema = []
+            for i, prop_dict in enumerate(schema):
+                prop_dict_copy = dict(prop_dict)
+                if "id" not in prop_dict_copy:
+                    prop_dict_copy["id"] = cuid_generator()
+
+                try:
+                    schema_prop = create_schema_property(prop_dict_copy)
+                    processed_schema.append(serialize_model(schema_prop))
+                except Exception as e:
+                    raise ValidationError(f"Invalid schema property at index {i}: {str(e)}")
+
+            data["schema"] = processed_schema
+
+        path = self._build_app_path("datasets", external_id)
+        response = self._make_request("PUT", path, data)
+        return deserialize_model(Dataset, response)
 
     def update_item(
         self,
