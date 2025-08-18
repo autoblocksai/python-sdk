@@ -23,8 +23,16 @@ def validate_unique_property_names(schema: List[Dict[str, Any]]) -> None:
         schema: List of property dictionaries
 
     Raises:
-        ValidationError: If duplicate property names are found
+        ValidationError: If duplicate property names are found or if any property has no name
     """
-    property_names = [prop.get("name") for prop in schema]
+    # Extract property names and filter out None values
+    property_names = []
+    for i, prop in enumerate(schema):
+        name = prop.get("name")
+        if name is None:
+            raise ValidationError(f"Property at index {i} has no name")
+        property_names.append(name)
+
+    # Check for duplicates
     if len(property_names) != len(set(property_names)):
         raise ValidationError("Schema property names must be unique")

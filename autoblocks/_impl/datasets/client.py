@@ -30,6 +30,35 @@ class DatasetsClient(BaseAppResourceClient):
     def __init__(self, app_slug: str, api_key: str, timeout: timedelta = timedelta(seconds=60)) -> None:
         super().__init__(app_slug=app_slug, api_key=api_key, timeout=timeout)
 
+    def _process_schema(self, schema: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Process schema items and validate them.
+
+        Args:
+            schema: List of property dictionaries
+
+        Returns:
+            List of processed schema properties
+
+        Raises:
+            ValidationError: If any schema property is invalid
+        """
+        processed_schema = []
+
+        for i, prop_dict in enumerate(schema):
+            prop_dict_copy = dict(prop_dict)
+
+            if "id" not in prop_dict_copy:
+                prop_dict_copy["id"] = cuid_generator()
+
+            try:
+                schema_prop = create_schema_property(prop_dict_copy)
+                processed_schema.append(serialize_model(schema_prop))
+            except Exception as e:
+                raise ValidationError(f"Invalid schema property at index {i}: {str(e)}")
+
+        return processed_schema
+
     def list(self) -> List[Dataset]:
         """
         List all datasets in the app.
@@ -67,23 +96,7 @@ class DatasetsClient(BaseAppResourceClient):
         data: Dict[str, Any] = {"name": name}
 
         # Process schema items
-        processed_schema = []
-
-        for i, prop_dict in enumerate(schema):
-            prop_dict_copy = dict(prop_dict)
-
-            if "id" not in prop_dict_copy:
-                prop_dict_copy["id"] = cuid_generator()
-
-            try:
-                # 3. If valid, add to processed schema
-                schema_prop = create_schema_property(prop_dict_copy)
-                processed_schema.append(serialize_model(schema_prop))
-            except Exception as e:
-                raise ValidationError(f"Invalid schema property at index {i}: {str(e)}")
-
-        # Use the field alias to ensure it's sent as 'schema' to the API
-        data["schema"] = processed_schema
+        data["schema"] = self._process_schema(schema)
 
         # Make the API call
         path = self._build_app_path("datasets")
@@ -272,19 +285,7 @@ class DatasetsClient(BaseAppResourceClient):
             validate_unique_property_names(schema)
 
             # Process schema items
-            processed_schema = []
-            for i, prop_dict in enumerate(schema):
-                prop_dict_copy = dict(prop_dict)
-                if "id" not in prop_dict_copy:
-                    prop_dict_copy["id"] = cuid_generator()
-
-                try:
-                    schema_prop = create_schema_property(prop_dict_copy)
-                    processed_schema.append(serialize_model(schema_prop))
-                except Exception as e:
-                    raise ValidationError(f"Invalid schema property at index {i}: {str(e)}")
-
-            data["schema"] = processed_schema
+            data["schema"] = self._process_schema(schema)
 
         path = self._build_app_path("datasets", external_id)
         response = self._make_request("PUT", path, data)
