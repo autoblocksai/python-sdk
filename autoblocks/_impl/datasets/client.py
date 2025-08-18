@@ -7,6 +7,12 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
+import httpx
+from tenacity import retry
+from tenacity import retry_if_exception_type
+from tenacity import stop_after_attempt
+from tenacity import wait_random_exponential
+
 from autoblocks._impl.api.base_app_resource_client import BaseAppResourceClient
 from autoblocks._impl.api.exceptions import ValidationError
 from autoblocks._impl.api.utils.serialization import deserialize_model
@@ -127,6 +133,11 @@ class DatasetsClient(BaseAppResourceClient):
         response = self._make_request("DELETE", path)
         return deserialize_model(SuccessResponse, response)
 
+    @retry(
+        retry=retry_if_exception_type((httpx.ReadTimeout, httpx.ConnectTimeout, httpx.WriteTimeout)),
+        stop=stop_after_attempt(3),
+        wait=wait_random_exponential(multiplier=1, min=4, max=10),
+    )
     def get_items(
         self,
         *,
@@ -157,6 +168,11 @@ class DatasetsClient(BaseAppResourceClient):
         response = self._make_request("GET", path)
         return deserialize_model_list(DatasetItem, response)
 
+    @retry(
+        retry=retry_if_exception_type((httpx.ReadTimeout, httpx.ConnectTimeout, httpx.WriteTimeout)),
+        stop=stop_after_attempt(3),
+        wait=wait_random_exponential(multiplier=1, min=4, max=10),
+    )
     def create_items(
         self,
         *,
