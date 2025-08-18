@@ -7,6 +7,12 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
+import httpx
+from tenacity import retry
+from tenacity import retry_if_exception_type
+from tenacity import stop_after_attempt
+from tenacity import wait_random_exponential
+
 from autoblocks._impl.api.base_app_resource_client import BaseAppResourceClient
 from autoblocks._impl.api.exceptions import ValidationError
 from autoblocks._impl.api.utils.serialization import deserialize_model
@@ -18,6 +24,7 @@ from autoblocks._impl.datasets.models.dataset import DatasetItemsSuccessResponse
 from autoblocks._impl.datasets.models.dataset import DatasetSchema
 from autoblocks._impl.datasets.models.dataset import SuccessResponse
 from autoblocks._impl.datasets.models.schema import create_schema_property
+from autoblocks._impl.datasets.util import validate_unique_property_names
 from autoblocks._impl.util import cuid_generator
 
 log = logging.getLogger(__name__)
@@ -28,6 +35,35 @@ class DatasetsClient(BaseAppResourceClient):
 
     def __init__(self, app_slug: str, api_key: str, timeout: timedelta = timedelta(seconds=60)) -> None:
         super().__init__(app_slug=app_slug, api_key=api_key, timeout=timeout)
+
+    def _process_schema(self, schema: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Process schema items and validate them.
+
+        Args:
+            schema: List of property dictionaries
+
+        Returns:
+            List of processed schema properties
+
+        Raises:
+            ValidationError: If any schema property is invalid
+        """
+        processed_schema = []
+
+        for i, prop_dict in enumerate(schema):
+            prop_dict_copy = dict(prop_dict)
+
+            if "id" not in prop_dict_copy:
+                prop_dict_copy["id"] = cuid_generator()
+
+            try:
+                schema_prop = create_schema_property(prop_dict_copy)
+                processed_schema.append(serialize_model(schema_prop))
+            except Exception as e:
+                raise ValidationError(f"Invalid schema property at index {i}: {str(e)}")
+
+        return processed_schema
 
     def list(self) -> List[Dataset]:
         """
@@ -59,27 +95,14 @@ class DatasetsClient(BaseAppResourceClient):
         Raises:
             ValidationError: If required parameters are missing or invalid
         """
+        # Validate unique property names
+        validate_unique_property_names(schema)
+
         # Construct the basic dataset data
         data: Dict[str, Any] = {"name": name}
 
         # Process schema items
-        processed_schema = []
-
-        for i, prop_dict in enumerate(schema):
-            prop_dict_copy = dict(prop_dict)
-
-            if "id" not in prop_dict_copy:
-                prop_dict_copy["id"] = cuid_generator()
-
-            try:
-                # 3. If valid, add to processed schema
-                schema_prop = create_schema_property(prop_dict_copy)
-                processed_schema.append(serialize_model(schema_prop))
-            except Exception as e:
-                raise ValidationError(f"Invalid schema property at index {i}: {str(e)}")
-
-        # Use the field alias to ensure it's sent as 'schema' to the API
-        data["schema"] = processed_schema
+        data["schema"] = self._process_schema(schema)
 
         # Make the API call
         path = self._build_app_path("datasets")
@@ -110,6 +133,11 @@ class DatasetsClient(BaseAppResourceClient):
         response = self._make_request("DELETE", path)
         return deserialize_model(SuccessResponse, response)
 
+    @retry(
+        retry=retry_if_exception_type((httpx.ReadTimeout, httpx.ConnectTimeout, httpx.WriteTimeout)),
+        stop=stop_after_attempt(3),
+        wait=wait_random_exponential(multiplier=1, min=4, max=10),
+    )
     def get_items(
         self,
         *,
@@ -140,6 +168,11 @@ class DatasetsClient(BaseAppResourceClient):
         response = self._make_request("GET", path)
         return deserialize_model_list(DatasetItem, response)
 
+    @retry(
+        retry=retry_if_exception_type((httpx.ReadTimeout, httpx.ConnectTimeout, httpx.WriteTimeout)),
+        stop=stop_after_attempt(3),
+        wait=wait_random_exponential(multiplier=1, min=4, max=10),
+    )
     def create_items(
         self,
         *,
@@ -233,6 +266,46 @@ class DatasetsClient(BaseAppResourceClient):
         path = self._build_app_path("datasets", dataset_id, "schema", str(schema_version), "items", **query_params)
         response = self._make_request("GET", path)
         return deserialize_model_list(DatasetItem, response)
+
+    def update_dataset(
+        self,
+        *,
+        external_id: str,
+        name: Optional[str] = None,
+        schema: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dataset:
+        """
+        Update a dataset.
+
+        Args:
+            external_id: Dataset ID (required)
+            name: New dataset name (optional)
+            schema: New schema as list of property dictionaries (optional)
+
+        Returns:
+            Updated dataset
+
+        Raises:
+            ValidationError: If dataset ID is not provided or schema has duplicate property names
+        """
+        if not external_id:
+            raise ValidationError("External ID is required")
+
+        data: Dict[str, Any] = {}
+
+        if name is not None:
+            data["name"] = name
+
+        if schema is not None:
+            # Validate unique property names
+            validate_unique_property_names(schema)
+
+            # Process schema items
+            data["schema"] = self._process_schema(schema)
+
+        path = self._build_app_path("datasets", external_id)
+        response = self._make_request("PUT", path, data)
+        return deserialize_model(Dataset, response)
 
     def update_item(
         self,
