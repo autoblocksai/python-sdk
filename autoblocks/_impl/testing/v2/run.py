@@ -24,6 +24,7 @@ from tenacity import stop_after_attempt
 from tenacity import wait_random_exponential
 
 from autoblocks._impl import global_state
+from autoblocks._impl.config.constants import PUBLIC_WEBAPP_UI_URL
 from autoblocks._impl.context_vars import EvaluatorRunContext
 from autoblocks._impl.context_vars import TestCaseRunContext
 from autoblocks._impl.context_vars import TestRunContext
@@ -51,6 +52,7 @@ from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import cuid_generator
+from autoblocks._impl.util import is_ci
 from autoblocks._impl.util import now_rfc3339
 from autoblocks._impl.util import parse_autoblocks_overrides
 from autoblocks._impl.util import serialize_to_string
@@ -436,6 +438,15 @@ async def run_test_suite_for_grid_combo(
         log.error(f"Error running test suite '{test_id}'", exc_info=err)
     finally:
         log.info(f"Finished running test suite '{test_id}'")
+
+        # Log URL to test results in GitHub CI
+        if is_ci():
+            log.info(
+                f"View test results at: {PUBLIC_WEBAPP_UI_URL}/apps/{app_slug}/runs/inspect-run?baselineRunId={run_id}"
+            )
+            print(
+                f"View test results at: {PUBLIC_WEBAPP_UI_URL}/apps/{app_slug}/runs/inspect-run?baselineRunId={run_id}"
+            )
         if grid_search_reset_token:
             grid_search_context_var.reset(grid_search_reset_token)
         if test_run_reset_token:
