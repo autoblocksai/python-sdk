@@ -11,6 +11,7 @@ from typing import Optional
 from typing import Sequence
 from typing import Union
 from typing import overload
+from urllib.parse import quote
 
 import httpx
 from opentelemetry import trace
@@ -420,7 +421,9 @@ async def run_test_suite_for_grid_combo(
 
     # Log URL to test results in GitHub CI (before tests start)
     if is_ci():
-        print(f"View test results at: {PUBLIC_WEBAPP_UI_URL}/apps/{app_id}/runs/inspect-run?baselineRunId={run_id}")
+        timestamp = quote(start_timestamp, safe="")
+        url = f"{PUBLIC_WEBAPP_UI_URL}/apps/{app_id}/runs/inspect-run?baselineRunId={run_id}&startTimestamp={timestamp}"
+        print(f"View test results at: {url}")
 
     # Determine message with priority: unified overrides > legacy env var
     overrides = parse_autoblocks_overrides()
@@ -454,6 +457,7 @@ async def run_test_suite_for_grid_combo(
         log.error(f"Error running test suite '{test_id}'", exc_info=err)
     finally:
         log.info(f"Finished running test suite '{test_id}'")
+        print(f"Finished running test suite '{test_id}'")
 
         if grid_search_reset_token:
             grid_search_context_var.reset(grid_search_reset_token)
