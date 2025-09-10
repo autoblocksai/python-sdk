@@ -90,6 +90,7 @@ class AutoblocksEnvVar(StrEnum):
     SLACK_WEBHOOK_URL = "AUTOBLOCKS_SLACK_WEBHOOK_URL"
     TEST_RUN_MESSAGE = "AUTOBLOCKS_TEST_RUN_MESSAGE"
     DISABLE_GITHUB_COMMENT = "AUTOBLOCKS_DISABLE_GITHUB_COMMENT"
+    PUBLIC_WEBAPP_UI_URL = "AUTOBLOCKS_PUBLIC_WEBAPP_UI_URL"
 
     def get(self) -> Optional[str]:
         return os.environ.get(self.value)

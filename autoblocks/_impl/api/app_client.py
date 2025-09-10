@@ -3,6 +3,7 @@
 from datetime import timedelta
 from typing import Optional
 
+from autoblocks._impl.app.client import AppClient
 from autoblocks._impl.datasets.client import DatasetsClient
 from autoblocks._impl.human_review.client import HumanReviewClient
 from autoblocks._impl.scenarios.client import ScenariosClient
@@ -46,6 +47,7 @@ class AutoblocksAppClient:
         self._datasets = DatasetsClient(app_slug=self.app_slug, api_key=self.api_key, timeout=timeout)
         self._human_review = HumanReviewClient(app_slug=self.app_slug, api_key=self.api_key, timeout=timeout)
         self._scenarios = ScenariosClient(app_slug=self.app_slug, api_key=self.api_key, timeout=timeout)
+        self._app = AppClient(app_slug=self.app_slug, api_key=self.api_key, timeout=timeout)
 
     @property
     def datasets(self) -> DatasetsClient:
@@ -70,3 +72,10 @@ class AutoblocksAppClient:
         Access to the scenarios client.
         """
         return self._scenarios
+
+    @property
+    def app(self) -> AppClient:
+        """
+        Access to the app client.
+        """
+        return self._app
