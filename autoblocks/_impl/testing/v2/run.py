@@ -24,6 +24,7 @@ from tenacity import stop_after_attempt
 from tenacity import wait_random_exponential
 
 from autoblocks._impl import global_state
+from autoblocks._impl.api.app_client import AutoblocksAppClient
 from autoblocks._impl.config.constants import PUBLIC_WEBAPP_UI_URL
 from autoblocks._impl.context_vars import EvaluatorRunContext
 from autoblocks._impl.context_vars import TestCaseRunContext
@@ -405,7 +406,22 @@ async def run_test_suite_for_grid_combo(
     run_id = cuid_generator()
     start_timestamp = now_rfc3339()
 
+    # Get app details to retrieve app_id
+    app_id = None
+
+    try:
+        app_client = AutoblocksAppClient(app_slug=app_slug)
+        app = app_client.app.get_app()
+        app_id = app.id
+    except Exception as err:
+        log.warning(f"Failed to retrieve app details: {err}")
+
     log.info(f"Running test suite '{test_id}' with {len(test_cases)} test cases")
+
+    # Log URL to test results in GitHub CI (before tests start)
+    if is_ci():
+        print(f"View test results at: {PUBLIC_WEBAPP_UI_URL}/apps/{app_id}/runs/inspect-run?baselineRunId={run_id}")
+
     # Determine message with priority: unified overrides > legacy env var
     overrides = parse_autoblocks_overrides()
     run_message = overrides.test_run_message or AutoblocksEnvVar.TEST_RUN_MESSAGE.get()
@@ -439,14 +455,6 @@ async def run_test_suite_for_grid_combo(
     finally:
         log.info(f"Finished running test suite '{test_id}'")
 
-        # Log URL to test results in GitHub CI
-        if is_ci():
-            log.info(
-                f"View test results at: {PUBLIC_WEBAPP_UI_URL}/apps/{app_slug}/runs/inspect-run?baselineRunId={run_id}"
-            )
-            print(
-                f"View test results at: {PUBLIC_WEBAPP_UI_URL}/apps/{app_slug}/runs/inspect-run?baselineRunId={run_id}"
-            )
         if grid_search_reset_token:
             grid_search_context_var.reset(grid_search_reset_token)
         if test_run_reset_token:
