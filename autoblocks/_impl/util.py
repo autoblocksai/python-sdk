@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 import traceback
 import urllib.parse
 from concurrent.futures import Future
@@ -63,6 +64,29 @@ def parse_autoblocks_overrides() -> AutoblocksOverrides:
 AnyTask = Union[asyncio.Task[Any], Future[Any]]
 
 cuid_generator = cuid_wrapper()
+
+# CUID2 validation constants
+CUID2_LENGTH = 24
+CUID2_CHARSET = "a-z0-9"
+_CUID2_PATTERN = re.compile(f"^[{CUID2_CHARSET}]{{{CUID2_LENGTH}}}$")
+
+
+def is_valid_cuid2(cuid: str) -> bool:
+    """
+    Validate if a string is a valid CUID2.
+
+    CUID2s are 24-character strings containing only lowercase letters and numbers.
+    This function uses a pre-compiled regex pattern for optimal performance.
+
+    Args:
+        cuid: The string to validate
+
+    Returns:
+        True if the string is a valid CUID2, False otherwise
+    """
+    if not isinstance(cuid, str):
+        return False
+    return bool(_CUID2_PATTERN.match(cuid))
 
 
 class StrEnum(str, Enum):

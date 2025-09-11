@@ -51,9 +51,11 @@ from autoblocks._impl.testing.v2.api import send_create_human_review_job
 from autoblocks._impl.testing.v2.api import send_v2_github_comment
 from autoblocks._impl.testing.v2.api import send_v2_slack_notification
 from autoblocks._impl.tracer.util import SpanAttribute
+from autoblocks._impl.util import CUID2_LENGTH
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import cuid_generator
+from autoblocks._impl.util import is_valid_cuid2
 from autoblocks._impl.util import now_rfc3339
 from autoblocks._impl.util import parse_autoblocks_overrides
 from autoblocks._impl.util import serialize_to_string
@@ -206,6 +208,7 @@ async def run_test_case_unsafe(
     otel_ctx = set_baggage(SpanAttribute.EXECUTION_ID, execution_id, context=otel_ctx)
     otel_ctx = set_baggage(SpanAttribute.ENVIRONMENT, "test", context=otel_ctx)
     otel_ctx = set_baggage(SpanAttribute.APP_SLUG, app_slug, context=otel_ctx)
+    otel_ctx = set_baggage(SpanAttribute.TEST_ID, test_id, context=otel_ctx)
     tracer = trace.get_tracer("AUTOBLOCKS_TRACER")
     token = attach(otel_ctx)
     async with test_case_semaphore_registry[test_id]:
@@ -213,6 +216,7 @@ async def run_test_case_unsafe(
             # Set span attributes before function execution
             span.set_attribute(SpanAttribute.IS_ROOT, True)
             span.set_attribute(SpanAttribute.EXECUTION_ID, execution_id)
+            span.set_attribute(SpanAttribute.TEST_ID, test_id)
             span.set_attribute(SpanAttribute.ENVIRONMENT, "test")
             span.set_attribute(SpanAttribute.APP_SLUG, app_slug)
             span.set_attribute(SpanAttribute.INPUT, serialize_to_string(serialize_test_case(test_case_ctx.test_case)))
@@ -395,6 +399,7 @@ def filter_test_cases_for_alignment_mode(
 async def run_test_suite_for_grid_combo(
     test_id: str,
     app_slug: str,
+    run_id: str,
     test_cases: Sequence[TestCaseType],
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
@@ -403,7 +408,6 @@ async def run_test_suite_for_grid_combo(
     human_review_job: Optional[CreateHumanReviewJob],
     retry_count: int = 0,
 ) -> None:
-    run_id = cuid_generator()
     start_timestamp = now_rfc3339()
 
     # Get app details to retrieve app_id
@@ -421,6 +425,7 @@ async def run_test_suite_for_grid_combo(
     # Log URL to test results in GitHub CI (before tests start)
     timestamp = quote(start_timestamp, safe="")
     url = f"{PUBLIC_WEBAPP_UI_URL}/apps/{app_id}/runs/inspect-run?baselineRunId={run_id}&startTimestamp={timestamp}"
+
     print(f"View test results at: {url}")
 
     # Determine message with priority: unified overrides > legacy env var
@@ -503,6 +508,7 @@ async def run_test_suite_for_grid_combo(
 async def async_run_test_suite(
     test_id: str,
     app_slug: str,
+    run_id: str,
     test_cases: Sequence[TestCaseType],
     evaluators: Sequence[BaseTestEvaluator],
     fn: Union[Callable[[TestCaseType], Any], Callable[[TestCaseType], Awaitable[Any]]],
@@ -565,6 +571,7 @@ async def async_run_test_suite(
                 grid_search_params_combo=None,
                 human_review_job=human_review_job,
                 retry_count=retry_count,
+                run_id=run_id,
             )
         except Exception as err:
             log.error(f"Error running test suite '{test_id}'", exc_info=err)
@@ -583,6 +590,7 @@ async def async_run_test_suite(
                     grid_search_params_combo=grid_params_combo,
                     human_review_job=human_review_job,
                     retry_count=retry_count,
+                    run_id=run_id,
                 )
                 for grid_params_combo in yield_grid_search_param_combos(grid_search_params)
             ],
@@ -604,6 +612,7 @@ def run_test_suite(
     grid_search_params: Optional[GridSearchParams] = None,
     human_review_job: Optional[CreateHumanReviewJob] = None,
     retry_count: int = 0,
+    run_id: Optional[str] = None,
 ) -> None: ...
 
 
@@ -620,6 +629,7 @@ def run_test_suite(
     grid_search_params: Optional[GridSearchParams] = None,
     human_review_job: Optional[CreateHumanReviewJob] = None,
     retry_count: int = 0,
+    run_id: Optional[str] = None,
 ) -> None: ...
 
 
@@ -635,6 +645,7 @@ def run_test_suite(
     grid_search_params: Optional[GridSearchParams] = None,
     human_review_job: Optional[CreateHumanReviewJob] = None,
     retry_count: int = 0,
+    run_id: Optional[str] = None,
 ) -> None:
     if not global_state.is_auto_tracer_initialized():
         log.error(
@@ -642,6 +653,18 @@ def run_test_suite(
             "Please call init_auto_tracer() first."
         )
         return
+
+    # Validate run_id if provided
+    if run_id is not None and not is_valid_cuid2(run_id):
+        log.debug(
+            f"CUID2 validation failed for run_id: '{run_id}' " f"(length: {len(run_id)}, expected: {CUID2_LENGTH})"
+        )
+        raise ValueError(
+            f"Invalid run_id: '{run_id}'. Must be a valid CUID2 "
+            f"({CUID2_LENGTH} lowercase alphanumeric characters). "
+            f"Got {len(run_id)} characters."
+        )
+
     global_state.init()
 
     asyncio.run_coroutine_threadsafe(
@@ -656,6 +679,7 @@ def run_test_suite(
             grid_search_params=grid_search_params,
             human_review_job=human_review_job,
             retry_count=retry_count,
+            run_id=run_id or cuid_generator(),
         ),
         global_state.event_loop(),
     ).result()
