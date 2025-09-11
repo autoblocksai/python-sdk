@@ -659,11 +659,7 @@ def run_test_suite(
         log.debug(
             f"CUID2 validation failed for run_id: '{run_id}' " f"(length: {len(run_id)}, expected: {CUID2_LENGTH})"
         )
-        raise ValueError(
-            f"Invalid run_id: '{run_id}'. Must be a valid CUID2 "
-            f"({CUID2_LENGTH} lowercase alphanumeric characters). "
-            f"Got {len(run_id)} characters."
-        )
+        raise ValueError(f"Invalid run_id: '{run_id}'. Must be a valid CUID2.")
 
     global_state.init()
 

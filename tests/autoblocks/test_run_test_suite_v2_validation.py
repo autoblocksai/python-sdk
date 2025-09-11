@@ -94,7 +94,7 @@ def test_v2_run_id_validation_invalid_cuid2_too_short(test_function):
     """Test that run_test_suite raises ValueError for CUID2 that's too short."""
     invalid_run_id = INVALID_CUID2_SAMPLES["too_short"]
 
-    with pytest.raises(ValueError, match=f"Invalid run_id: '{invalid_run_id}'. Must be a valid CUID2"):
+    with pytest.raises(ValueError, match=f"Invalid run_id: '{invalid_run_id}'. Must be a valid CUID2."):
         run_test_suite(
             id="my-test-id",
             app_slug="test-app",
@@ -196,7 +196,7 @@ def test_v2_run_id_validation_empty_string(test_function):
     """Test that run_test_suite raises ValueError for empty string run_id."""
     invalid_run_id = INVALID_CUID2_SAMPLES["empty"]
 
-    with pytest.raises(ValueError, match=f"Invalid run_id: '{invalid_run_id}'. Must be a valid CUID2"):
+    with pytest.raises(ValueError, match=f"Invalid run_id: '{invalid_run_id}'. Must be a valid CUID2."):
         run_test_suite(
             id="my-test-id",
             app_slug="test-app",
@@ -214,7 +214,7 @@ def test_v2_run_id_validation_parametrized_invalid_cases(test_function, invalid_
     """Parametrized test for all invalid CUID2 cases."""
     invalid_run_id = INVALID_CUID2_SAMPLES[invalid_case]
 
-    with pytest.raises(ValueError, match=f"Invalid run_id: '{re.escape(invalid_run_id)}'. Must be a valid CUID2"):
+    with pytest.raises(ValueError, match=f"Invalid run_id: '{re.escape(invalid_run_id)}'. Must be a valid CUID2."):
         run_test_suite(
             id="my-test-id",
             app_slug="test-app",
