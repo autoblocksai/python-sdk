@@ -54,7 +54,6 @@ from autoblocks._impl.tracer.util import SpanAttribute
 from autoblocks._impl.util import AutoblocksEnvVar
 from autoblocks._impl.util import all_settled
 from autoblocks._impl.util import cuid_generator
-from autoblocks._impl.util import is_ci
 from autoblocks._impl.util import now_rfc3339
 from autoblocks._impl.util import parse_autoblocks_overrides
 from autoblocks._impl.util import serialize_to_string
@@ -420,10 +419,9 @@ async def run_test_suite_for_grid_combo(
     log.info(f"Running test suite '{test_id}' with {len(test_cases)} test cases")
 
     # Log URL to test results in GitHub CI (before tests start)
-    if is_ci():
-        timestamp = quote(start_timestamp, safe="")
-        url = f"{PUBLIC_WEBAPP_UI_URL}/apps/{app_id}/runs/inspect-run?baselineRunId={run_id}&startTimestamp={timestamp}"
-        print(f"View test results at: {url}")
+    timestamp = quote(start_timestamp, safe="")
+    url = f"{PUBLIC_WEBAPP_UI_URL}/apps/{app_id}/runs/inspect-run?baselineRunId={run_id}&startTimestamp={timestamp}"
+    print(f"View test results at: {url}")
 
     # Determine message with priority: unified overrides > legacy env var
     overrides = parse_autoblocks_overrides()
