@@ -99,11 +99,11 @@ class RunManager:
     @staticmethod
     def _evaluations_to_maps(
         evals: List[EvaluationWithId],
-    ) -> tuple[dict[str, bool], dict[str, str], dict[str, float], dict[str, dict]]:
+    ) -> tuple[dict[str, bool], dict[str, str], dict[str, float], dict[str, dict[str, Any]]]:
         id_to_result: dict[str, bool] = {}
         id_to_reason: dict[str, str] = {}
         id_to_score: dict[str, float] = {}
-        id_to_metadata: dict[str, dict] = {}
+        id_to_metadata: dict[str, dict[str, Any]] = {}
 
         for e in evals:
             # Reconstruct Evaluation to compute passed()
