@@ -156,6 +156,7 @@ async def send_create_result(
     evaluator_id_to_result: dict[str, bool],
     evaluator_id_to_reason: dict[str, str],
     evaluator_id_to_score: dict[str, float],
+    evaluator_id_to_metadata: dict[str, dict],
     run_message: Optional[str] = None,
 ) -> Response:
     return await post_to_api(
@@ -175,5 +176,6 @@ async def send_create_result(
             evaluatorIdToResult=evaluator_id_to_result,
             evaluatorIdToReason=evaluator_id_to_reason,
             evaluatorIdToScore=evaluator_id_to_score,
+            evaluatorIdToMetadata=evaluator_id_to_metadata,
         ),
     )
