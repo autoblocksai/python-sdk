@@ -94,6 +94,7 @@ def test_full_lifecycle_v2(httpx_mock):
             evaluatorIdToResult={"evaluator-external-id": True},
             evaluatorIdToReason={"evaluator-external-id": "ok"},
             evaluatorIdToScore={"evaluator-external-id": 1},
+            evaluatorIdToMetadata={"evaluator-external-id": {"reason": "ok"}},
         ),
         json=dict(executionId="mock-exec-id"),
     )
@@ -180,6 +181,7 @@ def test_add_result_without_evaluators_sends_empty_maps(httpx_mock):
             evaluatorIdToResult={},
             evaluatorIdToReason={},
             evaluatorIdToScore={},
+            evaluatorIdToMetadata={},
         ),
         json=dict(executionId="exec-1"),
     )
