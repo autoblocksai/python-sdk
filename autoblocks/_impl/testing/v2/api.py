@@ -157,6 +157,8 @@ async def send_create_result(
     evaluator_id_to_reason: dict[str, str],
     evaluator_id_to_score: dict[str, float],
     run_message: Optional[str] = None,
+    input_human_review_fields: Optional[List[dict[str, Any]]] = None,
+    output_human_review_fields: Optional[List[dict[str, Any]]] = None,
 ) -> Response:
     return await post_to_api(
         "/testing/results",
@@ -175,5 +177,7 @@ async def send_create_result(
             evaluatorIdToResult=evaluator_id_to_result,
             evaluatorIdToReason=evaluator_id_to_reason,
             evaluatorIdToScore=evaluator_id_to_score,
+            inputHumanReviewFields=input_human_review_fields,
+            outputHumanReviewFields=output_human_review_fields,
         ),
     )

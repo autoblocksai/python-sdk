@@ -13,7 +13,9 @@ from autoblocks._impl.testing.models import Evaluation
 from autoblocks._impl.testing.models import EvaluationWithId
 from autoblocks._impl.testing.models import TestCaseContext
 from autoblocks._impl.testing.util import serialize_output
+from autoblocks._impl.testing.util import serialize_output_for_human_review
 from autoblocks._impl.testing.util import serialize_test_case
+from autoblocks._impl.testing.util import serialize_test_case_for_human_review
 from autoblocks._impl.testing.v2.api import send_create_human_review_job
 from autoblocks._impl.testing.v2.api import send_create_result
 from autoblocks._impl.testing.v2.run import evaluator_semaphore_registry
@@ -168,6 +170,10 @@ class RunManager:
         input_raw = json.dumps(serialize_test_case(test_case))
         output_raw = json.dumps(serialize_output(output))
 
+        # Serialize human review fields
+        input_human_review_fields = serialize_test_case_for_human_review(test_case)
+        output_human_review_fields = serialize_output_for_human_review(output)
+
         # Per-execution start time defaults to now if not provided
         exec_started_at = started_at or now_rfc3339()
 
@@ -187,6 +193,8 @@ class RunManager:
             evaluator_id_to_reason=eval_reason_map,
             evaluator_id_to_score=eval_score_map,
             run_message=self.run_message,
+            input_human_review_fields=input_human_review_fields,
+            output_human_review_fields=output_human_review_fields,
         )
         data = resp.json()
         execution_id = data["executionId"]
