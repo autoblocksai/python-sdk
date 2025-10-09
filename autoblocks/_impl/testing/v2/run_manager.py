@@ -264,4 +264,3 @@ class RunManager:
             ),
             global_state.event_loop(),
         ).result()
-
