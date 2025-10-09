@@ -99,10 +99,11 @@ class RunManager:
     @staticmethod
     def _evaluations_to_maps(
         evals: List[EvaluationWithId],
-    ) -> tuple[dict[str, bool], dict[str, str], dict[str, float]]:
+    ) -> tuple[dict[str, bool], dict[str, str], dict[str, float], dict[str, dict[str, Any]]]:
         id_to_result: dict[str, bool] = {}
         id_to_reason: dict[str, str] = {}
         id_to_score: dict[str, float] = {}
+        id_to_metadata: dict[str, dict[str, Any]] = {}
 
         for e in evals:
             # Reconstruct Evaluation to compute passed()
@@ -137,7 +138,8 @@ class RunManager:
 
             id_to_reason[e.id] = reason
             id_to_score[e.id] = e.score
-        return id_to_result, id_to_reason, id_to_score
+            id_to_metadata[e.id] = e.metadata or {}
+        return id_to_result, id_to_reason, id_to_score, id_to_metadata
 
     async def async_add_result(
         self,
@@ -162,7 +164,7 @@ class RunManager:
             output=output,
             evaluators=evaluators or [],
         )
-        eval_result_map, eval_reason_map, eval_score_map = self._evaluations_to_maps(evals)
+        eval_result_map, eval_reason_map, eval_score_map, eval_metadata_map = self._evaluations_to_maps(evals)
 
         # Serialize input/output with standard json to match expected formatting in tests
         input_raw = json.dumps(serialize_test_case(test_case))
@@ -186,6 +188,7 @@ class RunManager:
             evaluator_id_to_result=eval_result_map,
             evaluator_id_to_reason=eval_reason_map,
             evaluator_id_to_score=eval_score_map,
+            evaluator_id_to_metadata=eval_metadata_map,
             run_message=self.run_message,
         )
         data = resp.json()
