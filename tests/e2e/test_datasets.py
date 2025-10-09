@@ -212,9 +212,6 @@ class TestConversationSchemaType:
 class TestDatasetItemsOperations:
     """Test operations on dataset items."""
 
-    # Class variable to store the item ID between test functions
-    test_item_id = None
-
     @pytest.fixture(scope="class")
     def client(self) -> AutoblocksAppClient:
         return create_app_client()
@@ -328,13 +325,24 @@ class TestDatasetItemsOperations:
         empty_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id, splits=["nonexistent"])
         assert len(empty_items) == 0
 
-        # Store an item ID for update/delete tests in the class variable
-        TestDatasetItemsOperations.test_item_id = retrieved_items[0].id
-
     def test_update_item_in_dataset(self, client: AutoblocksAppClient, test_dataset_id: str) -> None:
         """Test updating an item in the dataset."""
-        # Make sure we have an item ID from the previous test
-        assert TestDatasetItemsOperations.test_item_id is not None
+        # Create an item first
+        items = [
+            {
+                "Text Field": "Original text",
+                "Number Field": 50,
+            }
+        ]
+
+        client.datasets.create_items(external_id=test_dataset_id, items=items, split_names=["train"])
+
+        # Get the created item ID
+        retrieved_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id)
+        item_to_update = next(
+            (item for item in retrieved_items if item.data.get("Text Field") == "Original text"), None
+        )
+        assert item_to_update is not None
 
         # Use the new keyword-only arguments
         update_data = {
@@ -344,7 +352,7 @@ class TestDatasetItemsOperations:
 
         update_result = client.datasets.update_item(
             external_id=test_dataset_id,
-            item_id=TestDatasetItemsOperations.test_item_id,
+            item_id=item_to_update.id,
             data=update_data,
             split_names=["validation"],
         )
@@ -352,10 +360,8 @@ class TestDatasetItemsOperations:
         assert update_result.success is True
 
         # Verify the update
-        retrieved_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id)
-        updated_item = next(
-            (item for item in retrieved_items if item.id == TestDatasetItemsOperations.test_item_id), None
-        )
+        updated_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id)
+        updated_item = next((item for item in updated_items if item.id == item_to_update.id), None)
 
         assert updated_item is not None
         assert updated_item.data["Text Field"] == "Updated sample text"
@@ -364,8 +370,22 @@ class TestDatasetItemsOperations:
 
     def test_delete_item_from_dataset(self, client: AutoblocksAppClient, test_dataset_id: str) -> None:
         """Test deleting an item from the dataset."""
-        # Make sure we have an item ID from the previous test
-        assert TestDatasetItemsOperations.test_item_id is not None
+        # Create an item first
+        items = [
+            {
+                "Text Field": "Item to delete",
+                "Number Field": 999,
+            }
+        ]
+
+        client.datasets.create_items(external_id=test_dataset_id, items=items, split_names=["test"])
+
+        # Get the created item ID
+        retrieved_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id)
+        item_to_delete = next(
+            (item for item in retrieved_items if item.data.get("Text Field") == "Item to delete"), None
+        )
+        assert item_to_delete is not None
 
         # Get dataset state before deletion
         pre_delete_datasets = client.datasets.list()
@@ -374,9 +394,7 @@ class TestDatasetItemsOperations:
         pre_delete_revision_id = pre_delete_dataset.latest_revision_id
 
         # Use the new keyword-only arguments
-        delete_result = client.datasets.delete_item(
-            external_id=test_dataset_id, item_id=TestDatasetItemsOperations.test_item_id
-        )
+        delete_result = client.datasets.delete_item(external_id=test_dataset_id, item_id=item_to_delete.id)
 
         assert delete_result.success is True
 
@@ -387,11 +405,9 @@ class TestDatasetItemsOperations:
         assert post_delete_dataset.latest_revision_id != pre_delete_revision_id
 
         # Verify the item is deleted
-        retrieved_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id)
+        final_items: List[DatasetItem] = client.datasets.get_items(external_id=test_dataset_id)
 
-        deleted_item = next(
-            (item for item in retrieved_items if item.id == TestDatasetItemsOperations.test_item_id), None
-        )
+        deleted_item = next((item for item in final_items if item.id == item_to_delete.id), None)
 
         assert deleted_item is None
 
