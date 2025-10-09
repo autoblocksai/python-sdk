@@ -51,6 +51,19 @@ class MyOutput:
         return [HumanReviewField(name="output", value=self.output, content_type=HumanReviewFieldContentType.TEXT)]
 
 
+@dataclass
+class NoHumanReviewTestCase(BaseTestCase):
+    input: str
+
+    def hash(self) -> str:
+        return self.input
+
+
+@dataclass
+class NoHumanReviewOutput:
+    output: str
+
+
 class MyEvaluator(BaseTestEvaluator):
     @property
     def id(self) -> str:
@@ -94,6 +107,8 @@ def test_full_lifecycle_v2(httpx_mock):
             evaluatorIdToResult={"evaluator-external-id": True},
             evaluatorIdToReason={"evaluator-external-id": "ok"},
             evaluatorIdToScore={"evaluator-external-id": 1},
+            inputHumanReviewFields=[{"name": "input", "value": "test", "contentType": "text"}],
+            outputHumanReviewFields=[{"name": "output", "value": "test", "contentType": "text"}],
         ),
         json=dict(executionId="mock-exec-id"),
     )
@@ -180,6 +195,8 @@ def test_add_result_without_evaluators_sends_empty_maps(httpx_mock):
             evaluatorIdToResult={},
             evaluatorIdToReason={},
             evaluatorIdToScore={},
+            inputHumanReviewFields=[{"name": "input", "value": "test", "contentType": "text"}],
+            outputHumanReviewFields=[{"name": "output", "value": "test", "contentType": "text"}],
         ),
         json=dict(executionId="exec-1"),
     )
@@ -192,3 +209,40 @@ def test_add_result_without_evaluators_sends_empty_maps(httpx_mock):
         duration_ms=250,
     )
     assert exec_id == "exec-1"
+
+
+def test_add_result_without_custom_human_review_fields(httpx_mock):
+    """Test that when test case/output don't define serialize_for_human_review,
+    inputHumanReviewFields and outputHumanReviewFields are sent as None."""
+    httpx_mock.add_response(
+        url=f"{API_ENDPOINT_V2}/testing/results",
+        method="POST",
+        match_json=dict(
+            appSlug="my-app",
+            runId=ANY_STRING,
+            environment="test",
+            runMessage=None,
+            startedAt=ANY_STRING,
+            durationMS=100,
+            status="SUCCESS",
+            inputRaw=json.dumps({"input": "test"}),
+            outputRaw=json.dumps({"output": "test"}),
+            input={"input": "test"},
+            output={"output": "test"},
+            evaluatorIdToResult={},
+            evaluatorIdToReason={},
+            evaluatorIdToScore={},
+            inputHumanReviewFields=None,
+            outputHumanReviewFields=None,
+        ),
+        json=dict(executionId="exec-2"),
+    )
+
+    test_run = RunManager(app_slug="my-app")
+    test_run.start()
+    exec_id = test_run.add_result(
+        test_case=NoHumanReviewTestCase(input="test"),
+        output=NoHumanReviewOutput(output="test"),
+        duration_ms=100,
+    )
+    assert exec_id == "exec-2"
